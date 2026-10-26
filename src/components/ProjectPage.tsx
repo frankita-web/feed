@@ -8,7 +8,7 @@ import { Selected } from "./Desktop";
 import { FeedView } from "./FeedView";
 import { buttonClass } from "./Modal";
 import { ProjectDialog } from "./ProjectDialog";
-import { Dots, Orb } from "./Typo";
+import { Orb } from "./Orb";
 
 export type Tab = "calendario" | "feed";
 
@@ -21,7 +21,7 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
   const project = store.projects.find((p) => p.slug === slug);
   if (!project)
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center font-mono uppercase">
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
         <p>este proyecto no existe</p>
         <Link href="/" className="text-xs underline">
           volver a mis proyectos
@@ -36,11 +36,11 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
   ];
 
   return (
-    <div className="flex-1" style={{ backgroundColor: project.bg }}>
+    <div className="flex-1">
       <header className="relative mx-auto flex max-w-7xl flex-wrap items-end justify-between gap-6 px-4 pt-7 sm:px-8">
         <div>
-          <Link href="/" className="font-mono text-[11px] tracking-[0.15em] uppercase hover:underline">
-            ← mis proyectos
+          <Link href="/" className="text-[13px] text-graphite hover:text-ink">
+            ← Mis proyectos
           </Link>
           <div className="mt-4 flex items-center gap-5">
             <Orb project={project} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
@@ -53,7 +53,7 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
                   href={`https://www.instagram.com/${project.instagram}/`}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block font-mono text-[11px] tracking-[0.12em] uppercase hover:underline"
+                  className="mt-2 inline-block text-[13px] text-graphite hover:text-ink"
                 >
                   @{project.instagram}
                 </a>
@@ -79,7 +79,6 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
             Ajustes
           </button>
         </div>
-        <Dots at={[[40, 20], [41.5, 30], [62, 60], [88, 8]]} className="hidden sm:block" />
       </header>
 
       {tab === "calendario" ? (

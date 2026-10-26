@@ -1,45 +1,42 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-courier);
-  --font-script: var(--font-pinyon);
+  --font-sans: "Helvetica Neue", Helvetica, var(--font-geist-sans), Arial, sans-serif;
 
-  --color-paper: #f2c6d0;
-  --color-ink: #1d1818;
-  --color-graphite: #6e6466;
-  --color-silver: #ececec;
+  --color-paper: #ededed;
+  --color-ink: #161616;
+  --color-graphite: #7a7a7a;
 }
 
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
-  font-family: var(--font-geist-sans), Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
-/* Grano de papel impreso sobre todo */
+/* Grano suave, como papel impreso */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 100;
-  opacity: 0.22;
+  opacity: 0.12;
   mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.27 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.3 0 0 0 0 0.3 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection {
   background: var(--color-ink);
-  color: var(--color-paper);
+  color: white;
 }
 
-/* Tarjeta plateada (la ventana de la referencia) */
+/* Tarjeta plateada */
 .silver {
-  background: linear-gradient(160deg, #ffffff 0%, #f3f3f3 45%, #dcdcdc 100%);
+  background: linear-gradient(160deg, #ffffff 0%, #f6f6f6 45%, #e2e2e2 100%);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 0.9) inset,
-    0 30px 60px -30px rgb(60 30 40 / 0.45);
+    0 30px 60px -30px rgb(0 0 0 / 0.3);
 }
 
 @keyframes orb-spin {
@@ -54,6 +51,12 @@ body::after {
   }
 }
 
+@keyframes pulse-dot {
+  50% {
+    opacity: 0.35;
+  }
+}
+
 .orb-spin {
   animation: orb-spin 16s linear infinite;
 }
@@ -62,9 +65,14 @@ body::after {
   animation: orb-drift 9s ease-in-out infinite;
 }
 
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .orb-spin,
-  .orb-drift {
+  .orb-drift,
+  .pulse-dot {
     animation: none;
   }
 }

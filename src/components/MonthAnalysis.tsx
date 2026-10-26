@@ -1,5 +1,5 @@
 import type { Post, Project } from "@/lib/types";
-import { Orb } from "./Typo";
+import { Orb } from "./Orb";
 
 const DONE = "#3d7a5c";
 
@@ -11,7 +11,7 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
   const uncategorized = feed.filter((p) => !p.pillar).length;
 
   return (
-    <aside className="silver self-start rounded-[24px] p-6 xl:rotate-[0.6deg]">
+    <aside className="silver self-start rounded-[24px] p-6">
       <div className="flex items-center gap-3">
         <Orb project={project} className="h-10 w-10 shrink-0" />
         <div>
@@ -30,7 +30,7 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
       </p>
 
       {project.pillars.length > 0 && (
-        <ul className="mt-6 space-y-2.5 font-mono text-[12px] uppercase">
+        <ul className="mt-6 space-y-2.5 text-[13px]">
           {project.pillars.map((pillar) => {
             const count = posts.filter((p) => p.pillar === pillar.name).length;
             const done = count >= pillar.target;
@@ -53,8 +53,8 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
         </ul>
       )}
       {uncategorized > 0 && (
-        <p className="mt-4 font-mono text-[10px] tracking-wider text-graphite uppercase">
-          • {uncategorized} sin categoría
+        <p className="mt-4 text-[12px] text-graphite">
+          {uncategorized} sin categoría
         </p>
       )}
     </aside>

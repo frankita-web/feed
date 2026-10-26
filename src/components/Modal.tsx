@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { Swirl } from "./Typo";
 
 export function Modal({
   title,
@@ -34,9 +33,7 @@ export function Modal({
         className="silver max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] p-7 sm:rounded-[28px]"
       >
         <div className="mb-6 flex items-start justify-between gap-4">
-          <h2 className="text-xl leading-tight">
-            <Swirl text={title} />
-          </h2>
+          <h2 className="text-2xl leading-tight font-semibold tracking-[-0.03em]">{title}</h2>
           <button
             onClick={onClose}
             className="rounded-full px-2 text-2xl leading-none text-graphite hover:text-ink"
@@ -54,7 +51,7 @@ export function Modal({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-mono text-[11px] tracking-[0.12em] text-graphite uppercase">
+      <span className="mb-1.5 block text-[11px] font-medium tracking-[0.08em] text-graphite uppercase">
         {label}
       </span>
       {children}

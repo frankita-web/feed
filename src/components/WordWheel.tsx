@@ -12,20 +12,25 @@ const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 /**
  * Lista de palabras sobre un arco (como el selector de la referencia).
- * `index` no tiene límites: la lista se repite para que la rueda sea infinita.
+ * Con `loop`, `index` no tiene límites y la lista se repite como rueda infinita.
  */
 export function WordWheel({
   items,
   index,
-  onChange,
+  onChange: setIndex,
   onPick,
+  label,
+  loop = true,
 }: {
   items: WheelItem[];
   index: number;
   onChange: (index: number) => void;
   onPick: (item: WheelItem) => void;
+  label: string;
+  loop?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const onChange = (i: number) => setIndex(loop ? i : Math.max(0, Math.min(items.length - 1, i)));
   const latest = useRef({ index, onChange });
   useEffect(() => {
     latest.current = { index, onChange };
@@ -55,7 +60,7 @@ export function WordWheel({
       ref={ref}
       tabIndex={0}
       role="listbox"
-      aria-label="Proyectos"
+      aria-label={label}
       onKeyDown={(e) => {
         if (e.key === "ArrowDown") onChange(index + 1);
         else if (e.key === "ArrowUp") onChange(index - 1);
@@ -80,6 +85,7 @@ export function WordWheel({
       {Array.from({ length: SPAN * 2 + 1 }, (_, i) => {
         const d = i - SPAN;
         const abs = index + d;
+        if (!loop && (abs < 0 || abs >= items.length)) return null;
         const item = items[mod(abs, items.length)];
         const a = d * STEP;
         const selected = d === 0;

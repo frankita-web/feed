@@ -74,7 +74,7 @@ export function ProjectDialog({
           />
         </Field>
         <div className="grid grid-cols-3 gap-4">
-          <Field label="Fondo">
+          <Field label="Color suave">
             <input
               type="color"
               className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
@@ -82,7 +82,7 @@ export function ProjectDialog({
               onChange={(e) => set({ bg: e.target.value })}
             />
           </Field>
-          <Field label="Acento">
+          <Field label="Color fuerte">
             <input
               type="color"
               className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
@@ -144,7 +144,7 @@ export function ProjectDialog({
             ))}
             <button
               type="button"
-              className="font-mono text-xs uppercase underline"
+              className="text-[13px] underline"
               onClick={() => set({ pillars: [...draft.pillars, { name: "", target: 1 }] })}
             >
               + agregar categoría

@@ -17,7 +17,6 @@ import { STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/types";
 import { MonthAnalysis } from "./MonthAnalysis";
 import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
 import { PostDialog, statusColor } from "./PostDialog";
-import { Swirl } from "./Typo";
 
 type Editing = { post: Post; isNew: boolean };
 
@@ -70,8 +69,8 @@ export function CalendarView({
             ‹
           </button>
           <h2 className="min-w-52 text-center text-[clamp(32px,4.5vw,52px)] leading-none">
-            <Swirl text={MONTHS[month]} />
-            <span className="ml-2 align-top font-mono text-xs">{year} •</span>
+            <span className="font-semibold tracking-[-0.05em] capitalize">{MONTHS[month]}</span>
+            <span className="ml-2 text-graphite/60 tracking-[-0.05em]">{year}</span>
           </h2>
           <button onClick={() => shift(1)} className={buttonClass} aria-label="Mes siguiente">
             ›
@@ -110,10 +109,10 @@ export function CalendarView({
                       : "border-white/60 bg-white/45"
                 }`}
               >
-                <div className="flex items-center justify-between font-mono text-[11px] tracking-[0.12em] uppercase">
+                <div className="flex items-center justify-between text-[11px] font-medium tracking-[0.06em] uppercase">
                   <span className={isToday ? "text-ink" : "text-graphite"}>
                     {WEEKDAYS[(leadingBlanks(year, month) + i) % 7]} {i + 1}
-                    {isToday && " • hoy"}
+                    {isToday && " · hoy"}
                   </span>
                   <button
                     onClick={(e) => {
@@ -132,8 +131,8 @@ export function CalendarView({
                   ))}
                 </div>
                 {note(key) && (
-                  <p className="mt-auto pt-2 text-center font-mono text-[9.5px] leading-tight tracking-wider text-graphite uppercase">
-                    • {note(key)}
+                  <p className="mt-auto pt-2 text-center text-[10px] leading-tight text-graphite">
+                    {note(key)}
                   </p>
                 )}
               </div>
@@ -153,7 +152,7 @@ export function CalendarView({
                   key === today ? "border-ink bg-white/70" : "border-white/60 bg-white/45"
                 }`}
               >
-                <span className="w-16 shrink-0 font-mono text-[11px] tracking-[0.12em] whitespace-nowrap text-graphite uppercase">
+                <span className="w-16 shrink-0 text-[11px] font-medium tracking-[0.06em] whitespace-nowrap text-graphite uppercase">
                   {weekdayOf(key)} {Number(key.slice(8))}
                 </span>
                 <div className="flex-1 space-y-2.5">
@@ -161,8 +160,8 @@ export function CalendarView({
                     <PostChip key={post.id} post={post} project={project} onClick={() => edit(post)} />
                   ))}
                   {note(key) && (
-                    <p className="font-mono text-[10px] tracking-wider text-graphite uppercase">
-                      • {note(key)}
+                    <p className="text-[11px] text-graphite">
+                      {note(key)}
                     </p>
                   )}
                 </div>
@@ -240,12 +239,12 @@ function PostChip({
             style={{ background: statusColor(post.status, project) }}
           />
         )}
-        <span className="font-mono text-[12px] leading-tight font-bold uppercase">
+        <span className="text-[12.5px] leading-tight font-semibold tracking-[-0.01em]">
           {post.title || "Sin título"}
         </span>
       </span>
-      <span className="mt-1 block pl-3 font-mono text-[10px] tracking-wide text-graphite uppercase">
-        [ {post.format} ]
+      <span className="mt-0.5 block pl-3 text-[11px] text-graphite">
+        {post.format}
       </span>
     </button>
   );
@@ -253,7 +252,7 @@ function PostChip({
 
 function Legend({ project }: { project: Project }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] tracking-[0.1em] uppercase">
+    <div className="flex flex-wrap items-center gap-4 text-[12px]">
       {STATUSES.map((s) => (
         <span key={s} className="flex items-center gap-1.5">
           <span className="h-[7px] w-[7px] rounded-full" style={{ background: statusColor(s, project) }} />
@@ -307,14 +306,14 @@ function DayDialog({
               }}
               className="flex w-full items-center justify-between gap-3 rounded-xl border border-black/10 bg-white/80 px-4 py-3 text-left transition hover:bg-white"
             >
-              <span className="flex items-center gap-2 font-mono text-sm font-bold uppercase">
+              <span className="flex items-center gap-2 text-sm font-semibold">
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{ background: statusColor(post.status, project) }}
                 />
                 {post.title || "Sin título"}
               </span>
-              <span className="font-mono text-[10px] text-graphite uppercase">[ {post.format} ]</span>
+              <span className="text-xs text-graphite">{post.format}</span>
             </button>
           ))}
           <button

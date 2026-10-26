@@ -54,3 +54,12 @@ export function shortDate(key: string) {
   const { month, day } = parseKey(key);
   return `${day} ${MONTHS[month].slice(0, 3)}`;
 }
+
+/** Lunes y domingo (YYYY-MM-DD) de la semana actual. */
+export function weekRange() {
+  const d = new Date();
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  const key = (x: Date) => dateKey(x.getFullYear(), x.getMonth(), x.getDate());
+  return [key(monday), key(sunday)] as const;
+}

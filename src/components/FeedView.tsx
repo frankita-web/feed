@@ -7,7 +7,7 @@ import { addPosts, newPost } from "@/lib/store";
 import type { Post, Project } from "@/lib/types";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
-import { Orb } from "./Typo";
+import { Orb } from "./Orb";
 import { PostDialog } from "./PostDialog";
 
 export function FeedView({ project, posts }: { project: Project; posts: Post[] }) {
@@ -77,7 +77,7 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
           />
         </div>
 
-        <div className="silver overflow-hidden rounded-[32px] sm:-rotate-[0.6deg]">
+        <div className="silver overflow-hidden rounded-[32px]">
           <div className="flex items-center gap-5 px-6 pt-7 pb-5">
             <Orb project={project} className="h-20 w-20 shrink-0" />
             <div>
@@ -98,7 +98,6 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
                 <button key={post.id} onClick={() => setEditing(post)} className="block">
                   <FeedTile
                     post={post}
-                    project={project}
                     badge={
                       isPlanned(post) ? (post.date ? shortDate(post.date) : "sin fecha") : undefined
                     }
@@ -113,8 +112,8 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
             </p>
           )}
         </div>
-        <p className="mt-5 text-center font-mono text-[10px] tracking-[0.12em] uppercase">
-          • las stories no aparecen en el grid · toca una publicación para editarla •
+        <p className="mt-5 text-center text-[12px] text-graphite">
+          Las stories no aparecen en el grid · toca una publicación para editarla
         </p>
       </div>
 

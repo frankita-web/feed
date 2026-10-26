@@ -1,22 +1,11 @@
 import type { Metadata } from "next";
-import { Courier_Prime, Geist, Pinyon_Script } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
+// Helvetica primero (Mac/iPhone); Geist como respaldo en otros sistemas.
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-});
-
-const courier = Courier_Prime({
-  variable: "--font-courier",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-});
-
-const pinyon = Pinyon_Script({
-  variable: "--font-pinyon",
-  subsets: ["latin"],
-  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -26,10 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${courier.variable} ${pinyon.variable} h-full antialiased`}
-    >
+    <html lang="es" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

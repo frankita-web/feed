@@ -75,13 +75,13 @@ export function PostDialog({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-lg border-[3px] border-white bg-paper font-mono text-[11px] uppercase shadow-md hover:-rotate-1"
+            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-lg border-[3px] border-white bg-[#dedede] text-[12px] text-graphite shadow-md hover:-rotate-1"
           >
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
               <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
-              <span className="px-2">{uploading ? "subiendo…" : "+ subir imagen o portada"}</span>
+              <span className="px-2">{uploading ? "Subiendo…" : "+ Subir imagen o portada"}</span>
             )}
           </button>
           <input

@@ -1,7 +1,7 @@
 "use client";
 
 import { useImageUrl } from "@/lib/images";
-import type { Post, Project } from "@/lib/types";
+import type { Post } from "@/lib/types";
 
 function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
   if (format.startsWith("Reel"))
@@ -22,26 +22,24 @@ function FormatIcon({ format, color }: { format: Post["format"]; color: string }
 
 export function FeedTile({
   post,
-  project,
   badge,
   small,
 }: {
   post: Post;
-  project: Project;
   badge?: string;
   small?: boolean;
 }) {
   const url = useImageUrl(post.image);
 
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden" style={{ background: project.bg }}>
+    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#dedede]">
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
         <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
           <span
-            className={`font-mono leading-tight font-bold uppercase ${small ? "text-[7px]" : "text-[13px]"}`}
+            className={`leading-tight font-semibold tracking-[-0.02em] ${small ? "text-[8px]" : "text-[15px]"}`}
           >
             {post.title || "sin título"}
           </span>
@@ -53,8 +51,8 @@ export function FeedTile({
             <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
           </div>
           {badge && (
-            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 font-mono text-[9.5px] whitespace-nowrap uppercase shadow-sm">
-              • {badge}
+            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] whitespace-nowrap shadow-sm">
+              {badge}
             </span>
           )}
         </>
