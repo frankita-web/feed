@@ -39,14 +39,9 @@ export function FeedTile({
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
         <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div
-          className={`absolute flex flex-col items-center justify-center text-center ${small ? "inset-0 p-1" : "inset-2 rounded-xl p-2"}`}
-          style={small ? undefined : { border: `1px dashed ${project.accent}55` }}
-        >
-          {!small && <span className="mb-1 text-xs" style={{ color: project.accent }}>♡</span>}
+        <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
           <span
-            className={`font-display leading-tight italic ${small ? "text-[9px]" : "text-lg"}`}
-            style={{ color: project.accent }}
+            className={`font-mono leading-tight font-bold uppercase ${small ? "text-[7px]" : "text-[13px]"}`}
           >
             {post.title || "sin título"}
           </span>
@@ -55,11 +50,11 @@ export function FeedTile({
       {!small && (
         <>
           <div className="absolute top-2.5 right-2.5 drop-shadow">
-            <FormatIcon format={post.format} color={url ? "white" : project.accent} />
+            <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
           </div>
           {badge && (
-            <span className="absolute bottom-2.5 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] whitespace-nowrap text-ink shadow-sm">
-              ♡ {badge}
+            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 font-mono text-[9.5px] whitespace-nowrap uppercase shadow-sm">
+              • {badge}
             </span>
           )}
         </>

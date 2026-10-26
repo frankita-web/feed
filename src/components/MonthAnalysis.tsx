@@ -1,7 +1,7 @@
 import type { Post, Project } from "@/lib/types";
-import { Bow } from "./Bow";
+import { Orb } from "./Typo";
 
-const DONE = "#6a9f78";
+const DONE = "#3d7a5c";
 
 /** "Análisis mensual non negociable": meta del mes y cuántos posts lleva cada categoría. */
 export function MonthAnalysis({ project, posts }: { project: Project; posts: Post[] }) {
@@ -11,56 +11,51 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
   const uncategorized = feed.filter((p) => !p.pillar).length;
 
   return (
-    <aside className="paper stitched relative self-start rounded-[32px] px-6 pt-9 pb-7 text-sm">
-      <Bow color={project.bg} className="absolute -top-4 left-1/2 h-9 w-14 -translate-x-1/2" />
-      <p className="text-center text-[10px] tracking-[0.3em] text-mauve uppercase">
-        análisis mensual
-      </p>
-      <p className="text-center font-script text-xl text-rose">non negociable</p>
+    <aside className="silver self-start rounded-[24px] p-6 xl:rotate-[0.6deg]">
+      <div className="flex items-center gap-3">
+        <Orb project={project} className="h-10 w-10 shrink-0" />
+        <div>
+          <p className="text-[15px] leading-tight font-medium">Análisis mensual</p>
+          <p className="text-[13px] text-graphite">non negociable</p>
+        </div>
+      </div>
 
-      <p className="mt-4 text-center font-display leading-none" style={{ color: project.accent }}>
-        <span className="text-6xl font-medium italic">{feed.length}</span>
-        <span className="text-2xl text-mauve italic"> / {project.monthlyGoal}</span>
+      <p className="mt-6 text-6xl leading-none font-light tracking-[-0.05em]">
+        {feed.length}
+        <span className="text-graphite/50">/{project.monthlyGoal}</span>
       </p>
-      <p className="mt-1 text-center text-xs text-mauve">
-        {missing ? `faltan ${missing} posts` : "¡meta cumplida! ♡"}
+      <p className="mt-2 text-[12px] text-graphite">
+        {missing ? `Faltan ${missing} posts` : "Meta cumplida"}
         {stories > 0 && ` · ${stories} ${stories === 1 ? "story" : "stories"}`}
       </p>
 
       {project.pillars.length > 0 && (
-        <ul className="mt-6 space-y-3 border-t border-dashed border-petal pt-5">
+        <ul className="mt-6 space-y-2.5 font-mono text-[12px] uppercase">
           {project.pillars.map((pillar) => {
             const count = posts.filter((p) => p.pillar === pillar.name).length;
             const done = count >= pillar.target;
             return (
-              <li key={pillar.name}>
-                <div className="flex items-baseline justify-between">
-                  <span className="font-display text-lg leading-none italic">
-                    <span style={{ color: project.accent }}>{pillar.target}</span>{" "}
-                    {pillar.name.toLowerCase()}
-                  </span>
-                  <span className="text-xs" style={{ color: done ? DONE : "var(--color-mauve)" }}>
-                    {count}/{pillar.target} {done ? "♥" : "♡"}
-                  </span>
-                </div>
-                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-blush">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(1, pillar.target ? count / pillar.target : 1) * 100}%`,
-                      background: done ? DONE : project.accent,
-                    }}
-                  />
-                </div>
+              <li key={pillar.name} className="flex items-baseline gap-2">
+                <span className={done ? "" : "text-ink/80"}>
+                  {pillar.target} {pillar.name}
+                </span>
+                <span className="flex-1 translate-y-[-3px] border-b border-dotted border-ink/40" />
+                <span className="font-bold" style={{ color: done ? DONE : undefined }}>
+                  {count}/{pillar.target}
+                </span>
+                <span
+                  className="h-[7px] w-[7px] translate-y-[-1px] rounded-full border border-ink/50"
+                  style={{ background: done ? DONE : "transparent", borderColor: done ? DONE : undefined }}
+                />
               </li>
             );
           })}
-          {uncategorized > 0 && (
-            <li className="pt-1 text-center font-display text-sm text-mauve italic">
-              {uncategorized} sin categoría
-            </li>
-          )}
         </ul>
+      )}
+      {uncategorized > 0 && (
+        <p className="mt-4 font-mono text-[10px] tracking-wider text-graphite uppercase">
+          • {uncategorized} sin categoría
+        </p>
       )}
     </aside>
   );

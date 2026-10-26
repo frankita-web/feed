@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveProject, slugify, useStore } from "@/lib/store";
 import type { Project } from "@/lib/types";
-import { Field, Modal, inputClass } from "./Modal";
+import { Field, Modal, darkButtonClass, inputClass } from "./Modal";
 
 const EMPTY: Project = {
   slug: "",
@@ -63,7 +63,7 @@ export function ProjectDialog({
             value={draft.name}
             onChange={(e) => set({ name: e.target.value })}
           />
-          {taken && <p className="mt-1 text-xs text-rose">Ya existe un proyecto con ese nombre.</p>}
+          {taken && <p className="mt-1 text-xs text-[#b3261e]">Ya existe un proyecto con ese nombre.</p>}
         </Field>
         <Field label="Instagram">
           <input
@@ -77,7 +77,7 @@ export function ProjectDialog({
           <Field label="Fondo">
             <input
               type="color"
-              className="h-10 w-full cursor-pointer rounded-2xl border border-petal bg-white p-1"
+              className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
               value={draft.bg}
               onChange={(e) => set({ bg: e.target.value })}
             />
@@ -85,7 +85,7 @@ export function ProjectDialog({
           <Field label="Acento">
             <input
               type="color"
-              className="h-10 w-full cursor-pointer rounded-2xl border border-petal bg-white p-1"
+              className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
               value={draft.accent}
               onChange={(e) => set({ accent: e.target.value })}
             />
@@ -135,7 +135,7 @@ export function ProjectDialog({
                 <button
                   type="button"
                   aria-label="Quitar"
-                  className="px-2 text-xl text-mauve hover:text-ink"
+                  className="px-2 text-xl text-graphite hover:text-ink"
                   onClick={() => set({ pillars: draft.pillars.filter((_, j) => j !== i) })}
                 >
                   ×
@@ -144,25 +144,23 @@ export function ProjectDialog({
             ))}
             <button
               type="button"
-              className="text-sm font-medium"
-              style={{ color: draft.accent }}
+              className="font-mono text-xs uppercase underline"
               onClick={() => set({ pillars: [...draft.pillars, { name: "", target: 1 }] })}
             >
-              + agregar categoría ♡
+              + agregar categoría
             </button>
           </div>
         </Field>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm text-mauve">
+          <button type="button" onClick={onClose} className="rounded-full px-4 py-1.5 text-[13px] text-graphite">
             Cancelar
           </button>
           <button
             type="submit"
-            className="rounded-full px-6 py-2 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgb(120_40_70/0.6)]"
-            style={{ background: draft.accent }}
+            className={darkButtonClass}
           >
-            {project ? "Guardar" : "Crear proyecto ♡"}
+            {project ? "Guardar" : "Crear proyecto"}
           </button>
         </div>
       </form>

@@ -2,38 +2,69 @@
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
-  --font-display: var(--font-cormorant);
+  --font-mono: var(--font-courier);
   --font-script: var(--font-pinyon);
 
-  --color-cream: #fffaf6;
-  --color-blush: #fbeaf0;
-  --color-petal: #f2d4de;
-  --color-rose: #d68aa1;
-  --color-ink: #4a3138;
-  --color-mauve: #9c7a85;
+  --color-paper: #f2c6d0;
+  --color-ink: #1d1818;
+  --color-graphite: #6e6466;
+  --color-silver: #ececec;
 }
 
 body {
-  background-color: var(--color-cream);
-  background-image: radial-gradient(#f6dbe4 1.2px, transparent 1.3px);
-  background-size: 22px 22px;
+  background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-geist-sans), Helvetica, Arial, sans-serif;
 }
 
+/* Grano de papel impreso sobre todo */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.22;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.25 0 0 0 0 0.27 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 ::selection {
-  background: #f6c9d6;
+  background: var(--color-ink);
+  color: var(--color-paper);
 }
 
-/* Tarjeta tipo papelería: crema, borde pétalo y sombra rosada suave */
-.paper {
-  background: #fffdfb;
-  border: 1px solid var(--color-petal);
-  box-shadow: 0 10px 30px -18px rgb(160 80 105 / 0.35);
+/* Tarjeta plateada (la ventana de la referencia) */
+.silver {
+  background: linear-gradient(160deg, #ffffff 0%, #f3f3f3 45%, #dcdcdc 100%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 30px 60px -30px rgb(60 30 40 / 0.45);
 }
 
-/* Borde punteado interior, como costura */
-.stitched {
-  outline: 1.5px dashed var(--color-petal);
-  outline-offset: -8px;
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orb-drift {
+  50% {
+    transform: translate(8%, -6%) scale(1.15);
+  }
+}
+
+.orb-spin {
+  animation: orb-spin 16s linear infinite;
+}
+
+.orb-drift {
+  animation: orb-drift 9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-spin,
+  .orb-drift {
+    animation: none;
+  }
 }

@@ -5,9 +5,9 @@ import { shortDate, todayKey } from "@/lib/dates";
 import { storeImage } from "@/lib/images";
 import { addPosts, newPost } from "@/lib/store";
 import type { Post, Project } from "@/lib/types";
-import { Bow } from "./Bow";
 import { FeedTile, feedPosts } from "./FeedTile";
-import { buttonClass } from "./Modal";
+import { buttonClass, darkButtonClass } from "./Modal";
+import { Orb } from "./Typo";
 import { PostDialog } from "./PostDialog";
 
 export function FeedView({ project, posts }: { project: Project; posts: Post[] }) {
@@ -45,7 +45,7 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-8">
+    <div className="mx-auto max-w-7xl px-4 pt-10 pb-16 sm:px-8">
       <div className="mx-auto max-w-xl">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <label className={`${buttonClass} flex cursor-pointer items-center gap-2`}>
@@ -53,17 +53,16 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
               type="checkbox"
               checked={showPlanned}
               onChange={(e) => setShowPlanned(e.target.checked)}
-              style={{ accentColor: project.accent }}
+              className="accent-ink"
             />
-            mostrar lo programado ({plannedCount})
+            Mostrar lo programado ({plannedCount})
           </label>
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading > 0}
-            className="rounded-full px-5 py-1.5 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgb(120_40_70/0.6)] disabled:opacity-60"
-            style={{ background: project.accent }}
+            className={darkButtonClass}
           >
-            {uploading ? `subiendo… (${uploading})` : "+ subir lo ya publicado"}
+            {uploading ? `Subiendo… (${uploading})` : "+ Subir lo ya publicado"}
           </button>
           <input
             ref={fileRef}
@@ -78,61 +77,44 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
           />
         </div>
 
-        <div
-          className="relative rounded-[44px] p-3 shadow-[0_30px_60px_-30px_rgb(150_70_95/0.6)]"
-          style={{ background: project.bg }}
-        >
-          <Bow color="#fffaf6" className="absolute -top-5 left-1/2 z-10 h-10 w-16 -translate-x-1/2 drop-shadow-sm" />
-          <div className="overflow-hidden rounded-[34px] bg-[#fffdfb]">
-            <div className="flex items-center gap-5 px-6 pt-8 pb-5">
-              <div
-                className="rounded-full p-[3px]"
-                style={{ background: `linear-gradient(135deg, ${project.bg}, ${project.accent})` }}
-              >
-                <div
-                  className="flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-white font-display text-4xl text-white italic"
-                  style={{ background: project.accent }}
-                >
-                  {project.name[0].toLowerCase()}
-                </div>
-              </div>
-              <div>
-                <p className="font-display text-2xl leading-tight font-medium italic">
-                  {project.instagram || project.name.toLowerCase()}
-                </p>
-                <p className="mt-1 text-xs tracking-wide text-mauve">
-                  <span className="font-medium text-ink">{all.length - plannedCount}</span>{" "}
-                  publicaciones · <span className="font-medium text-ink">{plannedCount}</span>{" "}
-                  programadas
-                </p>
-              </div>
-            </div>
-
-            {visible.length ? (
-              <div className="grid grid-cols-3 gap-[3px]">
-                {visible.map((post) => (
-                  <button key={post.id} onClick={() => setEditing(post)} className="block">
-                    <FeedTile
-                      post={post}
-                      project={project}
-                      badge={
-                        isPlanned(post) ? (post.date ? shortDate(post.date) : "sin fecha") : undefined
-                      }
-                    />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="px-6 pb-12 text-center font-display text-lg text-mauve italic">
-                todavía no hay nada en el feed ♡ agrega publicaciones en el calendario o sube lo
-                que ya tienes publicado.
+        <div className="silver overflow-hidden rounded-[32px] sm:-rotate-[0.6deg]">
+          <div className="flex items-center gap-5 px-6 pt-7 pb-5">
+            <Orb project={project} className="h-20 w-20 shrink-0" />
+            <div>
+              <p className="text-xl font-semibold tracking-[-0.03em]">
+                {project.instagram || project.name.toLowerCase()}
               </p>
-            )}
+              <p className="mt-0.5 text-[13px] text-graphite">
+                <span className="font-medium text-ink">{all.length - plannedCount}</span>{" "}
+                publicaciones · <span className="font-medium text-ink">{plannedCount}</span>{" "}
+                programadas
+              </p>
+            </div>
           </div>
+
+          {visible.length ? (
+            <div className="grid grid-cols-3 gap-[2px]">
+              {visible.map((post) => (
+                <button key={post.id} onClick={() => setEditing(post)} className="block">
+                  <FeedTile
+                    post={post}
+                    project={project}
+                    badge={
+                      isPlanned(post) ? (post.date ? shortDate(post.date) : "sin fecha") : undefined
+                    }
+                  />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="px-6 pb-12 text-center text-[13px] text-graphite">
+              Todavía no hay nada en el feed. Agrega publicaciones en el calendario o sube lo que
+              ya tienes publicado.
+            </p>
+          )}
         </div>
-        <p className="mt-4 text-center font-display text-base text-mauve italic">
-          las stories no aparecen en el grid · toca una publicación para editarla o cambiarle la
-          foto
+        <p className="mt-5 text-center font-mono text-[10px] tracking-[0.12em] uppercase">
+          • las stories no aparecen en el grid · toca una publicación para editarla •
         </p>
       </div>
 

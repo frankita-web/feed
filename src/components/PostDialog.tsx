@@ -4,11 +4,11 @@ import { useRef, useState } from "react";
 import { removeImage, storeImage, useImageUrl } from "@/lib/images";
 import { deletePost, savePost } from "@/lib/store";
 import { FORMATS, STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/types";
-import { Chips, Field, Modal, inputClass } from "./Modal";
+import { Chips, Field, Modal, darkButtonClass, inputClass } from "./Modal";
 
 export function statusColor(status: Post["status"], project: Project) {
-  if (status === "listo") return "#6a9f78";
-  if (status === "publicado") return "#7a5864";
+  if (status === "listo") return "#3d7a5c";
+  if (status === "publicado") return "#1d1818";
   return project.accent;
 }
 
@@ -75,7 +75,7 @@ export function PostDialog({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-petal bg-blush/60 font-display text-sm text-mauve italic hover:border-rose"
+            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-lg border-[3px] border-white bg-paper font-mono text-[11px] uppercase shadow-md hover:-rotate-1"
           >
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
@@ -119,7 +119,7 @@ export function PostDialog({
                   discardUpload();
                   set({ image: null });
                 }}
-                className="text-xs text-mauve underline"
+                className="text-xs text-graphite underline"
               >
                 Quitar imagen
               </button>
@@ -127,7 +127,7 @@ export function PostDialog({
           </div>
         </div>
         {!draft.date && (
-          <p className="-mt-2 text-xs text-mauve">
+          <p className="-mt-2 text-xs text-graphite">
             Sin fecha: solo aparece en el feed, abajo de lo programado (para lo que ya estaba
             publicado).
           </p>
@@ -138,7 +138,6 @@ export function PostDialog({
             options={FORMATS}
             value={draft.format}
             onChange={(format) => set({ format })}
-            color={project.accent}
           />
         </Field>
 
@@ -148,7 +147,6 @@ export function PostDialog({
               options={[...project.pillars.map((p) => p.name), NO_PILLAR]}
               value={draft.pillar ?? NO_PILLAR}
               onChange={(v) => set({ pillar: v === NO_PILLAR ? null : v })}
-              color={project.accent}
             />
           </Field>
         )}
@@ -163,13 +161,11 @@ export function PostDialog({
                   key={s}
                   type="button"
                   onClick={() => set({ status: s })}
-                  className="rounded-full border px-3 py-1 text-sm"
-                  style={
-                    active
-                      ? { background: c, borderColor: c, color: "white" }
-                      : { borderColor: "var(--color-petal)", background: "white", color: c }
-                  }
+                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] ${
+                    active ? "border-ink bg-ink text-white" : "border-black/10 bg-white/80"
+                  }`}
                 >
+                  <span className="h-2 w-2 rounded-full" style={{ background: c }} />
                   {STATUS_LABEL[s]}
                 </button>
               );
@@ -191,20 +187,15 @@ export function PostDialog({
           {isNew ? (
             <span />
           ) : (
-            <button type="button" onClick={remove} className="text-sm text-mauve hover:text-ink hover:underline">
+            <button type="button" onClick={remove} className="text-[13px] text-graphite hover:text-ink hover:underline">
               Borrar
             </button>
           )}
           <div className="flex gap-2">
-            <button type="button" onClick={cancel} className="rounded-full px-4 py-2 text-sm text-mauve">
+            <button type="button" onClick={cancel} className="rounded-full px-4 py-1.5 text-[13px] text-graphite">
               Cancelar
             </button>
-            <button
-              type="submit"
-              disabled={uploading}
-              className="rounded-full px-6 py-2 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgb(120_40_70/0.6)] disabled:opacity-50"
-              style={{ background: project.accent }}
-            >
+            <button type="submit" disabled={uploading} className={darkButtonClass}>
               Guardar
             </button>
           </div>
