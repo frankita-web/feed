@@ -1,7 +1,15 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { CANCINO_PINNED, CANCINO_PUBLISHED, SEED_VERSION, seedState } from "./seed";
+import {
+  CANCINO_HISTORY_POSTS,
+  CANCINO_NOTES,
+  CANCINO_PINNED,
+  CANCINO_PLANNED_IMAGES,
+  CANCINO_PUBLISHED,
+  SEED_VERSION,
+  seedState,
+} from "./seed";
 import type { Post, Project, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
@@ -44,10 +52,25 @@ function migrate(s: State): State {
     });
     if (!posts.some((p) => p.id === CANCINO_PINNED.id)) posts = [...posts, CANCINO_PINNED];
   }
+  let notes = s.notes;
+  // v3: julio–septiembre y fotos del feed armado en Canva.
+  if ((s.version ?? 1) < 3) {
+    posts = posts.map((p) => {
+      const i = /^seed-cancino-(\d+)$/.exec(p.id)?.[1];
+      const image = i !== undefined ? CANCINO_PLANNED_IMAGES[Number(i)] : undefined;
+      return image && !p.image ? { ...p, image } : p;
+    });
+    const ids = new Set(posts.map((p) => p.id));
+    posts = [...posts, ...CANCINO_HISTORY_POSTS.filter((p) => !ids.has(p.id))];
+    notes = { ...notes };
+    for (const [date, text] of Object.entries(CANCINO_NOTES))
+      if (date < "2026-10") notes[`cancino:${date}`] ??= text;
+  }
   return {
     ...s,
     version: SEED_VERSION,
     posts,
+    notes,
     projects: s.projects.map((p) => ({
       ...p,
       ...OLD_COLORS[p.bg],

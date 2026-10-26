@@ -14,13 +14,16 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
   const [editing, setEditing] = useState<Post | null>(null);
   const [uploading, setUploading] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
   const today = todayKey();
   const isPlanned = (p: Post) => p.status !== "publicado";
   const plannedLabel = (p: Post) =>
-    !p.date ? "Nuevo · sin fecha" : `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}`;
+    !p.date
+      ? "Nuevo · sin fecha"
+      : `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}`;
   const published = all.filter((p) => !isPlanned(p));
   const plannedCount = all.length - published.length;
   const handle = project.instagram || project.name.toLowerCase();
@@ -47,17 +50,28 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
     addPosts(created);
   };
 
+  const LIMIT = 18;
   const grid = (list: Post[], markPlanned: boolean) => (
-    <div className="grid grid-cols-3 gap-[2px]">
-      {list.map((post) => (
-        <button key={post.id} onClick={() => setEditing(post)} className="block">
-          <FeedTile
-            post={post}
-            planned={markPlanned && isPlanned(post) ? plannedLabel(post) : undefined}
-          />
+    <>
+      <div className="grid grid-cols-3 gap-[2px]">
+        {(showAll ? list : list.slice(0, LIMIT)).map((post) => (
+          <button key={post.id} onClick={() => setEditing(post)} className="block">
+            <FeedTile
+              post={post}
+              planned={markPlanned && isPlanned(post) ? plannedLabel(post) : undefined}
+            />
+          </button>
+        ))}
+      </div>
+      {list.length > LIMIT && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="w-full py-4 text-[13px] text-graphite hover:text-ink"
+        >
+          {showAll ? "Ver menos" : `Ver todo (${list.length})`}
         </button>
-      ))}
-    </div>
+      )}
+    </>
   );
 
   return (

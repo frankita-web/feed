@@ -67,9 +67,94 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 3;
 
-const CANCINO_NOTES: Record<string, string> = {
+// Julio–septiembre 2026, del PDF "Feed Parrilla Grilla Instagram Cancino". Ya publicado.
+const CANCINO_HISTORY: [date: string, title: string, format: Format, pillar: string | null][] = [
+  ["2026-07-02", "Memo", "Foto", null],
+  ["2026-07-03", "Memos", "Reel vertical", null],
+  ["2026-07-04", "Pásele Mixcoac Caja", "Reel vertical", "Barrio"],
+  ["2026-07-06", "Pizza", "Foto", "Pizza"],
+  ["2026-07-07", "PDM Scuby PM", "Reel vertical", "PDM"],
+  ["2026-07-09", "PDM fotos selección 1", "Post carrusel", "PDM"],
+  ["2026-07-15", "Caja caminando", "Reel vertical", "Barrio"],
+  ["2026-07-20", "Despedida Ricardo", "Stories", null],
+  ["2026-07-21", "Fotos entradas", "Post carrusel", "Entrada"],
+  ["2026-07-23", "Scuby vídeo Cabrera", "Reel vertical", "Barrio"],
+  ["2026-07-25", "PDM fotos selección 2", "Reel vertical", "PDM"],
+  ["2026-07-27", "Drink Diageo mensual · Pepe Enzoni", "Reel vertical", "Drink"],
+  ["2026-07-29", "WTF es", "Post carrusel", null],
+  ["2026-07-29", "Anunciar Hotbook", "Stories", null],
+  ["2026-07-30", "Teaser Ricardo Verdejo", "Stories", null],
+  ["2026-07-31", "Despedida Scuby", "Reel vertical", null],
+  ["2026-08-01", "PDM Ricardo Verdejo", "Reel vertical", "PDM"],
+  ["2026-08-02", "Teaser Plantas", "Stories", null],
+  ["2026-08-03", "Hero planta 🌱", "Reel vertical", "Vegano"],
+  ["2026-08-04", "Foto menú 🌱", "Foto", "Vegano"],
+  ["2026-08-05", "Emojis trend 👑", "Foto", null],
+  ["2026-08-06", "Platillos 🌱", "Foto", "Vegano"],
+  ["2026-08-09", "Diccionario hongos PDM", "Post carrusel", "PDM"],
+  ["2026-08-11", "Video hongos Ricardo", "Reel horizontal", "PDM"],
+  ["2026-08-14", "Flotador Diageo", "Reel vertical", "Drink"],
+  ["2026-08-16", "PDM fotos selección 1", "Post carrusel", "PDM"],
+  ["2026-08-17", "Stopmotion pescaditos", "Post carrusel", null],
+  ["2026-08-19", "Fotos caminando Ricardo al centro", "Post carrusel", "Barrio"],
+  ["2026-08-21", "Entradas, DIPPPPP", "Reel vertical", "Entrada"],
+  ["2026-08-25", "Pizzas", "Foto", "Pizza"],
+  ["2026-08-27", "PDM fotos selección 2", "Reel vertical", "PDM"],
+  ["2026-08-30", "Teaser", "Stories", null],
+  ["2026-08-31", "Despedida", "Reel vertical", null],
+  ["2026-09-01", "PDM Santiago", "Reel vertical", "PDM"],
+  ["2026-09-03", "Elle", "Foto", null],
+  ["2026-09-08", "Qué prefieres, Vegan 🌱", "Reel vertical", "Vegano"],
+  ["2026-09-10", "Entrevista Stgo PDM", "Reel horizontal", "PDM"],
+  ["2026-09-13", "Anatomía Pepperita 🍕", "Reel horizontal", "Pizza"],
+  ["2026-09-16", "Fotos PDM · Dump", "Post carrusel", "PDM"],
+  ["2026-09-18", "Carpaccio atún 📸", "Post carrusel", "Entrada"],
+  ["2026-09-22", "Pizza Huitlacoche", "Post carrusel", "Pizza"],
+  ["2026-09-24", "Pollo a la cazadora 📸", "Post carrusel", "Plato fuerte"],
+  ["2026-09-26", "Drink Diageo · Primo Spritz 🍹", "Reel vertical", "Drink"],
+  ["2026-09-29", "Teaser", "Stories", null],
+  ["2026-09-30", "Despedida", "Reel vertical", null],
+];
+
+export const CANCINO_HISTORY_POSTS: Post[] = CANCINO_HISTORY.map(
+  ([date, title, format, pillar], i) => ({
+    id: `seed-cancino-h${i}`,
+    project: "cancino",
+    date,
+    title,
+    format,
+    status: "publicado",
+    pillar,
+    caption: "",
+    image: null,
+    createdAt: i,
+  }),
+);
+
+/** Fotos del feed armado en Canva para posts que vienen (v3), por índice de CANCINO_POSTS. */
+export const CANCINO_PLANNED_IMAGES: Record<number, string> = {
+  0: "/feed/cancino-anchoas.jpg",
+  6: "/feed/cancino-drink-tommy.jpg",
+  8: "/feed/cancino-menu-plantas.jpg",
+  9: "/feed/cancino-los-bordes.jpg",
+};
+
+
+export const CANCINO_NOTES: Record<string, string> = {
+  "2026-06-29": "Shoot San Miguel",
+  "2026-06-30": "Shoot Mixcoac · juega México",
+  "2026-07-05": "Juega México",
+  "2026-07-06": "Shoot Pam",
+  "2026-07-19": "Final mundial ⚽",
+  "2026-07-30": "Hotbook fair (30 jul – 2 ago)",
+  "2026-08-01": "Rebranding: menú a base de plantas",
+  "2026-08-03": "Activación menú vegano (3 – 9 ago)",
+  "2026-09-05": "Fiesta galería Stgo",
+  "2026-09-16": "Independencia de México",
+  "2026-09-22": "Empieza el otoño",
+  "2026-09-28": "Vuelve Franca",
   "2026-10-25": "Día internacional de la pasta",
   "2026-11-01": "Día de muertos",
   "2026-11-16": "Revolución Mexicana",
@@ -91,9 +176,10 @@ export function seedState(): State {
       image: null,
       createdAt: i,
       ...CANCINO_PUBLISHED[i],
+      ...(CANCINO_PLANNED_IMAGES[i] && { image: CANCINO_PLANNED_IMAGES[i] }),
     }),
   );
-  posts.push(CANCINO_PINNED);
+  posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS);
 
   const notes = Object.fromEntries(
     Object.entries(CANCINO_NOTES).map(([date, text]) => [`cancino:${date}`, text]),
