@@ -44,12 +44,15 @@ export type Post = {
   status: Status;
   pillar: string | null;
   caption: string;
-  /** Id de la imagen guardada en IndexedDB. */
+  /** Id de la imagen en IndexedDB, o ruta de /public (empieza con "/"). */
   image: string | null;
   createdAt: number;
+  /** Fijado arriba en el perfil de Instagram. */
+  pinned?: boolean;
 };
 
 export type State = {
+  version?: number;
   projects: Project[];
   posts: Post[];
   /** Notas por día (efemérides, recordatorios). Llave: `${slug}:${YYYY-MM-DD}`. */

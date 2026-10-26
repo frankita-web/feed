@@ -45,14 +45,17 @@ function load(id: string) {
   });
 }
 
+// Las imágenes incluidas en el sitio (public/) se usan directo por su ruta.
+const isStatic = (id: string) => id.startsWith("/");
+
 export function useImageUrl(id: string | null) {
   const url = useSyncExternalStore(
     subscribe,
-    () => (id ? (urls.get(id) ?? null) : null),
+    () => (!id ? null : isStatic(id) ? id : (urls.get(id) ?? null)),
     () => null,
   );
   useEffect(() => {
-    if (id) load(id);
+    if (id && !isStatic(id)) load(id);
   }, [id]);
   return url;
 }
@@ -77,6 +80,7 @@ export async function storeImage(file: File): Promise<string> {
 }
 
 export async function removeImage(id: string) {
+  if (isStatic(id)) return;
   await run("readwrite", (s) => s.delete(id));
   urls.delete(id);
   notify();

@@ -16,9 +16,11 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const today = todayKey();
   const all = feedPosts(posts, project.slug);
-  const isPlanned = (p: Post) => p.status !== "publicado" && (!p.date || p.date >= today);
+  const today = todayKey();
+  const isPlanned = (p: Post) => p.status !== "publicado";
+  const plannedLabel = (p: Post) =>
+    !p.date ? "Nuevo · sin fecha" : `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}`;
   const published = all.filter((p) => !isPlanned(p));
   const plannedCount = all.length - published.length;
   const handle = project.instagram || project.name.toLowerCase();
@@ -51,13 +53,7 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
         <button key={post.id} onClick={() => setEditing(post)} className="block">
           <FeedTile
             post={post}
-            planned={
-              markPlanned && isPlanned(post)
-                ? post.date
-                  ? shortDate(post.date)
-                  : "sin fecha"
-                : undefined
-            }
+            planned={markPlanned && isPlanned(post) ? plannedLabel(post) : undefined}
           />
         </button>
       ))}

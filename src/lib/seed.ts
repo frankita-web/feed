@@ -43,6 +43,32 @@ const CANCINO_POSTS: SeedPost[] = [
   ["2026-12-05", "Aniversario 15 años", "Tbc", "pendiente", null],
 ];
 
+/** Lo que ya está en el Instagram de Cancino (captura del 26 oct), por índice de CANCINO_POSTS. */
+export const CANCINO_PUBLISHED: Record<number, Partial<Post>> = {
+  0: { status: "publicado" },
+  1: { status: "publicado", format: "Post carrusel", image: "/feed/cancino-6.jpg" },
+  2: { status: "publicado", image: "/feed/cancino-5.jpg" },
+  3: { status: "publicado", image: "/feed/cancino-4.jpg" },
+  4: { status: "publicado", image: "/feed/cancino-3.jpg" },
+  5: { status: "publicado", image: "/feed/cancino-2.jpg" },
+};
+
+export const CANCINO_PINNED: Post = {
+  id: "seed-cancino-fijado",
+  project: "cancino",
+  date: null,
+  title: "A base de plantas",
+  format: "Foto",
+  status: "publicado",
+  pillar: "Vegano",
+  caption: "",
+  image: "/feed/cancino-1.jpg",
+  createdAt: 0,
+  pinned: true,
+};
+
+export const SEED_VERSION = 2;
+
 const CANCINO_NOTES: Record<string, string> = {
   "2026-10-25": "Día internacional de la pasta",
   "2026-11-01": "Día de muertos",
@@ -64,14 +90,17 @@ export function seedState(): State {
       caption: "",
       image: null,
       createdAt: i,
+      ...CANCINO_PUBLISHED[i],
     }),
   );
+  posts.push(CANCINO_PINNED);
 
   const notes = Object.fromEntries(
     Object.entries(CANCINO_NOTES).map(([date, text]) => [`cancino:${date}`, text]),
   );
 
   return {
+    version: SEED_VERSION,
     projects: [
       {
         slug: "cancino",

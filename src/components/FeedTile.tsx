@@ -21,7 +21,7 @@ function FormatIcon({ format, color }: { format: Post["format"]; color: string }
 }
 
 /**
- * Un cuadro del grid. `planned` (fecha) lo marca como espacio para un post nuevo:
+ * Un cuadro del grid. `planned` (etiqueta, ej. "Nuevo · 29 oct") lo marca como espacio para un post nuevo:
  * borde punteado y etiqueta negra, para distinguirlo de lo ya subido.
  */
 export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
@@ -29,11 +29,11 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
 
   return (
     <div
-      className={`relative aspect-[4/5] w-full overflow-hidden ${planned && !url ? "bg-white/70" : "bg-[#dedede]"}`}
+      className={`relative aspect-[3/4] w-full overflow-hidden ${planned && !url ? "bg-white/70" : "bg-[#dedede]"}`}
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
-        <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
+        <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover object-top" />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
           <span className="text-[15px] leading-tight font-semibold tracking-[-0.02em]">
@@ -42,14 +42,17 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
           {planned && <span className="text-[11px] text-graphite">{post.format}</span>}
         </div>
       )}
-      <div className="absolute top-2.5 right-2.5 drop-shadow">
-        <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
-      </div>
+      {/* Las fotos traídas de Instagram ya traen su ícono */}
+      {(planned || !url) && (
+        <div className="absolute top-2.5 right-2.5 drop-shadow">
+          <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
+        </div>
+      )}
       {planned && (
         <>
           <div className="pointer-events-none absolute inset-1.5 rounded-[3px] border-[1.5px] border-dashed border-ink/70" />
           <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-white">
-            Nuevo · {planned}
+            {planned}
           </span>
         </>
       )}
@@ -57,11 +60,12 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
   );
 }
 
-/** Orden del grid de Instagram: lo más nuevo arriba; lo publicado sin fecha va al final. */
+/** Orden del grid de Instagram: fijados primero, luego lo más nuevo; lo publicado sin fecha va al final. */
 export function feedPosts(posts: Post[], slug: string) {
   return posts
     .filter((p) => p.project === slug && p.format !== "Stories")
     .sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
       if (a.date !== b.date) {
         if (!a.date) return 1;
         if (!b.date) return -1;

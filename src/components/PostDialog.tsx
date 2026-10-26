@@ -173,6 +173,16 @@ export function PostDialog({
           </div>
         </Field>
 
+        <label className="flex cursor-pointer items-center gap-2 text-[13px]">
+          <input
+            type="checkbox"
+            checked={!!draft.pinned}
+            onChange={(e) => set({ pinned: e.target.checked })}
+            className="accent-ink"
+          />
+          Fijado en el perfil (va primero en el feed)
+        </label>
+
         <Field label="Copy / notas">
           <textarea
             rows={4}

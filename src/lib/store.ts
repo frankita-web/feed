@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { seedState } from "./seed";
+import { CANCINO_PINNED, CANCINO_PUBLISHED, SEED_VERSION, seedState } from "./seed";
 import type { Post, Project, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
@@ -34,8 +34,20 @@ const HANDLES: Record<string, string> = {
 };
 
 function migrate(s: State): State {
+  let posts = s.posts;
+  // v2: fotos del Instagram actual de Cancino en los posts de octubre ya subidos.
+  if ((s.version ?? 1) < 2) {
+    posts = posts.map((p) => {
+      const i = /^seed-cancino-(\d+)$/.exec(p.id)?.[1];
+      const patch = i !== undefined ? CANCINO_PUBLISHED[Number(i)] : undefined;
+      return patch && !p.image ? { ...p, ...patch } : p;
+    });
+    if (!posts.some((p) => p.id === CANCINO_PINNED.id)) posts = [...posts, CANCINO_PINNED];
+  }
   return {
     ...s,
+    version: SEED_VERSION,
+    posts,
     projects: s.projects.map((p) => ({
       ...p,
       ...OLD_COLORS[p.bg],
