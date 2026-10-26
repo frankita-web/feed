@@ -2,10 +2,38 @@
 
 @theme inline {
   --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-cormorant);
+  --font-script: var(--font-pinyon);
+
+  --color-cream: #fffaf6;
+  --color-blush: #fbeaf0;
+  --color-petal: #f2d4de;
+  --color-rose: #d68aa1;
+  --color-ink: #4a3138;
+  --color-mauve: #9c7a85;
 }
 
 body {
-  background: #ffffff;
-  color: #171717;
+  background-color: var(--color-cream);
+  background-image: radial-gradient(#f6dbe4 1.2px, transparent 1.3px);
+  background-size: 22px 22px;
+  color: var(--color-ink);
   font-family: var(--font-geist-sans), Helvetica, Arial, sans-serif;
+}
+
+::selection {
+  background: #f6c9d6;
+}
+
+/* Tarjeta tipo papelería: crema, borde pétalo y sombra rosada suave */
+.paper {
+  background: #fffdfb;
+  border: 1px solid var(--color-petal);
+  box-shadow: 0 10px 30px -18px rgb(160 80 105 / 0.35);
+}
+
+/* Borde punteado interior, como costura */
+.stitched {
+  outline: 1.5px dashed var(--color-petal);
+  outline-offset: -8px;
 }

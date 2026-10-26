@@ -10,8 +10,8 @@ const EMPTY: Project = {
   slug: "",
   name: "",
   instagram: "",
-  bg: "#e9e3f7",
-  accent: "#6d3fd1",
+  bg: "#ece4f5",
+  accent: "#9b7bc4",
   monthlyGoal: 12,
   pillars: [],
 };
@@ -63,7 +63,7 @@ export function ProjectDialog({
             value={draft.name}
             onChange={(e) => set({ name: e.target.value })}
           />
-          {taken && <p className="mt-1 text-xs text-red-600">Ya existe un proyecto con ese nombre.</p>}
+          {taken && <p className="mt-1 text-xs text-rose">Ya existe un proyecto con ese nombre.</p>}
         </Field>
         <Field label="Instagram">
           <input
@@ -77,7 +77,7 @@ export function ProjectDialog({
           <Field label="Fondo">
             <input
               type="color"
-              className="h-10 w-full cursor-pointer rounded-xl"
+              className="h-10 w-full cursor-pointer rounded-2xl border border-petal bg-white p-1"
               value={draft.bg}
               onChange={(e) => set({ bg: e.target.value })}
             />
@@ -85,7 +85,7 @@ export function ProjectDialog({
           <Field label="Acento">
             <input
               type="color"
-              className="h-10 w-full cursor-pointer rounded-xl"
+              className="h-10 w-full cursor-pointer rounded-2xl border border-petal bg-white p-1"
               value={draft.accent}
               onChange={(e) => set({ accent: e.target.value })}
             />
@@ -135,7 +135,7 @@ export function ProjectDialog({
                 <button
                   type="button"
                   aria-label="Quitar"
-                  className="px-2 text-xl text-neutral-400 hover:text-neutral-900"
+                  className="px-2 text-xl text-mauve hover:text-ink"
                   onClick={() => set({ pillars: draft.pillars.filter((_, j) => j !== i) })}
                 >
                   ×
@@ -148,21 +148,21 @@ export function ProjectDialog({
               style={{ color: draft.accent }}
               onClick={() => set({ pillars: [...draft.pillars, { name: "", target: 1 }] })}
             >
-              + Agregar categoría
+              + agregar categoría ♡
             </button>
           </div>
         </Field>
 
         <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm">
+          <button type="button" onClick={onClose} className="rounded-full px-4 py-2 text-sm text-mauve">
             Cancelar
           </button>
           <button
             type="submit"
-            className="rounded-full px-5 py-2 text-sm font-semibold text-white"
+            className="rounded-full px-6 py-2 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgb(120_40_70/0.6)]"
             style={{ background: draft.accent }}
           >
-            {project ? "Guardar" : "Crear proyecto"}
+            {project ? "Guardar" : "Crear proyecto ♡"}
           </button>
         </div>
       </form>

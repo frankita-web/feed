@@ -1,4 +1,7 @@
 import type { Post, Project } from "@/lib/types";
+import { Bow } from "./Bow";
+
+const DONE = "#6a9f78";
 
 /** "Análisis mensual non negociable": meta del mes y cuántos posts lleva cada categoría. */
 export function MonthAnalysis({ project, posts }: { project: Project; posts: Post[] }) {
@@ -8,41 +11,44 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
   const uncategorized = feed.filter((p) => !p.pillar).length;
 
   return (
-    <aside className="rounded-3xl bg-white/80 p-5 text-sm">
-      <p className="text-xs font-bold tracking-[0.2em] text-neutral-900 uppercase">
-        Análisis mensual
+    <aside className="paper stitched relative self-start rounded-[32px] px-6 pt-9 pb-7 text-sm">
+      <Bow color={project.bg} className="absolute -top-4 left-1/2 h-9 w-14 -translate-x-1/2" />
+      <p className="text-center text-[10px] tracking-[0.3em] text-mauve uppercase">
+        análisis mensual
       </p>
-      <p className="mt-3 text-3xl font-black" style={{ color: project.accent }}>
-        {feed.length}
-        <span className="text-lg font-bold text-neutral-400"> / {project.monthlyGoal} posts</span>
+      <p className="text-center font-script text-xl text-rose">non negociable</p>
+
+      <p className="mt-4 text-center font-display leading-none" style={{ color: project.accent }}>
+        <span className="text-6xl font-medium italic">{feed.length}</span>
+        <span className="text-2xl text-mauve italic"> / {project.monthlyGoal}</span>
       </p>
-      <p className="mt-1 text-neutral-500">
-        {missing ? `Faltan ${missing}` : "¡Meta cumplida!"}
+      <p className="mt-1 text-center text-xs text-mauve">
+        {missing ? `faltan ${missing} posts` : "¡meta cumplida! ♡"}
         {stories > 0 && ` · ${stories} ${stories === 1 ? "story" : "stories"}`}
       </p>
 
       {project.pillars.length > 0 && (
-        <ul className="mt-5 space-y-2.5">
+        <ul className="mt-6 space-y-3 border-t border-dashed border-petal pt-5">
           {project.pillars.map((pillar) => {
             const count = posts.filter((p) => p.pillar === pillar.name).length;
             const done = count >= pillar.target;
             return (
               <li key={pillar.name}>
-                <div className="flex justify-between">
-                  <span className="font-semibold" style={{ color: project.accent }}>
-                    {pillar.target} {pillar.name}
+                <div className="flex items-baseline justify-between">
+                  <span className="font-display text-lg leading-none italic">
+                    <span style={{ color: project.accent }}>{pillar.target}</span>{" "}
+                    {pillar.name.toLowerCase()}
                   </span>
-                  <span className={done ? "font-semibold text-[#2fa84f]" : "text-neutral-500"}>
-                    {done ? "✓ " : ""}
-                    {count}/{pillar.target}
+                  <span className="text-xs" style={{ color: done ? DONE : "var(--color-mauve)" }}>
+                    {count}/{pillar.target} {done ? "♥" : "♡"}
                   </span>
                 </div>
-                <div className="mt-1 h-1 overflow-hidden rounded-full bg-neutral-200">
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-blush">
                   <div
-                    className="h-full rounded-full"
+                    className="h-full rounded-full transition-all"
                     style={{
                       width: `${Math.min(1, pillar.target ? count / pillar.target : 1) * 100}%`,
-                      background: done ? "#2fa84f" : project.accent,
+                      background: done ? DONE : project.accent,
                     }}
                   />
                 </div>
@@ -50,7 +56,9 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
             );
           })}
           {uncategorized > 0 && (
-            <li className="pt-1 text-xs text-neutral-500">{uncategorized} sin categoría</li>
+            <li className="pt-1 text-center font-display text-sm text-mauve italic">
+              {uncategorized} sin categoría
+            </li>
           )}
         </ul>
       )}

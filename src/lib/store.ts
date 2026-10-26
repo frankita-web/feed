@@ -14,11 +14,24 @@ function read(): State {
   if (state) return state;
   try {
     const raw = localStorage.getItem(KEY);
-    state = raw ? (JSON.parse(raw) as State) : seedState();
+    state = raw ? migrate(JSON.parse(raw) as State) : seedState();
   } catch {
     state = seedState();
   }
   return state;
+}
+
+// Colores originales de Crissis e Issi → paleta pastel actual.
+const OLD_COLORS: Record<string, { bg: string; accent: string }> = {
+  "#f4e4c4": { bg: "#f6e7d6", accent: "#c2876a" },
+  "#cfe1f4": { bg: "#dfe8f6", accent: "#7f99c9" },
+};
+
+function migrate(s: State): State {
+  return {
+    ...s,
+    projects: s.projects.map((p) => (OLD_COLORS[p.bg] ? { ...p, ...OLD_COLORS[p.bg] } : p)),
+  };
 }
 
 function write(next: State) {

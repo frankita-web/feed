@@ -3,16 +3,16 @@
 import { useImageUrl } from "@/lib/images";
 import type { Post, Project } from "@/lib/types";
 
-function FormatIcon({ format }: { format: Post["format"] }) {
+function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
   if (format.startsWith("Reel"))
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="white" aria-label="Reel">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill={color} aria-label="Reel">
         <path d="M8 5.5v13l11-6.5z" />
       </svg>
     );
   if (format === "Post carrusel")
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="white" strokeWidth="2" aria-label="Carrusel">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke={color} strokeWidth="2" aria-label="Carrusel">
         <rect x="7" y="7" width="13" height="13" rx="2" />
         <path d="M4 16V6a2 2 0 0 1 2-2h10" />
       </svg>
@@ -34,30 +34,32 @@ export function FeedTile({
   const url = useImageUrl(post.image);
 
   return (
-    <div
-      className="relative aspect-[4/5] w-full overflow-hidden"
-      style={{ background: project.accent }}
-    >
+    <div className="relative aspect-[4/5] w-full overflow-hidden" style={{ background: project.bg }}>
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
         <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
+        <div
+          className={`absolute flex flex-col items-center justify-center text-center ${small ? "inset-0 p-1" : "inset-2 rounded-xl p-2"}`}
+          style={small ? undefined : { border: `1px dashed ${project.accent}55` }}
+        >
+          {!small && <span className="mb-1 text-xs" style={{ color: project.accent }}>♡</span>}
           <span
-            className={`font-semibold leading-tight text-white ${small ? "text-[8px]" : "text-sm"}`}
+            className={`font-display leading-tight italic ${small ? "text-[9px]" : "text-lg"}`}
+            style={{ color: project.accent }}
           >
-            {post.title || "Sin título"}
+            {post.title || "sin título"}
           </span>
         </div>
       )}
       {!small && (
         <>
-          <div className="absolute top-1.5 right-1.5 drop-shadow">
-            <FormatIcon format={post.format} />
+          <div className="absolute top-2.5 right-2.5 drop-shadow">
+            <FormatIcon format={post.format} color={url ? "white" : project.accent} />
           </div>
           {badge && (
-            <span className="absolute bottom-1.5 left-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-neutral-800">
-              {badge}
+            <span className="absolute bottom-2.5 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] whitespace-nowrap text-ink shadow-sm">
+              ♡ {badge}
             </span>
           )}
         </>

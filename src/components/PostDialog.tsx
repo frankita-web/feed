@@ -7,8 +7,8 @@ import { FORMATS, STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/
 import { Chips, Field, Modal, inputClass } from "./Modal";
 
 export function statusColor(status: Post["status"], project: Project) {
-  if (status === "listo") return "#2fa84f";
-  if (status === "publicado") return "#262626";
+  if (status === "listo") return "#6a9f78";
+  if (status === "publicado") return "#7a5864";
   return project.accent;
 }
 
@@ -75,13 +75,13 @@ export function PostDialog({
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-xl border-2 border-dashed border-neutral-200 bg-neutral-50 text-xs text-neutral-400 hover:border-neutral-400"
+            className="relative aspect-[4/5] w-28 shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-petal bg-blush/60 font-display text-sm text-mauve italic hover:border-rose"
           >
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
               <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
-              <span className="px-2">{uploading ? "Subiendo…" : "+ Subir imagen o portada"}</span>
+              <span className="px-2">{uploading ? "subiendo…" : "+ subir imagen o portada"}</span>
             )}
           </button>
           <input
@@ -119,7 +119,7 @@ export function PostDialog({
                   discardUpload();
                   set({ image: null });
                 }}
-                className="text-xs text-neutral-500 underline"
+                className="text-xs text-mauve underline"
               >
                 Quitar imagen
               </button>
@@ -127,7 +127,7 @@ export function PostDialog({
           </div>
         </div>
         {!draft.date && (
-          <p className="-mt-2 text-xs text-neutral-500">
+          <p className="-mt-2 text-xs text-mauve">
             Sin fecha: solo aparece en el feed, abajo de lo programado (para lo que ya estaba
             publicado).
           </p>
@@ -167,7 +167,7 @@ export function PostDialog({
                   style={
                     active
                       ? { background: c, borderColor: c, color: "white" }
-                      : { borderColor: "#e5e5e5", color: c }
+                      : { borderColor: "var(--color-petal)", background: "white", color: c }
                   }
                 >
                   {STATUS_LABEL[s]}
@@ -191,18 +191,18 @@ export function PostDialog({
           {isNew ? (
             <span />
           ) : (
-            <button type="button" onClick={remove} className="text-sm text-red-600 hover:underline">
+            <button type="button" onClick={remove} className="text-sm text-mauve hover:text-ink hover:underline">
               Borrar
             </button>
           )}
           <div className="flex gap-2">
-            <button type="button" onClick={cancel} className="rounded-full px-4 py-2 text-sm">
+            <button type="button" onClick={cancel} className="rounded-full px-4 py-2 text-sm text-mauve">
               Cancelar
             </button>
             <button
               type="submit"
               disabled={uploading}
-              className="rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="rounded-full px-6 py-2 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgb(120_40_70/0.6)] disabled:opacity-50"
               style={{ background: project.accent }}
             >
               Guardar

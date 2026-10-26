@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
+import { Bow } from "./Bow";
 
 export function Modal({
   title,
@@ -23,20 +24,23 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[#5a2f3d]/25 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-6 shadow-xl sm:rounded-3xl"
+        className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[32px] border border-petal bg-cream p-7 shadow-[0_30px_60px_-25px_rgb(120_50_75/0.45)] sm:rounded-[32px]"
       >
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-lg font-bold">{title}</h2>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Bow className="h-5 w-8" />
+            <h2 className="font-display text-3xl leading-none font-medium italic">{title}</h2>
+          </div>
           <button
             onClick={onClose}
-            className="rounded-full px-2 text-2xl leading-none text-neutral-400 hover:text-neutral-900"
+            className="rounded-full px-2 text-2xl leading-none text-mauve hover:text-ink"
             aria-label="Cerrar"
           >
             ×
@@ -51,7 +55,7 @@ export function Modal({
 export function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold tracking-wider text-neutral-500 uppercase">
+      <span className="mb-1.5 block text-[11px] font-medium tracking-[0.18em] text-mauve uppercase">
         {label}
       </span>
       {children}
@@ -60,7 +64,10 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 export const inputClass =
-  "w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm outline-none focus:border-neutral-400 focus:bg-white";
+  "w-full rounded-2xl border border-petal bg-white px-3.5 py-2 text-sm text-ink outline-none placeholder:text-mauve/60 focus:border-rose focus:ring-4 focus:ring-blush";
+
+export const buttonClass =
+  "rounded-full border border-petal bg-white/80 px-4 py-1.5 text-sm text-ink transition hover:border-rose hover:bg-white";
 
 export function Chips<T extends string>({
   options,
@@ -88,7 +95,7 @@ export function Chips<T extends string>({
             style={
               active
                 ? { background: color, borderColor: color, color: "white" }
-                : { borderColor: "#e5e5e5" }
+                : { borderColor: "var(--color-petal)", background: "white" }
             }
           >
             {label(o)}
