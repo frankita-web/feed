@@ -7,6 +7,7 @@ import {
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
   CANCINO_PUBLISHED,
+  CRISSIS_POSTS,
   SEED_VERSION,
   seedState,
 } from "./seed";
@@ -65,6 +66,11 @@ function migrate(s: State): State {
     notes = { ...notes };
     for (const [date, text] of Object.entries(CANCINO_NOTES))
       if (date < "2026-10") notes[`cancino:${date}`] ??= text;
+  }
+  // v4: feed actual de Crissis.
+  if ((s.version ?? 1) < 4) {
+    const ids = new Set(posts.map((p) => p.id));
+    posts = [...posts, ...CRISSIS_POSTS.filter((p) => !ids.has(p.id))];
   }
   return {
     ...s,

@@ -67,7 +67,45 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
+
+// Feed actual de Crissis (captura del grid, 26 oct). Lo más nuevo primero.
+const CRISSIS_FEED: [date: string | null, title: string, format: Format, caption: string][] = [
+  [
+    null,
+    "Crissis es un bar",
+    "Foto",
+    "crissis es un bar. volvemos a lo que siempre quisimos ser: un lugar de tragos, de encuentros, de despedidas que se vuelven una última.",
+  ],
+  [
+    "2026-10-14",
+    "Hugo the wine bar",
+    "Reel vertical",
+    "hugo the wine bar en crissis bistró.\n\n< la noche se cuenta sola >\n\nfotos @carlocanun",
+  ],
+  ["2026-10-05", "Rico, rico, rico", "Post carrusel", "< rico, rico, rico >\nahora ya en comida y en cena. 🥪🧀"],
+  ["2026-09-30", "Postre de coco", "Foto", "3 🥛🥥"],
+  [null, "Coctel con cereza", "Foto", ""],
+  [null, "Ensalada con higos", "Foto", ""],
+  [null, "Equipo y botellas", "Foto", ""],
+  [null, "Camarones", "Post carrusel", ""],
+  [null, "Alitas", "Post carrusel", ""],
+];
+
+export const CRISSIS_POSTS: Post[] = CRISSIS_FEED.map(([date, title, format, caption], i) => ({
+  id: `seed-crissis-${i}`,
+  project: "crissis",
+  date,
+  title,
+  format,
+  status: "publicado",
+  pillar: null,
+  caption,
+  image: `/feed/crissis-${i + 1}.jpg`,
+  createdAt: 100 - i,
+  pinned: i === 0,
+}));
+
 
 // Julio–septiembre 2026, del PDF "Feed Parrilla Grilla Instagram Cancino". Ya publicado.
 const CANCINO_HISTORY: [date: string, title: string, format: Format, pillar: string | null][] = [
@@ -179,7 +217,7 @@ export function seedState(): State {
       ...(CANCINO_PLANNED_IMAGES[i] && { image: CANCINO_PLANNED_IMAGES[i] }),
     }),
   );
-  posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS);
+  posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS, ...CRISSIS_POSTS);
 
   const notes = Object.fromEntries(
     Object.entries(CANCINO_NOTES).map(([date, text]) => [`cancino:${date}`, text]),
