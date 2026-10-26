@@ -85,7 +85,7 @@ export function seedState(): State {
       {
         slug: "crissis",
         name: "Crissis",
-        instagram: "",
+        instagram: "crissis.crissisbistro",
         bg: "#f6e7d6",
         accent: "#c2876a",
         monthlyGoal: 12,
@@ -94,7 +94,7 @@ export function seedState(): State {
       {
         slug: "issi",
         name: "Issi",
-        instagram: "",
+        instagram: "issi_rest",
         bg: "#dfe8f6",
         accent: "#7f99c9",
         monthlyGoal: 12,

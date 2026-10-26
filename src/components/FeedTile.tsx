@@ -20,41 +20,37 @@ function FormatIcon({ format, color }: { format: Post["format"]; color: string }
   return null;
 }
 
-export function FeedTile({
-  post,
-  badge,
-  small,
-}: {
-  post: Post;
-  badge?: string;
-  small?: boolean;
-}) {
+/**
+ * Un cuadro del grid. `planned` (fecha) lo marca como espacio para un post nuevo:
+ * borde punteado y etiqueta negra, para distinguirlo de lo ya subido.
+ */
+export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
   const url = useImageUrl(post.image);
 
   return (
-    <div className="relative aspect-[4/5] w-full overflow-hidden bg-[#dedede]">
+    <div
+      className={`relative aspect-[4/5] w-full overflow-hidden ${planned && !url ? "bg-white/70" : "bg-[#dedede]"}`}
+    >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
         <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover" />
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
-          <span
-            className={`leading-tight font-semibold tracking-[-0.02em] ${small ? "text-[8px]" : "text-[15px]"}`}
-          >
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
+          <span className="text-[15px] leading-tight font-semibold tracking-[-0.02em]">
             {post.title || "sin título"}
           </span>
+          {planned && <span className="text-[11px] text-graphite">{post.format}</span>}
         </div>
       )}
-      {!small && (
+      <div className="absolute top-2.5 right-2.5 drop-shadow">
+        <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
+      </div>
+      {planned && (
         <>
-          <div className="absolute top-2.5 right-2.5 drop-shadow">
-            <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
-          </div>
-          {badge && (
-            <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] whitespace-nowrap shadow-sm">
-              {badge}
-            </span>
-          )}
+          <div className="pointer-events-none absolute inset-1.5 rounded-[3px] border-[1.5px] border-dashed border-ink/70" />
+          <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-white">
+            Nuevo · {planned}
+          </span>
         </>
       )}
     </div>

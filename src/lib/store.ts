@@ -27,10 +27,20 @@ const OLD_COLORS: Record<string, { bg: string; accent: string }> = {
   "#cfe1f4": { bg: "#dfe8f6", accent: "#7f99c9" },
 };
 
+// Instagram de proyectos que se crearon sin usuario.
+const HANDLES: Record<string, string> = {
+  crissis: "crissis.crissisbistro",
+  issi: "issi_rest",
+};
+
 function migrate(s: State): State {
   return {
     ...s,
-    projects: s.projects.map((p) => (OLD_COLORS[p.bg] ? { ...p, ...OLD_COLORS[p.bg] } : p)),
+    projects: s.projects.map((p) => ({
+      ...p,
+      ...OLD_COLORS[p.bg],
+      instagram: p.instagram || HANDLES[p.slug] || "",
+    })),
   };
 }
 
