@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { MONTHS, parseKey, shortDate, todayKey, weekRange, weekdayOf } from "@/lib/dates";
 import { useStore } from "@/lib/store";
 import { STATUS_LABEL, type Project, type State } from "@/lib/types";
@@ -144,7 +144,7 @@ function WeekNotice({ store }: { store: State }) {
   );
 }
 
-/** Escritorio: una carpeta por proyecto alrededor del título. */
+/** Escritorio: las carpetas de los proyectos en fila, sobre el título. */
 function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => void }) {
   type Item = { key: string; node: ReactNode };
   const items: Item[] = [
@@ -171,31 +171,17 @@ function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => voi
   ];
 
   return (
-    <div className="relative mx-auto my-16 sm:aspect-[4/3] sm:w-[min(88vw,760px)]">
-      <h1 className="relative z-10 py-6 text-center text-[clamp(52px,9vw,96px)] leading-[0.92] font-semibold tracking-[-0.06em] sm:absolute sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:py-0">
+    <div className="my-20 flex flex-col items-center gap-12">
+      <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 sm:gap-x-16">
+        {items.map((item) => (
+          <div key={item.key}>{item.node}</div>
+        ))}
+      </div>
+      <h1 className="text-center text-[clamp(52px,9vw,96px)] leading-[0.92] font-semibold tracking-[-0.06em]">
         Mis
         <br />
         <Selected>Proyectos</Selected>
       </h1>
-      <div className="grid grid-cols-2 gap-8 sm:block">
-        {items.map((item, i) => {
-          const angle = -Math.PI / 2 - Math.PI / items.length + (i / items.length) * Math.PI * 2;
-          return (
-            <div
-              key={item.key}
-              className="flex justify-center sm:absolute sm:top-[var(--y)] sm:left-[var(--x)] sm:-translate-x-1/2 sm:-translate-y-1/2"
-              style={
-                {
-                  "--x": `${50 + 41 * Math.cos(angle)}%`,
-                  "--y": `${50 + 41 * Math.sin(angle)}%`,
-                } as CSSProperties
-              }
-            >
-              {item.node}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
