@@ -36,7 +36,25 @@ export type Project = {
   palette?: string[];
   /** Color de pendiente / listo / publicado, elegido de la paleta. */
   statusColors?: Partial<Record<Status, string>>;
+  /** Logo: ruta en /public o id de imagen subida. */
+  logo?: string;
+  /** Carta de drinks (sección Drinks). */
+  drinks?: Drink[];
+  /** Drink planeado para cada mes. Llave: YYYY-MM. */
+  drinkPlan?: Record<string, DrinkPlan>;
 };
+
+export type Drink = {
+  name: string;
+  section: string;
+  description: string;
+  /** Lleva alcohol de Diageo: cuenta para el post mensual obligatorio. */
+  diageo: boolean;
+  /** Otras formas de escribirlo en los títulos ("tommy", "enzoni"…). */
+  aliases?: string[];
+};
+
+export type DrinkPlan = { drink: string; note?: string };
 
 /** Colores de la marca; si no hay paleta, usa los dos colores de antes. */
 export function paletteOf(project: Project) {

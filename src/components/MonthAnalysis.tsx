@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { shortDate } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
-import { Orb } from "./Orb";
+import { Logo } from "./Logo";
 import { statusColor } from "./Status";
 
 
@@ -29,7 +29,7 @@ export function MonthAnalysis({
   return (
     <aside className="silver self-start rounded-[24px] p-6">
       <div className="flex items-center gap-3">
-        <Orb project={project} className="h-10 w-10 shrink-0" />
+        <Logo project={project} className="h-10 w-10 shrink-0" />
         <div>
           <p className="text-[15px] leading-tight font-medium">Análisis mensual</p>
           <p className="text-[13px] text-graphite">non negociable</p>

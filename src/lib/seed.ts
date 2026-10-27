@@ -1,3 +1,4 @@
+import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
 import type { Format, Pillar, Post, Project, State, Status } from "./types";
 
 const CANCINO_PILLARS: Pillar[] = [
@@ -68,7 +69,41 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 8;
+export const SEED_VERSION = 12;
+
+/** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
+export const CANCINO_VIDEOS: Record<number, Partial<Post>> = {
+  6: {
+    image: "/feed/cancino-margarita.jpg",
+    files: [
+      {
+        id: "/feed/cancino-margarita.mov",
+        name: "MARGARITA.mov",
+        type: "video/quicktime",
+        size: 25702589,
+      },
+    ],
+  },
+  7: {
+    image: "/feed/cancino-rigatoni.jpg",
+    files: [
+      {
+        id: "/feed/cancino-rigatoni.mov",
+        name: "RIGATONI_001.mov",
+        type: "video/quicktime",
+        size: 11887324,
+      },
+    ],
+  },
+  8: {
+    files: [
+      { id: "/feed/cancino-reto-vegano.mp4", name: "veg.mp4", type: "video/mp4", size: 36559014 },
+    ],
+  },
+};
+
+/** Versión en que se agregó cada video (para no volver a ponerlos si se quitaron). */
+export const CANCINO_VIDEOS_SINCE: Record<number, number> = { 6: 9, 7: 11, 8: 9 };
 
 /** Paletas de marca (v6). `accent` es el color principal de cada una. */
 export const BRAND_COLORS: Record<
@@ -238,6 +273,7 @@ export function seedState(): State {
       createdAt: i,
       ...CANCINO_PUBLISHED[i],
       ...(CANCINO_PLANNED_IMAGES[i] && { image: CANCINO_PLANNED_IMAGES[i] }),
+      ...CANCINO_VIDEOS[i],
     }),
   );
   posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS, ...CRISSIS_POSTS);
@@ -257,6 +293,9 @@ export function seedState(): State {
         monthlyGoal: 15,
         pillars: CANCINO_PILLARS,
         ...BRAND_COLORS.cancino,
+        logo: "/logos/cancino.svg",
+        drinks: CANCINO_DRINKS,
+        drinkPlan: CANCINO_DRINK_PLAN,
       },
       {
         slug: "crissis",

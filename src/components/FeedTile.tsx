@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useImageUrl } from "@/lib/images";
 import type { Post } from "@/lib/types";
 
@@ -26,10 +27,21 @@ function FormatIcon({ format, color }: { format: Post["format"]; color: string }
  */
 export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
   const url = useImageUrl(post.image);
+  const video = post.files?.find((f) => f.type.startsWith("video/"));
+  const videoUrl = useImageUrl(video?.id ?? null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <div
       className={`relative aspect-[3/4] w-full overflow-hidden ${planned && !url ? "bg-white/70" : "bg-[#dedede]"}`}
+      onMouseEnter={() => videoRef.current?.play().catch(() => {})}
+      onMouseLeave={() => {
+        const v = videoRef.current;
+        if (v) {
+          v.pause();
+          v.currentTime = 0;
+        }
+      }}
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
@@ -41,6 +53,21 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
           </span>
           {planned && <span className="text-[11px] text-graphite">{post.format}</span>}
         </div>
+      )}
+      {videoUrl && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          poster={url ?? undefined}
+          muted
+          loop
+          playsInline
+          preload="none"
+          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 [&:not([data-paused])]:opacity-100"
+          data-paused=""
+          onPlay={(e) => e.currentTarget.removeAttribute("data-paused")}
+          onPause={(e) => e.currentTarget.setAttribute("data-paused", "")}
+        />
       )}
       {/* Las fotos traídas de Instagram ya traen su ícono */}
       {(planned || !url) && (

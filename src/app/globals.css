@@ -39,30 +39,10 @@ body::after {
     0 30px 60px -30px rgb(0 0 0 / 0.3);
 }
 
-@keyframes orb-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes orb-drift {
-  50% {
-    transform: translate(8%, -6%) scale(1.15);
-  }
-}
-
 @keyframes pulse-dot {
   50% {
     opacity: 0.35;
   }
-}
-
-.orb-spin {
-  animation: orb-spin 16s linear infinite;
-}
-
-.orb-drift {
-  animation: orb-drift 9s ease-in-out infinite;
 }
 
 .pulse-dot {
@@ -70,8 +50,6 @@ body::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb-spin,
-  .orb-drift,
   .pulse-dot {
     animation: none;
   }

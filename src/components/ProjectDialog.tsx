@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveProject, slugify, useStore } from "@/lib/store";
 import { STATUSES, STATUS_LABEL, paletteOf, type Project } from "@/lib/types";
-import { Field, Modal, darkButtonClass, inputClass } from "./Modal";
+import { storeImage } from "@/lib/images";
+import { Logo } from "./Logo";
+import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
 import { statusColor } from "./Status";
 
 const EMPTY: Project = {
@@ -80,6 +82,34 @@ export function ProjectDialog({
             onChange={(e) => set({ instagram: e.target.value })}
           />
         </Field>
+        <Field label="Logo">
+          <div className="flex items-center gap-4">
+            <Logo project={draft} className="h-14 w-14 shrink-0" />
+            <label className={`${buttonClass} cursor-pointer`}>
+              Subir logo
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) set({ logo: await storeImage(file) });
+                }}
+              />
+            </label>
+            {draft.logo && (
+              <button
+                type="button"
+                onClick={() => set({ logo: undefined })}
+                className="text-[13px] text-graphite hover:text-ink"
+              >
+                Quitar
+              </button>
+            )}
+          </div>
+        </Field>
+
         <Field label="Paleta de la marca">
           <div className="flex flex-wrap items-end gap-3">
             {palette.map((color, i) => (

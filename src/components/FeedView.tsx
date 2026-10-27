@@ -7,7 +7,7 @@ import { addPosts, newPost, savePosts } from "@/lib/store";
 import type { Post, Project } from "@/lib/types";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
-import { Orb } from "./Orb";
+import { Logo } from "./Logo";
 import { PostDialog } from "./PostDialog";
 
 export function FeedView({ project, posts }: { project: Project; posts: Post[] }) {
@@ -263,7 +263,7 @@ function Phone({
       className={`silver overflow-hidden rounded-[32px] transition ${highlight ? "ring-2 ring-ink ring-offset-4 ring-offset-paper" : ""}`}
     >
       <div className="flex items-center gap-4 px-5 pt-6 pb-4">
-        <Orb project={project} className="h-16 w-16 shrink-0" />
+        <Logo project={project} className="h-16 w-16 shrink-0" />
         <div className="min-w-0">
           <p className="truncate text-lg font-semibold tracking-[-0.03em]">{handle}</p>
           <p className="text-[12px] text-graphite">{stats}</p>

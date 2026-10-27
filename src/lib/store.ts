@@ -8,10 +8,13 @@ import {
   CANCINO_PLANNED_IMAGES,
   BRAND_COLORS,
   CANCINO_PUBLISHED,
+  CANCINO_VIDEOS,
+  CANCINO_VIDEOS_SINCE,
   CRISSIS_POSTS,
   SEED_VERSION,
   seedState,
 } from "./seed";
+import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
 import type { Post, Project, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
@@ -92,6 +95,28 @@ function migrate(s: State): State {
       ? { ...p, ...BRAND_COLORS[p.slug] }
       : p,
   );
+  // v9/v11: videos de los reels de Cancino (sin pisar archivos ya agregados).
+  posts = posts.map((p) => {
+    const i = Number(/^seed-cancino-(\d+)$/.exec(p.id)?.[1] ?? -1);
+    const video = CANCINO_VIDEOS[i];
+    if (!video || (s.version ?? 1) >= CANCINO_VIDEOS_SINCE[i] || p.files?.length) return p;
+    const keepCover = p.image && !p.image.startsWith("/feed/");
+    return { ...p, ...video, ...(keepCover && { image: p.image }) };
+  });
+  // v10: carta de drinks y plan anual de Cancino.
+  if ((s.version ?? 1) < 10) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" && !p.drinks
+        ? { ...p, drinks: CANCINO_DRINKS, drinkPlan: CANCINO_DRINK_PLAN }
+        : p,
+    );
+  }
+  // v12: logo de Cancino.
+  if ((s.version ?? 1) < 12) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" && !p.logo ? { ...p, logo: "/logos/cancino.svg" } : p,
+    );
+  }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {
     projects = projects.map((p) =>
