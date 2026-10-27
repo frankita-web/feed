@@ -16,7 +16,7 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import type { Deliverable, Post, Project, Scene, Script, Shoot, State } from "./types";
+import type { Deliverable, Idea, Post, Project, Scene, Script, Shoot, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
 const KEY = "feed-planner:v1";
@@ -253,16 +253,30 @@ export function updateDeliverable(
     saveShoot({ ...shoot, items: shoot.items.map((i) => (i.id === itemId ? change(i) : i)) });
 }
 
+/** Al mandar un entregable al feed: guarda el post en el entregable y en su guion. */
+export function linkDeliverableToPost(shootId: string, itemId: string, postId: string) {
+  updateDeliverable(shootId, itemId, (i) => ({ ...i, postId }));
+  const item = (read().shoots ?? [])
+    .find((x) => x.id === shootId)
+    ?.items.find((i) => i.id === itemId);
+  if (item?.scriptId) updateScript(item.scriptId, (s) => (s.postId ? s : { ...s, postId }));
+}
+
 export function deleteShoot(id: string) {
   const s = read();
-  write({ ...s, shoots: (s.shoots ?? []).filter((x) => x.id !== id) });
+  write({
+    ...s,
+    shoots: (s.shoots ?? []).filter((x) => x.id !== id),
+    ideas: s.ideas?.map((i) => (i.shootId === id ? { ...i, shootId: null } : i)),
+  });
 }
 
 /** Archivo que usa algún entregable (no se borra aunque se quite de un post). */
 export function usedByShoots(fileId: string) {
   return (read().shoots ?? []).some((sh) =>
     sh.items.some(
-      (i) => i.cover === fileId || i.slides.includes(fileId) || i.files.some((f) => f.id === fileId),
+      (i) =>
+        i.cover === fileId || i.slides.includes(fileId) || i.files.some((f) => f.id === fileId),
     ),
   );
 }
@@ -291,6 +305,37 @@ export function newShoot(project: string, fields: Partial<Shoot> = {}): Shoot {
     due: null,
     notes: "",
     items: [],
+    createdAt: Date.now(),
+    ...fields,
+  };
+}
+
+export function saveIdea(idea: Idea) {
+  const s = read();
+  const list = s.ideas ?? [];
+  write({
+    ...s,
+    ideas: list.some((x) => x.id === idea.id)
+      ? list.map((x) => (x.id === idea.id ? idea : x))
+      : [idea, ...list],
+  });
+}
+
+export function deleteIdea(id: string) {
+  const s = read();
+  write({ ...s, ideas: (s.ideas ?? []).filter((x) => x.id !== id) });
+}
+
+export function newIdea(project: string, fields: Partial<Idea> = {}): Idea {
+  return {
+    id: crypto.randomUUID(),
+    project,
+    title: "",
+    notes: "",
+    link: "",
+    pillar: null,
+    shootId: null,
+    done: false,
     createdAt: Date.now(),
     ...fields,
   };

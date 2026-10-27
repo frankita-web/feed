@@ -151,6 +151,10 @@ export type Deliverable = {
   files: Attachment[];
   /** Publicación del feed donde se usó. */
   postId: string | null;
+  /** De qué es: "Pizza siempre", "PDM Ximena"… */
+  note?: string;
+  /** Guion con el que se grabó / va a usarse. */
+  scriptId?: string | null;
 };
 
 export type Shoot = {
@@ -168,8 +172,25 @@ export type Shoot = {
   createdAt: number;
 };
 
+/** Idea de contenido para un próximo shoot. */
+export type Idea = {
+  id: string;
+  project: string;
+  title: string;
+  notes: string;
+  /** Link de referencia (reel, Pinterest, TikTok…). */
+  link: string;
+  pillar: string | null;
+  /** Shoot donde se va a grabar; null = sin asignar. */
+  shootId: string | null;
+  /** Ya se grabó. */
+  done: boolean;
+  createdAt: number;
+};
+
 export type State = {
   version?: number;
+  ideas?: Idea[];
   shoots?: Shoot[];
   projects: Project[];
   posts: Post[];

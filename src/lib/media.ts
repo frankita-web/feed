@@ -68,5 +68,6 @@ export function postFromDeliverable(project: string, item: Deliverable): Post {
     image: item.cover,
     slides: item.slides,
     files: item.files,
+    caption: item.note ?? "",
   });
 }

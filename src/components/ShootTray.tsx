@@ -5,7 +5,7 @@ import { useState } from "react";
 import { shortDate } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
 import { postFromDeliverable } from "@/lib/media";
-import { updateDeliverable } from "@/lib/store";
+import { linkDeliverableToPost } from "@/lib/store";
 import type { Deliverable, Post, Project, Shoot } from "@/lib/types";
 import { PostDialog } from "./PostDialog";
 
@@ -104,9 +104,7 @@ export function ShootTray({
           post={sending.post}
           isNew
           onClose={() => setSending(null)}
-          onSaved={(post) =>
-            updateDeliverable(sending.shoot.id, sending.item.id, (i) => ({ ...i, postId: post.id }))
-          }
+          onSaved={(post) => linkDeliverableToPost(sending.shoot.id, sending.item.id, post.id)}
         />
       )}
     </section>

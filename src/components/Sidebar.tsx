@@ -6,11 +6,12 @@ import { todayKey, weekRange } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
 import { ProjectDialog } from "./ProjectDialog";
 
-export type Tab = "calendario" | "feed" | "guiones" | "entregables" | "drinks" | "menu";
+export type Tab = "calendario" | "feed" | "ideas" | "guiones" | "entregables" | "drinks" | "menu";
 
 export const TAB_LABEL: Record<Tab, string> = {
   calendario: "Calendario",
   feed: "Feed",
+  ideas: "Ideas",
   guiones: "Guiones",
   entregables: "Entregables",
   drinks: "Drinks",
@@ -22,6 +23,7 @@ export function tabsFor(project: Project): Tab[] {
   return [
     "calendario",
     "feed",
+    "ideas",
     "guiones",
     "entregables",
     ...(project.drinks ? (["drinks"] as const) : []),
@@ -91,6 +93,11 @@ export const TAB_ICON: Record<Tab | "ajustes" | "inicio", ReactNode> = {
   drinks: (
     <Icon>
       <path d="M5 4h14l-7 8zM12 12v8M8 20h8" />
+    </Icon>
+  ),
+  ideas: (
+    <Icon>
+      <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" />
     </Icon>
   ),
   entregables: (

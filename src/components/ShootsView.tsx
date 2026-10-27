@@ -4,12 +4,21 @@ import { useRef, useState } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
-import { deleteShoot, newDeliverable, newShoot, saveShoot, updateDeliverable } from "@/lib/store";
+import {
+  deleteShoot,
+  linkDeliverableToPost,
+  newDeliverable,
+  newShoot,
+  saveShoot,
+  updateDeliverable,
+} from "@/lib/store";
 import {
   DELIVERABLE_KINDS,
   type Deliverable,
+  type Idea,
   type Post,
   type Project,
+  type Script,
   type Shoot,
 } from "@/lib/types";
 import { buttonClass, darkButtonClass, inputClass } from "./Modal";
@@ -22,11 +31,16 @@ export function ShootsView({
   project,
   posts,
   shoots,
+  ideas = [],
+  scripts = [],
 }: {
   project: Project;
   posts: Post[];
   shoots: Shoot[];
+  ideas?: Idea[];
+  scripts?: Script[];
 }) {
+  const myScripts = scripts.filter((s) => s.project === project.slug);
   const [sending, setSending] = useState<Sending | null>(null);
   const mine = shoots
     .filter((s) => s.project === project.slug)
@@ -76,6 +90,8 @@ export function ShootsView({
               key={shoot.id}
               shoot={shoot}
               posts={posts}
+              ideas={ideas.filter((i) => i.shootId === shoot.id)}
+              scripts={myScripts}
               onToFeed={(item) => toFeed(shoot, item)}
             />
           ))}
@@ -100,9 +116,7 @@ export function ShootsView({
           post={sending.post}
           isNew={sending.isNew}
           onClose={() => setSending(null)}
-          onSaved={(post) =>
-            updateDeliverable(sending.shoot.id, sending.item.id, (i) => ({ ...i, postId: post.id }))
-          }
+          onSaved={(post) => linkDeliverableToPost(sending.shoot.id, sending.item.id, post.id)}
         />
       )}
     </div>
@@ -124,10 +138,14 @@ function Stat({ value, label, strong }: { value: number; label: string; strong?:
 function ShootCard({
   shoot,
   posts,
+  ideas,
+  scripts,
   onToFeed,
 }: {
   shoot: Shoot;
   posts: Post[];
+  ideas: Idea[];
+  scripts: Script[];
   onToFeed: (item: Deliverable) => void;
 }) {
   const set = (fields: Partial<Shoot>) => saveShoot({ ...shoot, ...fields });
@@ -190,6 +208,22 @@ function ShootCard({
         </label>
       </div>
 
+      {ideas.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-1.5 text-[12px]">
+          <span className="text-graphite">Ideas para este shoot:</span>
+          {ideas.map((i) => (
+            <span
+              key={i.id}
+              className={`rounded-full border border-black/10 bg-white/70 px-2.5 py-0.5 ${
+                i.done ? "text-graphite line-through" : ""
+              }`}
+            >
+              {i.title || "Idea"}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {shoot.items.map((item) => (
           <DeliverableTile
@@ -197,6 +231,7 @@ function ShootCard({
             shoot={shoot}
             item={item}
             post={posts.find((p) => p.id === item.postId)}
+            scripts={scripts}
             onToFeed={() => onToFeed(item)}
           />
         ))}
@@ -250,11 +285,13 @@ function DeliverableTile({
   shoot,
   item,
   post,
+  scripts,
   onToFeed,
 }: {
   shoot: Shoot;
   item: Deliverable;
   post?: Post;
+  scripts: Script[];
   onToFeed: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -355,28 +392,53 @@ function DeliverableTile({
       </div>
 
       <input
-        className="w-full bg-transparent text-[13px] font-medium outline-none"
+        className="w-full rounded-lg border border-transparent bg-transparent px-1.5 py-1 text-[13px] font-semibold outline-none hover:border-black/10 hover:bg-white/60 focus:border-black/30 focus:bg-white"
         value={item.title}
+        placeholder="Nombre del video"
         onChange={(e) => change({ title: e.target.value })}
         aria-label="Nombre del entregable"
+        title="Toca para cambiar el nombre"
       />
-      <div className="flex items-center gap-1.5">
-        <select
-          value={item.kind}
-          onChange={(e) => change({ kind: e.target.value as Deliverable["kind"] })}
-          className="min-w-0 flex-1 rounded-lg border border-black/10 bg-white/70 px-1.5 py-1 text-[11px]"
-          aria-label="Tipo"
-        >
-          {DELIVERABLE_KINDS.map((k) => (
-            <option key={k}>{k}</option>
-          ))}
-        </select>
+      <div className="flex rounded-lg border border-black/10 bg-white/60 p-0.5 text-[11px]">
+        {DELIVERABLE_KINDS.map((k) => (
+          <button
+            key={k}
+            onClick={() => change({ kind: k })}
+            className={`flex-1 rounded-md py-1 transition ${
+              item.kind === k ? "bg-ink font-medium text-white" : "hover:bg-white"
+            }`}
+          >
+            {k}
+          </button>
+        ))}
+      </div>
+      <input
+        className={`${inputClass} py-1.5 text-[12px]`}
+        value={item.note ?? ""}
+        placeholder="De qué es (ej. Pizza siempre)"
+        onChange={(e) => change({ note: e.target.value })}
+        aria-label="De qué es"
+      />
+      <select
+        value={item.scriptId ?? ""}
+        onChange={(e) => change({ scriptId: e.target.value || null })}
+        className={`${inputClass} py-1.5 text-[12px] ${item.scriptId ? "" : "text-graphite"}`}
+        aria-label="Guion"
+      >
+        <option value="">Sin guion</option>
+        {scripts.map((s) => (
+          <option key={s.id} value={s.id}>
+            Guion: {s.title || "Sin título"}
+          </option>
+        ))}
+      </select>
+      <div className="flex items-center justify-between gap-1.5">
         <button
           onClick={() => change({ status: delivered ? "pendiente" : "entregado" })}
-          className="rounded-lg border border-black/10 bg-white/70 px-1.5 py-1 text-[11px]"
+          className="flex items-center gap-1.5 rounded-lg border border-black/10 bg-white/70 px-2 py-1 text-[11px]"
           title="Marcar como entregado o pendiente"
         >
-          {delivered ? "✓" : "○"}
+          {delivered ? "✓ Entregado" : "○ Pendiente"}
         </button>
         <button
           onClick={() =>
