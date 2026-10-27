@@ -20,7 +20,8 @@ import { newPost, saveNote, savePost } from "@/lib/store";
 import { STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/types";
 import { MonthAnalysis } from "./MonthAnalysis";
 import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
-import { PostDialog, statusColor } from "./PostDialog";
+import { PostDialog } from "./PostDialog";
+import { StatusDot } from "./Status";
 
 type Editing = { post: Post; isNew: boolean };
 type View = "mes" | "semana";
@@ -366,10 +367,7 @@ function WeekCard({
       </div>
       <div className="p-2">
         <p className="flex items-start gap-1.5 text-[12.5px] leading-tight font-semibold">
-          <span
-            className="mt-1 h-[7px] w-[7px] shrink-0 rounded-full"
-            style={{ background: statusColor(post.status, project) }}
-          />
+          <StatusDot status={post.status} project={project} className="mt-1 h-[7px] w-[7px]" />
           {post.title || "Sin título"}
         </p>
         <p className="mt-0.5 text-[11px] text-graphite">
@@ -417,10 +415,7 @@ function PostChip({
             className="mt-0.5 h-6 w-5 shrink-0 border-2 border-white object-cover shadow-sm"
           />
         ) : (
-          <span
-            className="mt-[5px] h-[7px] w-[7px] shrink-0 rounded-full"
-            style={{ background: statusColor(post.status, project) }}
-          />
+          <StatusDot status={post.status} project={project} className="mt-[5px] h-[7px] w-[7px]" />
         )}
         <span className="text-[12.5px] leading-tight font-semibold tracking-[-0.01em]">
           {post.title || "Sin título"}
@@ -436,10 +431,7 @@ function Legend({ project }: { project: Project }) {
     <div className="flex flex-wrap items-center gap-4 text-[12px]">
       {STATUSES.map((s) => (
         <span key={s} className="flex items-center gap-1.5">
-          <span
-            className="h-[7px] w-[7px] rounded-full"
-            style={{ background: statusColor(s, project) }}
-          />
+          <StatusDot status={s} project={project} className="h-[7px] w-[7px]" />
           {STATUS_LABEL[s]}
         </span>
       ))}
@@ -491,10 +483,7 @@ function DayDialog({
               className="flex w-full items-center justify-between gap-3 rounded-xl border border-black/10 bg-white/80 px-4 py-3 text-left transition hover:bg-white"
             >
               <span className="flex items-center gap-2 text-sm font-semibold">
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ background: statusColor(post.status, project) }}
-                />
+                <StatusDot status={post.status} project={project} className="h-2 w-2" />
                 {post.title || "Sin título"}
               </span>
               <span className="text-xs text-graphite">{post.format}</span>

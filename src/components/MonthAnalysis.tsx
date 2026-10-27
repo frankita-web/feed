@@ -4,8 +4,8 @@ import { useState } from "react";
 import { shortDate } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
 import { Orb } from "./Orb";
+import { statusColor } from "./Status";
 
-const DONE = "#3d7a5c";
 
 /** "Análisis mensual non negociable": meta del mes y cuántos posts lleva cada categoría. */
 export function MonthAnalysis({
@@ -18,6 +18,7 @@ export function MonthAnalysis({
   onEdit: (post: Post) => void;
 }) {
   const [showUncategorized, setShowUncategorized] = useState(false);
+  const DONE = statusColor("listo", project);
   const feed = posts.filter((p) => p.format !== "Stories");
   const stories = posts.length - feed.length;
   const missing = Math.max(0, project.monthlyGoal - feed.length);
@@ -55,7 +56,7 @@ export function MonthAnalysis({
                   {pillar.target} {pillar.name}
                 </span>
                 <span className="flex-1 translate-y-[-3px] border-b border-dotted border-ink/40" />
-                <span className="font-bold" style={{ color: done ? DONE : undefined }}>
+                <span className={done ? "font-bold" : "font-bold text-graphite"}>
                   {count}/{pillar.target}
                 </span>
                 <span

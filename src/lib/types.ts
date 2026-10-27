@@ -34,6 +34,8 @@ export type Project = {
   pillars: Pillar[];
   /** Paleta de la marca, para los detalles (esfera, puntitos, manijas). La base sigue gris. */
   palette?: string[];
+  /** Color de pendiente / listo / publicado, elegido de la paleta. */
+  statusColors?: Partial<Record<Status, string>>;
 };
 
 /** Colores de la marca; si no hay paleta, usa los dos colores de antes. */

@@ -4,11 +4,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { CalendarView } from "./CalendarView";
-import { Folder, Selected } from "./Desktop";
+import { Folder } from "./Desktop";
 import { FeedView } from "./FeedView";
 import { buttonClass } from "./Modal";
 import { ProjectDialog } from "./ProjectDialog";
-import { Orb, Swatches } from "./Orb";
 
 export type Tab = "calendario" | "feed";
 
@@ -43,26 +42,20 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
           <Link href="/" className="text-[13px] text-graphite hover:text-ink">
             ← Mis proyectos
           </Link>
-          <div className="mt-4 flex items-center gap-5">
-            <Orb project={project} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
-            <div>
-              <h1 className="text-[clamp(40px,6vw,64px)] leading-[0.95] font-semibold tracking-[-0.055em]">
-                <Selected color={project.accent}>{project.name}</Selected>
-              </h1>
-              <div className="mt-2 flex items-center gap-3">
-                {project.instagram && (
-                  <a
-                    href={`https://www.instagram.com/${project.instagram}/`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[13px] text-graphite hover:text-ink"
-                  >
-                    @{project.instagram}
-                  </a>
-                )}
-                <Swatches project={project} />
-              </div>
-            </div>
+          <div className="mt-4">
+            <h1 className="text-[clamp(40px,6vw,64px)] leading-[0.95] font-semibold tracking-[-0.055em]">
+              {project.name}
+            </h1>
+            {project.instagram && (
+              <a
+                href={`https://www.instagram.com/${project.instagram}/`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-[13px] text-graphite hover:text-ink"
+              >
+                @{project.instagram}
+              </a>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">

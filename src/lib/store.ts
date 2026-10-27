@@ -85,10 +85,19 @@ function migrate(s: State): State {
       p.id === "seed-cancino-1" && !p.pillar ? { ...p, pillar: "Postre" } : p,
     );
   }
-  // v6: paletas de marca de Cancino y Crissis.
-  if ((s.version ?? 1) < 6) {
+  // v6: paletas de Cancino y Crissis; v7: Issi.
+  const brandFrom = (slug: string) => (slug === "issi" ? 7 : 6);
+  projects = projects.map((p) =>
+    (s.version ?? 1) < brandFrom(p.slug) && !p.palette?.length && BRAND_COLORS[p.slug]
+      ? { ...p, ...BRAND_COLORS[p.slug] }
+      : p,
+  );
+  // v8: colores de pendiente / listo / publicado desde la paleta.
+  if ((s.version ?? 1) < 8) {
     projects = projects.map((p) =>
-      !p.palette?.length && BRAND_COLORS[p.slug] ? { ...p, ...BRAND_COLORS[p.slug] } : p,
+      !p.statusColors && BRAND_COLORS[p.slug]
+        ? { ...p, statusColors: BRAND_COLORS[p.slug].statusColors }
+        : p,
     );
   }
   return {

@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveProject, slugify, useStore } from "@/lib/store";
-import { paletteOf, type Project } from "@/lib/types";
+import { STATUSES, STATUS_LABEL, paletteOf, type Project } from "@/lib/types";
 import { Field, Modal, darkButtonClass, inputClass } from "./Modal";
+import { statusColor } from "./Status";
 
 const EMPTY: Project = {
   slug: "",
@@ -79,7 +80,7 @@ export function ProjectDialog({
             onChange={(e) => set({ instagram: e.target.value })}
           />
         </Field>
-        <Field label="Paleta de la marca (detalles: esfera, puntitos, pendientes)">
+        <Field label="Paleta de la marca">
           <div className="flex flex-wrap items-end gap-3">
             {palette.map((color, i) => (
               <div key={i} className="flex flex-col items-center gap-1">
@@ -131,6 +132,35 @@ export function ProjectDialog({
             >
               +
             </button>
+          </div>
+        </Field>
+
+        <Field label="Colores de estado">
+          <div className="space-y-2">
+            {STATUSES.map((status) => {
+              const current = statusColor(status, draft);
+              return (
+                <div key={status} className="flex items-center gap-3">
+                  <span className="w-20 text-[13px]">{STATUS_LABEL[status]}</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {palette.map((color, i) => (
+                      <button
+                        key={`${color}-${i}`}
+                        type="button"
+                        aria-label={`${STATUS_LABEL[status]}: ${color}`}
+                        onClick={() =>
+                          set({ statusColors: { ...draft.statusColors, [status]: color } })
+                        }
+                        className={`h-6 w-6 rounded-full ring-1 ring-black/15 ${
+                          current === color ? "ring-2 ring-ink ring-offset-2" : ""
+                        }`}
+                        style={{ background: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Field>
 

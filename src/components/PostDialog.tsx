@@ -12,12 +12,7 @@ import {
   type Project,
 } from "@/lib/types";
 import { Chips, Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
-
-export function statusColor(status: Post["status"], project: Project) {
-  if (status === "listo") return "#3d7a5c";
-  if (status === "publicado") return "#1d1818";
-  return project.accent;
-}
+import { StatusDot } from "./Status";
 
 const NO_PILLAR = "Sin categoría";
 const CAPTION_LIMIT = 2200; // máximo de Instagram
@@ -197,10 +192,7 @@ export function PostDialog({
                       : "border-black/10 bg-white/80"
                   }`}
                 >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ background: statusColor(s, project) }}
-                  />
+                  <StatusDot status={s} project={project} className="h-2 w-2" />
                   {STATUS_LABEL[s]}
                 </button>
               ))}

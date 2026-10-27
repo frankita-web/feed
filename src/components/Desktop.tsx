@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 /** Carpeta azul estilo macOS. */
 export function Folder({ className = "h-16 w-20" }: { className?: string }) {
   return (
@@ -14,35 +12,5 @@ export function Folder({ className = "h-16 w-20" }: { className?: string }) {
       <rect x="3" y="15" width="74" height="44" rx="5" fill="url(#folder-front)" />
       <rect x="3" y="15" width="74" height="1.4" fill="#ffffff" opacity=".55" />
     </svg>
-  );
-}
-
-/** Recuadro de selección con manijas, como al editar un texto en Keynote/Figma. */
-export function Selected({ children, color }: { children: ReactNode; color?: string }) {
-  const handles = [
-    "left-0 top-0",
-    "left-1/2 top-0",
-    "right-0 top-0",
-    "left-0 top-1/2",
-    "right-0 top-1/2",
-    "left-0 bottom-0",
-    "left-1/2 bottom-0",
-    "right-0 bottom-0",
-  ];
-  return (
-    <span className="relative inline-block px-[0.12em]">
-      {children}
-      <span aria-hidden="true" className="absolute inset-0 border border-ink/45" />
-      {handles.map((h) => (
-        <span
-          key={h}
-          aria-hidden="true"
-          className={`absolute ${h} h-[7px] w-[7px] border border-ink/60 bg-white ${
-            h.includes("right-0") ? "translate-x-1/2" : "-translate-x-1/2"
-          } ${h.includes("bottom-0") ? "translate-y-1/2" : "-translate-y-1/2"}`}
-          style={color ? { background: color, borderColor: color } : undefined}
-        />
-      ))}
-    </span>
   );
 }

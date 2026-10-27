@@ -1,4 +1,4 @@
-import type { Format, Pillar, Post, State, Status } from "./types";
+import type { Format, Pillar, Post, Project, State, Status } from "./types";
 
 const CANCINO_PILLARS: Pillar[] = [
   { name: "PDM", target: 3 },
@@ -68,14 +68,27 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 6;
+export const SEED_VERSION = 8;
 
 /** Paletas de marca (v6). `accent` es el color principal de cada una. */
-export const BRAND_COLORS: Record<string, { palette: string[]; accent: string }> = {
-  cancino: { palette: ["#e5003e", "#f7c2c4", "#aa1831"], accent: "#e5003e" },
+export const BRAND_COLORS: Record<
+  string,
+  Pick<Project, "palette" | "accent" | "statusColors">
+> = {
+  cancino: {
+    palette: ["#e5003e", "#f7c2c4", "#aa1831"],
+    accent: "#e5003e",
+    statusColors: { pendiente: "#e5003e", listo: "#f7c2c4", publicado: "#aa1831" },
+  },
   crissis: {
     palette: ["#ffff95", "#b4ffd7", "#ec0000", "#f9ceff", "#ffffff"],
     accent: "#ec0000",
+    statusColors: { pendiente: "#ec0000", listo: "#b4ffd7", publicado: "#f9ceff" },
+  },
+  issi: {
+    palette: ["#f8f6e6", "#241e1f"],
+    accent: "#241e1f",
+    statusColors: { pendiente: "#241e1f", listo: "#f8f6e6", publicado: "#8a8378" },
   },
 };
 
@@ -258,8 +271,8 @@ export function seedState(): State {
         slug: "issi",
         name: "Issi",
         instagram: "issi_rest",
-        bg: "#dfe8f6",
-        accent: "#7f99c9",
+        bg: "#f8f6e6",
+        ...BRAND_COLORS.issi,
         monthlyGoal: 12,
         pillars: [],
       },

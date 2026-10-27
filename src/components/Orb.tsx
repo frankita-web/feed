@@ -40,19 +40,3 @@ export function Orb({ project, className = "" }: { project: Project; className?:
     </div>
   );
 }
-
-/** Tirita con los colores de la marca. */
-export function Swatches({ project, className = "" }: { project: Project; className?: string }) {
-  return (
-    <span className={`flex items-center gap-1 ${className}`} aria-label="Paleta de la marca">
-      {paletteOf(project).map((color, i) => (
-        <span
-          key={`${color}-${i}`}
-          className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10"
-          style={{ background: color }}
-          title={color}
-        />
-      ))}
-    </span>
-  );
-}

@@ -10,7 +10,7 @@ import { Folder } from "./Desktop";
 import { buttonClass, darkButtonClass } from "./Modal";
 import { Orb } from "./Orb";
 import { ProjectDialog } from "./ProjectDialog";
-import { statusColor } from "./PostDialog";
+import { StatusDot } from "./Status";
 import { WordWheel } from "./WordWheel";
 
 export function ProjectsHome() {
@@ -93,10 +93,7 @@ function WeekNotice({ store }: { store: State }) {
               <span>{project.name}</span>·<span>{day(selected.date!)}</span>·
               <span>{selected.format}</span>·
               <span className="flex items-center gap-1">
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ background: statusColor(selected.status, project) }}
-                />
+                <StatusDot status={selected.status} project={project} className="h-1.5 w-1.5" />
                 {STATUS_LABEL[selected.status]}
                 {selected.date! < todayKey() && " (atrasado)"}
               </span>
