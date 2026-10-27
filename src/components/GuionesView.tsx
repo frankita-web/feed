@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
-import { deleteScript, newScene, newScript, saveScript } from "@/lib/store";
+import { deleteScript, newScene, newScript, saveScript, updateScript } from "@/lib/store";
 import { SCRIPT_STATUSES, type Post, type Project, type Scene, type Script } from "@/lib/types";
 import { Field, buttonClass, darkButtonClass, inputClass } from "./Modal";
+import type { ScriptPatch } from "@/lib/script-tool";
 import { ScriptChat } from "./ScriptChat";
 
 const isVideo = (p: Post) =>
@@ -107,15 +108,7 @@ export function GuionesView({
 
       {selected ? (
         <>
-          <ScriptEditor key={selected.id} script={selected} posts={posts} />
-          <div className="lg:col-span-2 2xl:col-span-1">
-            <ScriptChat
-              key={selected.id}
-              script={selected}
-              project={project}
-              post={posts.find((p) => p.id === selected.postId)}
-            />
-          </div>
+          <ScriptWorkspace key={selected.id} stored={selected} project={project} posts={posts} />
         </>
       ) : (
         <div className="silver flex flex-col items-center justify-center gap-3 rounded-[24px] p-12 text-center lg:col-span-1 2xl:col-span-2">
@@ -133,8 +126,122 @@ export function GuionesView({
   );
 }
 
-function ScriptEditor({ script, posts }: { script: Script; posts: Post[] }) {
-  const set = (fields: Partial<Script>) => saveScript({ ...script, ...fields });
+/** Lo que se edita del guion (sin la conversación ni fechas). */
+const content = (s: Script) => JSON.stringify({ ...s, chat: undefined, updatedAt: undefined });
+
+/**
+ * Guion abierto: se edita un borrador y se guarda con el botón (o ⌘S).
+ * Si cambias de guion o de sección con cambios pendientes, se guardan solos.
+ */
+function ScriptWorkspace({
+  stored,
+  project,
+  posts,
+}: {
+  stored: Script;
+  project: Project;
+  posts: Post[];
+}) {
+  const [draft, setDraft] = useState(stored);
+  const dirty = content(draft) !== content(stored);
+
+  const save = () => updateScript(stored.id, (s) => ({ ...draft, chat: s.chat }));
+
+  // Guardar al salir sin perder nada, y avisar si se cierra la pestaña.
+  const pending = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    pending.current = dirty ? save : null;
+  });
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (pending.current) e.preventDefault();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        pending.current?.();
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      window.removeEventListener("keydown", onKey);
+      pending.current?.();
+    };
+  }, []);
+
+  const applyPatch = (patch: ScriptPatch) =>
+    setDraft((d) => ({
+      ...d,
+      ...patch,
+      scenes: patch.scenes ? patch.scenes.map((sc) => newScene(sc)) : d.scenes,
+      status: d.status === "idea" ? "borrador" : d.status,
+    }));
+
+  return (
+    <>
+      <ScriptEditor
+        script={draft}
+        posts={posts}
+        onChange={(fields) => setDraft((d) => ({ ...d, ...fields }))}
+        saveBar={<SaveBar dirty={dirty} savedAt={stored.updatedAt} onSave={save} />}
+      />
+      <div className="lg:col-span-2 2xl:col-span-1">
+        <ScriptChat
+          script={draft}
+          project={project}
+          post={posts.find((p) => p.id === draft.postId)}
+          onPatch={applyPatch}
+        />
+      </div>
+    </>
+  );
+}
+
+function SaveBar({
+  dirty,
+  savedAt,
+  onSave,
+}: {
+  dirty: boolean;
+  savedAt: number;
+  onSave: () => void;
+}) {
+  const time = new Date(savedAt).toLocaleTimeString("es-MX", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return (
+    <div className="flex items-center gap-3">
+      <span className="flex items-center gap-1.5 text-[12px] text-graphite">
+        {dirty ? (
+          <>
+            <span className="h-2 w-2 rounded-full bg-[#e5a400]" />
+            Cambios sin guardar
+          </>
+        ) : (
+          <>✓ Guardado {time}</>
+        )}
+      </span>
+      <button onClick={onSave} disabled={!dirty} className={`${darkButtonClass} px-5`}>
+        Guardar
+      </button>
+    </div>
+  );
+}
+
+function ScriptEditor({
+  script,
+  posts,
+  onChange: set,
+  saveBar,
+}: {
+  script: Script;
+  posts: Post[];
+  onChange: (fields: Partial<Script>) => void;
+  saveBar: ReactNode;
+}) {
   const setScene = (id: string, fields: Partial<Scene>) =>
     set({ scenes: script.scenes.map((s) => (s.id === id ? { ...s, ...fields } : s)) });
   const move = (i: number, d: number) => {
@@ -149,6 +256,7 @@ function ScriptEditor({ script, posts }: { script: Script; posts: Post[] }) {
 
   return (
     <section className="silver min-w-0 rounded-[24px] p-6">
+      <div className="mb-4 flex justify-end border-b border-black/[0.06] pb-4">{saveBar}</div>
       <div className="flex flex-wrap items-start gap-3">
         <input
           className="min-w-0 flex-1 bg-transparent text-2xl font-semibold tracking-[-0.03em] outline-none placeholder:text-graphite/50"
@@ -254,7 +362,13 @@ function ScriptEditor({ script, posts }: { script: Script; posts: Post[] }) {
                     ↓
                   </button>
                   <button
-                    onClick={() => set({ scenes: script.scenes.filter((s) => s.id !== scene.id) })}
+                    onClick={() => {
+                      const filled = [scene.shot, scene.action, scene.onScreen, scene.audio].some(
+                        (v) => v.trim(),
+                      );
+                      if (filled && !confirm(`¿Quitar la toma ${i + 1}?`)) return;
+                      set({ scenes: script.scenes.filter((s) => s.id !== scene.id) });
+                    }}
                     className="px-1 hover:text-ink"
                     aria-label="Quitar toma"
                   >
@@ -312,7 +426,8 @@ function ScriptEditor({ script, posts }: { script: Script; posts: Post[] }) {
         </Field>
       </div>
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        {saveBar}
         <button
           onClick={() => confirm("¿Borrar este guion?") && deleteScript(script.id)}
           className="text-[13px] text-graphite hover:text-ink hover:underline"

@@ -147,7 +147,13 @@ function migrate(s: State): State {
 
 function write(next: State) {
   state = next;
-  localStorage.setItem(KEY, JSON.stringify(next));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next));
+  } catch (error) {
+    // Sin espacio o almacenamiento bloqueado: que se note en vez de perder cambios en silencio.
+    console.error(error);
+    alert("No se pudo guardar en este navegador. Copia tu texto antes de cerrar la página.");
+  }
   listeners.forEach((l) => l());
 }
 

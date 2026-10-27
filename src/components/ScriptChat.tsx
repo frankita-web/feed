@@ -8,7 +8,7 @@ import {
 } from "ai";
 import { useEffect, useRef, useState } from "react";
 import type { ScriptContext, ScriptPatch } from "@/lib/script-tool";
-import { newScene, updateScript } from "@/lib/store";
+import { updateScript } from "@/lib/store";
 import type { Post, Project, Script } from "@/lib/types";
 
 const SUGGESTIONS = [
@@ -30,10 +30,13 @@ export function ScriptChat({
   script,
   project,
   post,
+  onPatch,
 }: {
   script: Script;
   project: Project;
   post?: Post;
+  /** Aplica en el guion abierto lo que escribió la IA. */
+  onPatch: (patch: ScriptPatch) => void;
 }) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,13 +83,7 @@ export function ScriptChat({
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     onToolCall({ toolCall }) {
       if (toolCall.dynamic || toolCall.toolName !== "actualizarGuion") return;
-      const patch = toolCall.input as ScriptPatch;
-      updateScript(script.id, (s) => ({
-        ...s,
-        ...patch,
-        scenes: patch.scenes ? patch.scenes.map((sc) => newScene(sc)) : s.scenes,
-        status: s.status === "idea" ? "borrador" : s.status,
-      }));
+      onPatch(toolCall.input as ScriptPatch);
       addToolOutput({
         tool: "actualizarGuion",
         toolCallId: toolCall.toolCallId,
