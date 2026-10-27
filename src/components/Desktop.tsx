@@ -18,7 +18,7 @@ export function Folder({ className = "h-16 w-20" }: { className?: string }) {
 }
 
 /** Recuadro de selección con manijas, como al editar un texto en Keynote/Figma. */
-export function Selected({ children, cursor = true }: { children: ReactNode; cursor?: boolean }) {
+export function Selected({ children }: { children: ReactNode }) {
   const handles = [
     "left-0 top-0",
     "left-1/2 top-0",
@@ -42,15 +42,6 @@ export function Selected({ children, cursor = true }: { children: ReactNode; cur
           } ${h.includes("bottom-0") ? "translate-y-1/2" : "-translate-y-1/2"}`}
         />
       ))}
-      {cursor && (
-        <svg
-          viewBox="0 0 16 24"
-          aria-hidden="true"
-          className="absolute -right-[0.35em] -bottom-[0.55em] h-[0.32em] min-h-4 w-auto"
-        >
-          <path d="M1 1v19l5-5 3.5 7.5 3-1.4L9 13.6h7z" fill="white" stroke="black" strokeWidth="1.3" />
-        </svg>
-      )}
     </span>
   );
 }

@@ -47,7 +47,7 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
             <Orb project={project} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
             <div>
               <h1 className="text-[clamp(40px,6vw,64px)] leading-[0.95] font-semibold tracking-[-0.055em]">
-                <Selected cursor={false}>{project.name}</Selected>
+                <Selected>{project.name}</Selected>
               </h1>
               {project.instagram && (
                 <a
