@@ -6,6 +6,7 @@ import {
   CANCINO_NOTES,
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
+  BRAND_COLORS,
   CANCINO_PUBLISHED,
   CRISSIS_POSTS,
   SEED_VERSION,
@@ -82,6 +83,12 @@ function migrate(s: State): State {
     );
     posts = posts.map((p) =>
       p.id === "seed-cancino-1" && !p.pillar ? { ...p, pillar: "Postre" } : p,
+    );
+  }
+  // v6: paletas de marca de Cancino y Crissis.
+  if ((s.version ?? 1) < 6) {
+    projects = projects.map((p) =>
+      !p.palette?.length && BRAND_COLORS[p.slug] ? { ...p, ...BRAND_COLORS[p.slug] } : p,
     );
   }
   return {

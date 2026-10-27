@@ -68,7 +68,16 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 5;
+export const SEED_VERSION = 6;
+
+/** Paletas de marca (v6). `accent` es el color principal de cada una. */
+export const BRAND_COLORS: Record<string, { palette: string[]; accent: string }> = {
+  cancino: { palette: ["#e5003e", "#f7c2c4", "#aa1831"], accent: "#e5003e" },
+  crissis: {
+    palette: ["#ffff95", "#b4ffd7", "#ec0000", "#f9ceff", "#ffffff"],
+    accent: "#ec0000",
+  },
+};
 
 // Feed actual de Crissis (captura del grid, 26 oct). Lo más nuevo primero.
 const CRISSIS_FEED: [date: string | null, title: string, format: Format, caption: string][] = [
@@ -231,19 +240,19 @@ export function seedState(): State {
         slug: "cancino",
         name: "Cancino",
         instagram: "loscancinos",
-        bg: "#f0bad8",
-        accent: "#e8333f",
+        bg: "#f7c2c4",
         monthlyGoal: 15,
         pillars: CANCINO_PILLARS,
+        ...BRAND_COLORS.cancino,
       },
       {
         slug: "crissis",
         name: "Crissis",
         instagram: "crissis.crissisbistro",
-        bg: "#f6e7d6",
-        accent: "#c2876a",
+        bg: "#ffff95",
         monthlyGoal: 12,
         pillars: [],
+        ...BRAND_COLORS.crissis,
       },
       {
         slug: "issi",

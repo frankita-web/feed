@@ -32,7 +32,14 @@ export type Project = {
   accent: string;
   monthlyGoal: number;
   pillars: Pillar[];
+  /** Paleta de la marca, para los detalles (esfera, puntitos, manijas). La base sigue gris. */
+  palette?: string[];
 };
+
+/** Colores de la marca; si no hay paleta, usa los dos colores de antes. */
+export function paletteOf(project: Project) {
+  return project.palette?.length ? project.palette : [project.accent, project.bg];
+}
 
 /** Archivo adjunto (video, PDF, diseño…) guardado en IndexedDB. */
 export type Attachment = {

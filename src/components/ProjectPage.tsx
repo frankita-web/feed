@@ -8,7 +8,7 @@ import { Folder, Selected } from "./Desktop";
 import { FeedView } from "./FeedView";
 import { buttonClass } from "./Modal";
 import { ProjectDialog } from "./ProjectDialog";
-import { Orb } from "./Orb";
+import { Orb, Swatches } from "./Orb";
 
 export type Tab = "calendario" | "feed";
 
@@ -47,18 +47,21 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
             <Orb project={project} className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" />
             <div>
               <h1 className="text-[clamp(40px,6vw,64px)] leading-[0.95] font-semibold tracking-[-0.055em]">
-                <Selected>{project.name}</Selected>
+                <Selected color={project.accent}>{project.name}</Selected>
               </h1>
-              {project.instagram && (
-                <a
-                  href={`https://www.instagram.com/${project.instagram}/`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-[13px] text-graphite hover:text-ink"
-                >
-                  @{project.instagram}
-                </a>
-              )}
+              <div className="mt-2 flex items-center gap-3">
+                {project.instagram && (
+                  <a
+                    href={`https://www.instagram.com/${project.instagram}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[13px] text-graphite hover:text-ink"
+                  >
+                    @{project.instagram}
+                  </a>
+                )}
+                <Swatches project={project} />
+              </div>
             </div>
           </div>
         </div>

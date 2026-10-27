@@ -1,25 +1,32 @@
-import type { Project } from "@/lib/types";
+import { paletteOf, type Project } from "@/lib/types";
 
-const GREEN = "#3d7a5c";
+/** Colores casi blancos no aportan a la esfera. */
+const isWhite = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return ((n >> 16) & 255) > 240 && ((n >> 8) & 255) > 240 && (n & 255) > 240;
+};
 
-/** Esfera de color difuminada con los colores del proyecto. */
+/** Esfera de color difuminada con la paleta del proyecto. */
 export function Orb({ project, className = "" }: { project: Project; className?: string }) {
+  const colors = paletteOf(project).filter((c) => !isWhite(c));
+  const [a = project.accent, b = a, c = b] = colors;
+
   return (
     <div
       className={`relative isolate overflow-hidden rounded-full ${className}`}
-      style={{ background: project.accent }}
+      style={{ background: a }}
     >
       <div
         className="orb-spin absolute -inset-1/4"
         style={{
-          background: `conic-gradient(from 20deg, ${project.accent}, ${GREEN}, ${project.bg}, #f7a37a, ${project.accent})`,
+          background: `conic-gradient(from 20deg, ${[...colors, a].join(", ")})`,
           filter: "blur(22px)",
         }}
       />
       <div
         className="orb-drift absolute inset-0"
         style={{
-          background: `radial-gradient(circle at 30% 65%, ${GREEN}cc, transparent 40%), radial-gradient(circle at 70% 35%, #ffffffaa, transparent 30%)`,
+          background: `radial-gradient(circle at 30% 65%, ${c}cc, transparent 40%), radial-gradient(circle at 70% 35%, ${b}, transparent 35%)`,
           filter: "blur(10px)",
         }}
       />
@@ -31,5 +38,21 @@ export function Orb({ project, className = "" }: { project: Project; className?:
         }}
       />
     </div>
+  );
+}
+
+/** Tirita con los colores de la marca. */
+export function Swatches({ project, className = "" }: { project: Project; className?: string }) {
+  return (
+    <span className={`flex items-center gap-1 ${className}`} aria-label="Paleta de la marca">
+      {paletteOf(project).map((color, i) => (
+        <span
+          key={`${color}-${i}`}
+          className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10"
+          style={{ background: color }}
+          title={color}
+        />
+      ))}
+    </span>
   );
 }

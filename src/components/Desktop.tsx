@@ -18,7 +18,7 @@ export function Folder({ className = "h-16 w-20" }: { className?: string }) {
 }
 
 /** Recuadro de selección con manijas, como al editar un texto en Keynote/Figma. */
-export function Selected({ children }: { children: ReactNode }) {
+export function Selected({ children, color }: { children: ReactNode; color?: string }) {
   const handles = [
     "left-0 top-0",
     "left-1/2 top-0",
@@ -40,6 +40,7 @@ export function Selected({ children }: { children: ReactNode }) {
           className={`absolute ${h} h-[7px] w-[7px] border border-ink/60 bg-white ${
             h.includes("right-0") ? "translate-x-1/2" : "-translate-x-1/2"
           } ${h.includes("bottom-0") ? "translate-y-1/2" : "-translate-y-1/2"}`}
+          style={color ? { background: color, borderColor: color } : undefined}
         />
       ))}
     </span>

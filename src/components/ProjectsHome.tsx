@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 import { STATUS_LABEL, type Project, type State } from "@/lib/types";
 import { Folder, Selected } from "./Desktop";
 import { buttonClass, darkButtonClass } from "./Modal";
-import { Orb } from "./Orb";
+import { Orb, Swatches } from "./Orb";
 import { ProjectDialog } from "./ProjectDialog";
 import { statusColor } from "./PostDialog";
 import { WordWheel } from "./WordWheel";
@@ -72,7 +72,7 @@ function WeekNotice({ store }: { store: State }) {
     <section className="silver mt-6 grid items-center gap-6 overflow-hidden rounded-[28px] p-6 sm:grid-cols-[1fr_1.1fr] sm:p-10">
       <div className="flex flex-col items-start">
         <p className="flex items-center gap-2 text-[12px] font-medium tracking-[0.08em] uppercase">
-          <span className="pulse-dot h-2 w-2 rounded-full bg-[#e8333f]" />
+          <span className="pulse-dot h-2 w-2 rounded-full" style={{ background: project.accent }} />
           Esta semana · {shortDate(from)} – {shortDate(to)}
         </p>
         <Orb project={project} className="mt-6 h-40 w-40 self-center sm:h-52 sm:w-52" />
@@ -156,6 +156,7 @@ function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => voi
           <span className="rounded px-1 text-[14px] font-semibold group-hover:bg-[#2f6fd6] group-hover:text-white">
             {p.name.toLowerCase()}
           </span>
+          <Swatches project={p} className="mt-0.5" />
         </Link>
       ),
     })),

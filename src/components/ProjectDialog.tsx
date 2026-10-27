@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveProject, slugify, useStore } from "@/lib/store";
-import type { Project } from "@/lib/types";
+import { paletteOf, type Project } from "@/lib/types";
 import { Field, Modal, darkButtonClass, inputClass } from "./Modal";
 
 const EMPTY: Project = {
@@ -14,6 +14,7 @@ const EMPTY: Project = {
   accent: "#9b7bc4",
   monthlyGoal: 12,
   pillars: [],
+  palette: ["#9b7bc4", "#ece4f5"],
 };
 
 export function ProjectDialog({
@@ -25,8 +26,13 @@ export function ProjectDialog({
 }) {
   const store = useStore();
   const router = useRouter();
-  const [draft, setDraft] = useState(project ?? EMPTY);
+  const [draft, setDraft] = useState(() =>
+    project ? { ...project, palette: paletteOf(project) } : EMPTY,
+  );
   const set = (fields: Partial<Project>) => setDraft((d) => ({ ...d, ...fields }));
+  const palette = draft.palette ?? [];
+  const setPalette = (next: string[], accent = draft.accent) =>
+    set({ palette: next, accent: next.includes(accent) ? accent : (next[0] ?? accent) });
 
   const slug = project?.slug ?? slugify(draft.name);
   const taken = !project && !!store?.projects.some((p) => p.slug === slug);
@@ -73,23 +79,62 @@ export function ProjectDialog({
             onChange={(e) => set({ instagram: e.target.value })}
           />
         </Field>
-        <div className="grid grid-cols-3 gap-4">
-          <Field label="Color suave">
-            <input
-              type="color"
-              className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
-              value={draft.bg}
-              onChange={(e) => set({ bg: e.target.value })}
-            />
-          </Field>
-          <Field label="Color fuerte">
-            <input
-              type="color"
-              className="h-10 w-full cursor-pointer rounded-xl border border-black/10 bg-white p-1"
-              value={draft.accent}
-              onChange={(e) => set({ accent: e.target.value })}
-            />
-          </Field>
+        <Field label="Paleta de la marca (detalles: esfera, puntitos, pendientes)">
+          <div className="flex flex-wrap items-end gap-3">
+            {palette.map((color, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <label
+                  className={`relative block h-11 w-11 cursor-pointer rounded-full ring-1 ring-black/10 ${
+                    color === draft.accent ? "ring-2 ring-ink ring-offset-2" : ""
+                  }`}
+                  style={{ background: color }}
+                  title="Cambiar color"
+                >
+                  <input
+                    type="color"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    value={color}
+                    onChange={(e) =>
+                      setPalette(
+                        palette.map((c, j) => (j === i ? e.target.value : c)),
+                        color === draft.accent ? e.target.value : draft.accent,
+                      )
+                    }
+                  />
+                </label>
+                <span className="flex gap-1 text-[10px] text-graphite">
+                  <button
+                    type="button"
+                    onClick={() => set({ accent: color })}
+                    className={color === draft.accent ? "font-semibold text-ink" : "hover:text-ink"}
+                  >
+                    {color === draft.accent ? "principal" : "usar"}
+                  </button>
+                  {palette.length > 1 && (
+                    <button
+                      type="button"
+                      aria-label="Quitar color"
+                      onClick={() => setPalette(palette.filter((_, j) => j !== i))}
+                      className="hover:text-ink"
+                    >
+                      ×
+                    </button>
+                  )}
+                </span>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setPalette([...palette, "#cccccc"])}
+              className="mb-5 flex h-11 w-11 items-center justify-center rounded-full border border-dashed border-ink/30 text-lg text-graphite hover:border-ink hover:text-ink"
+              aria-label="Agregar color"
+            >
+              +
+            </button>
+          </div>
+        </Field>
+
+        <div className="w-40">
           <Field label="Posts al mes">
             <input
               type="number"
