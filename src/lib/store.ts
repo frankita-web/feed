@@ -7,6 +7,7 @@ import {
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
   BRAND_COLORS,
+  CANCINO_MENU,
   CANCINO_PUBLISHED,
   CANCINO_VIDEOS,
   CANCINO_VIDEOS_SINCE,
@@ -15,7 +16,7 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import type { Post, Project, State } from "./types";
+import type { Post, Project, Scene, Script, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
 const KEY = "feed-planner:v1";
@@ -111,6 +112,12 @@ function migrate(s: State): State {
         : p,
     );
   }
+  // v13: menú impreso de Cancino.
+  if ((s.version ?? 1) < 13) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" && !p.menu ? { ...p, menu: CANCINO_MENU } : p,
+    );
+  }
   // v12: logo de Cancino.
   if ((s.version ?? 1) < 12) {
     projects = projects.map((p) =>
@@ -193,6 +200,59 @@ export function savePosts(changed: Post[]) {
 export function addPosts(posts: Post[]) {
   const s = read();
   write({ ...s, posts: [...s.posts, ...posts] });
+}
+
+export function saveScript(script: Script) {
+  const s = read();
+  const list = s.scripts ?? [];
+  const next = { ...script, updatedAt: Date.now() };
+  write({
+    ...s,
+    scripts: list.some((x) => x.id === script.id)
+      ? list.map((x) => (x.id === script.id ? next : x))
+      : [next, ...list],
+  });
+}
+
+/** Cambia un guion a partir de su versión más reciente (evita pisar cambios simultáneos). */
+export function updateScript(id: string, change: (script: Script) => Script) {
+  const current = (read().scripts ?? []).find((x) => x.id === id);
+  if (current) saveScript(change(current));
+}
+
+export function deleteScript(id: string) {
+  const s = read();
+  write({ ...s, scripts: (s.scripts ?? []).filter((x) => x.id !== id) });
+}
+
+export function newScene(fields: Partial<Scene> = {}): Scene {
+  return {
+    id: crypto.randomUUID(),
+    shot: "",
+    action: "",
+    onScreen: "",
+    audio: "",
+    seconds: "",
+    ...fields,
+  };
+}
+
+export function newScript(project: string, fields: Partial<Script> = {}): Script {
+  return {
+    id: crypto.randomUUID(),
+    project,
+    postId: null,
+    title: "",
+    status: "idea",
+    duration: "",
+    hook: "",
+    scenes: [newScene()],
+    closing: "",
+    notes: "",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    ...fields,
+  };
 }
 
 export function deletePost(id: string) {

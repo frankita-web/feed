@@ -6,8 +6,10 @@ import { useStore } from "@/lib/store";
 import { CalendarView } from "./CalendarView";
 import { DrinksView } from "./DrinksView";
 import { FeedView } from "./FeedView";
+import { GuionesView } from "./GuionesView";
+import { MenuView } from "./MenuView";
 import { ProjectDialog } from "./ProjectDialog";
-import { Sidebar, TAB_ICON, TAB_LABEL, type Tab } from "./Sidebar";
+import { Sidebar, TAB_ICON, TAB_LABEL, tabsFor, type Tab } from "./Sidebar";
 
 export type { Tab };
 
@@ -28,6 +30,8 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
       </main>
     );
 
+  // Sección que este proyecto no tiene (p. ej. Drinks en Issi): vuelve al calendario.
+  if (!tabsFor(project).includes(tab)) tab = "calendario";
   const posts = store.posts.filter((p) => p.project === slug);
 
   return (
@@ -64,6 +68,10 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
           <CalendarView project={project} posts={posts} notes={store.notes} />
         ) : tab === "feed" ? (
           <FeedView project={project} posts={posts} />
+        ) : tab === "guiones" ? (
+          <GuionesView project={project} posts={posts} scripts={store.scripts ?? []} />
+        ) : tab === "menu" ? (
+          <MenuView project={project} />
         ) : (
           <DrinksView project={project} posts={posts} />
         )}

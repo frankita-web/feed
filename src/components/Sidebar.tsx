@@ -6,13 +6,30 @@ import { todayKey, weekRange } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
 import { ProjectDialog } from "./ProjectDialog";
 
-export type Tab = "calendario" | "feed" | "drinks";
+export type Tab = "calendario" | "feed" | "guiones" | "drinks" | "menu";
 
 export const TAB_LABEL: Record<Tab, string> = {
   calendario: "Calendario",
   feed: "Feed",
+  guiones: "Guiones",
   drinks: "Drinks",
+  menu: "Menú",
 };
+
+/** Secciones que tiene cada proyecto (Drinks y Menú solo si los cargó). */
+export function tabsFor(project: Project): Tab[] {
+  return [
+    "calendario",
+    "feed",
+    "guiones",
+    ...(project.drinks ? (["drinks"] as const) : []),
+    ...(project.menu ? (["menu"] as const) : []),
+  ];
+}
+
+/** Misma sección en otro proyecto, o su calendario si no la tiene. */
+const sameTab = (project: Project, tab: Tab) =>
+  tabsFor(project).includes(tab) ? tab : "calendario";
 
 export function tabHref(slug: string, tab: Tab) {
   return tab === "calendario" ? `/proyecto/${slug}` : `/proyecto/${slug}/${tab}`;
@@ -72,6 +89,18 @@ export const TAB_ICON: Record<Tab | "ajustes" | "inicio", ReactNode> = {
   drinks: (
     <Icon>
       <path d="M5 4h14l-7 8zM12 12v8M8 20h8" />
+    </Icon>
+  ),
+  guiones: (
+    <Icon>
+      <path d="M6 3.5h8.5L19 8v12.5H6z" />
+      <path d="M14.5 3.5V8H19M9 12h7M9 15.5h7M9 19h4" />
+    </Icon>
+  ),
+  menu: (
+    <Icon>
+      <path d="M12 6.5c-2-1.6-5-2-8-1.5v14c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5V5c-3-.5-6-.1-8 1.5z" />
+      <path d="M12 6.5V21" />
     </Icon>
   ),
   ajustes: (
@@ -143,7 +172,7 @@ export function Sidebar({
   const thisWeek = posts.filter((p) => p.date && p.date >= from && p.date <= to && pending(p));
   const overdue = posts.filter((p) => p.date && p.date < today && pending(p)).length;
 
-  const tabs: Tab[] = ["calendario", "feed", ...(project.drinks ? (["drinks"] as const) : [])];
+  const tabs = tabsFor(project);
   const badges: Partial<Record<Tab, number>> = { calendario: thisWeek.length || undefined };
 
   return (
@@ -180,7 +209,7 @@ export function Sidebar({
                 {projects.map((p) => (
                   <Link
                     key={p.slug}
-                    href={tabHref(p.slug, tab === "drinks" && !p.drinks ? "calendario" : tab)}
+                    href={tabHref(p.slug, sameTab(p, tab))}
                     onClick={() => setSwitcher(false)}
                     className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-[14px] hover:bg-black/[0.05]"
                   >
@@ -264,7 +293,7 @@ export function Sidebar({
           {projects.map((p) => (
             <Link
               key={p.slug}
-              href={tabHref(p.slug, tab === "drinks" && !p.drinks ? "calendario" : tab)}
+              href={tabHref(p.slug, sameTab(p, tab))}
               className={itemClass(p.slug === project.slug)}
               title={p.name}
             >
@@ -306,7 +335,7 @@ export function Sidebar({
           {projects.map((p) => (
             <Link
               key={p.slug}
-              href={tabHref(p.slug, tab === "drinks" && !p.drinks ? "calendario" : tab)}
+              href={tabHref(p.slug, sameTab(p, tab))}
               className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] ${
                 p.slug === project.slug ? "bg-white font-medium shadow-sm" : "text-ink/70"
               }`}

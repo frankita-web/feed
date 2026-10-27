@@ -69,7 +69,17 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 12;
+export const SEED_VERSION = 13;
+
+/** Menú Cancino Cibeles 2026 (v13). */
+export const CANCINO_MENU: Project["menu"] = {
+  title: "Cancino Cibeles · 2026",
+  pdf: "/menus/cancino-cibeles-2026.pdf",
+  booklets: [
+    { name: "Comida", pages: [1, 2, 3, 4].map((n) => `/menus/cancino/p${n}.jpg`) },
+    { name: "Bebidas", pages: [5, 6, 7, 8].map((n) => `/menus/cancino/p${n}.jpg`) },
+  ],
+};
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
 export const CANCINO_VIDEOS: Record<number, Partial<Post>> = {
@@ -294,6 +304,7 @@ export function seedState(): State {
         pillars: CANCINO_PILLARS,
         ...BRAND_COLORS.cancino,
         logo: "/logos/cancino.svg",
+        menu: CANCINO_MENU,
         drinks: CANCINO_DRINKS,
         drinkPlan: CANCINO_DRINK_PLAN,
       },

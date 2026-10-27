@@ -38,6 +38,8 @@ export type Project = {
   statusColors?: Partial<Record<Status, string>>;
   /** Logo: ruta en /public o id de imagen subida. */
   logo?: string;
+  /** Menú impreso del restaurante (sección Menú). */
+  menu?: Menu;
   /** Carta de drinks (sección Drinks). */
   drinks?: Drink[];
   /** Drink planeado para cada mes. Llave: YYYY-MM. */
@@ -55,6 +57,13 @@ export type Drink = {
 };
 
 export type DrinkPlan = { drink: string; note?: string };
+
+/** Un menú impreso: cada librito con sus páginas en orden (portada, adentro, contraportada). */
+export type Menu = {
+  title: string;
+  pdf?: string;
+  booklets: { name: string; pages: string[] }[];
+};
 
 /** Colores de la marca; si no hay paleta, usa los dos colores de antes. */
 export function paletteOf(project: Project) {
@@ -91,10 +100,46 @@ export type Post = {
   files?: Attachment[];
 };
 
+/** Una toma del guion. */
+export type Scene = {
+  id: string;
+  /** Plano: "detalle de la pizza", "plano medio"… */
+  shot: string;
+  action: string;
+  /** Texto en pantalla. */
+  onScreen: string;
+  /** Voz en off, diálogo o música. */
+  audio: string;
+  seconds: string;
+};
+
+export const SCRIPT_STATUSES = ["idea", "borrador", "listo"] as const;
+
+export type Script = {
+  id: string;
+  project: string;
+  /** Publicación del calendario a la que pertenece el video. */
+  postId: string | null;
+  title: string;
+  status: (typeof SCRIPT_STATUSES)[number];
+  duration: string;
+  /** Primeros 3 segundos. */
+  hook: string;
+  scenes: Scene[];
+  /** Cierre / llamado a la acción. */
+  closing: string;
+  notes: string;
+  /** Conversación con la IA (mensajes del chat). */
+  chat?: unknown[];
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type State = {
   version?: number;
   projects: Project[];
   posts: Post[];
+  scripts?: Script[];
   /** Notas por día (efemérides, recordatorios). Llave: `${slug}:${YYYY-MM-DD}`. */
   notes: Record<string, string>;
 };
