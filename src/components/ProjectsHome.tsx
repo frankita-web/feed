@@ -6,9 +6,9 @@ import { useState, type ReactNode } from "react";
 import { MONTHS, parseKey, shortDate, todayKey, weekRange, weekdayOf } from "@/lib/dates";
 import { useStore } from "@/lib/store";
 import { STATUS_LABEL, type Project, type State } from "@/lib/types";
-import { Folder, Selected } from "./Desktop";
+import { Folder } from "./Desktop";
 import { buttonClass, darkButtonClass } from "./Modal";
-import { Orb, Swatches } from "./Orb";
+import { Orb } from "./Orb";
 import { ProjectDialog } from "./ProjectDialog";
 import { statusColor } from "./PostDialog";
 import { WordWheel } from "./WordWheel";
@@ -30,14 +30,8 @@ export function ProjectsHome() {
 
         {store && (
           <section className="silver mt-6 mb-12 overflow-hidden rounded-[28px] p-6 sm:p-10">
-            <div className="flex flex-wrap items-end justify-between gap-8">
-              <h1 className="text-[clamp(44px,7vw,80px)] leading-[0.92] font-semibold tracking-[-0.06em]">
-                Mis
-                <br />
-                <Selected>Proyectos</Selected>
-              </h1>
-              <ProjectFolders store={store} onCreate={() => setCreating(true)} />
-            </div>
+            <h1 className="sr-only">Mis proyectos</h1>
+            <ProjectFolders store={store} onCreate={() => setCreating(true)} />
             <div className="my-8 border-t border-black/10" />
             <WeekNotice store={store} />
           </section>
@@ -166,7 +160,6 @@ function ProjectFolders({ store, onCreate }: { store: State; onCreate: () => voi
           <span className="rounded px-1 text-[14px] font-semibold group-hover:bg-[#2f6fd6] group-hover:text-white">
             {p.name.toLowerCase()}
           </span>
-          <Swatches project={p} className="mt-0.5" />
         </Link>
       ),
     })),
