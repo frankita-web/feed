@@ -16,7 +16,7 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import type { Post, Project, Scene, Script, State } from "./types";
+import type { Deliverable, Post, Project, Scene, Script, Shoot, State } from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
 const KEY = "feed-planner:v1";
@@ -229,6 +229,71 @@ export function updateScript(id: string, change: (script: Script) => Script) {
 export function deleteScript(id: string) {
   const s = read();
   write({ ...s, scripts: (s.scripts ?? []).filter((x) => x.id !== id) });
+}
+
+export function saveShoot(shoot: Shoot) {
+  const s = read();
+  const list = s.shoots ?? [];
+  write({
+    ...s,
+    shoots: list.some((x) => x.id === shoot.id)
+      ? list.map((x) => (x.id === shoot.id ? shoot : x))
+      : [shoot, ...list],
+  });
+}
+
+/** Cambia un entregable a partir de la versión más reciente de su shoot. */
+export function updateDeliverable(
+  shootId: string,
+  itemId: string,
+  change: (item: Deliverable) => Deliverable,
+) {
+  const shoot = (read().shoots ?? []).find((x) => x.id === shootId);
+  if (shoot)
+    saveShoot({ ...shoot, items: shoot.items.map((i) => (i.id === itemId ? change(i) : i)) });
+}
+
+export function deleteShoot(id: string) {
+  const s = read();
+  write({ ...s, shoots: (s.shoots ?? []).filter((x) => x.id !== id) });
+}
+
+/** Archivo que usa algún entregable (no se borra aunque se quite de un post). */
+export function usedByShoots(fileId: string) {
+  return (read().shoots ?? []).some((sh) =>
+    sh.items.some(
+      (i) => i.cover === fileId || i.slides.includes(fileId) || i.files.some((f) => f.id === fileId),
+    ),
+  );
+}
+
+export function newDeliverable(fields: Partial<Deliverable> = {}): Deliverable {
+  return {
+    id: crypto.randomUUID(),
+    title: "",
+    kind: "Video",
+    status: "pendiente",
+    cover: null,
+    slides: [],
+    files: [],
+    postId: null,
+    ...fields,
+  };
+}
+
+export function newShoot(project: string, fields: Partial<Shoot> = {}): Shoot {
+  return {
+    id: crypto.randomUUID(),
+    project,
+    title: "",
+    date: null,
+    crew: "",
+    due: null,
+    notes: "",
+    items: [],
+    createdAt: Date.now(),
+    ...fields,
+  };
 }
 
 export function newScene(fields: Partial<Scene> = {}): Scene {

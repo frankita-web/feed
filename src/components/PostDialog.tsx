@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { removeImage, storeFile, storeImage, useImageUrl } from "@/lib/images";
-import { deletePost, savePost } from "@/lib/store";
+import { deletePost, savePost, usedByShoots } from "@/lib/store";
 import {
   FORMATS,
   STATUSES,
@@ -29,11 +29,14 @@ export function PostDialog({
   post,
   isNew,
   onClose,
+  onSaved,
 }: {
   project: Project;
   post: Post;
   isNew: boolean;
   onClose: () => void;
+  /** Se llama al guardar (p. ej. para vincular el entregable con el post). */
+  onSaved?: (post: Post) => void;
 }) {
   const [draft, setDraft] = useState(post);
   const [uploading, setUploading] = useState(0);
@@ -44,7 +47,8 @@ export function PostDialog({
   const files = draft.files ?? [];
   const setMedia = (list: string[]) => set({ image: list[0] ?? null, slides: list.slice(1) });
 
-  const removeAll = (ids: string[]) => ids.forEach((id) => removeImage(id));
+  const removeAll = (ids: string[]) =>
+    ids.filter((id) => !usedByShoots(id)).forEach((id) => removeImage(id));
   const without = (a: Post, b: Post) => ownedIds(a).filter((id) => !ownedIds(b).includes(id));
 
   const cancel = () => {
@@ -54,7 +58,9 @@ export function PostDialog({
 
   const save = () => {
     removeAll(without(post, draft));
-    savePost({ ...draft, title: draft.title.trim() });
+    const saved = { ...draft, title: draft.title.trim() };
+    savePost(saved);
+    onSaved?.(saved);
     onClose();
   };
 

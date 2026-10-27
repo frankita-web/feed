@@ -135,8 +135,42 @@ export type Script = {
   updatedAt: number;
 };
 
+export const DELIVERABLE_KINDS = ["Video", "Fotos", "Carrusel", "Otro"] as const;
+
+/** Algo que el fotógrafo / videógrafo tiene que entregar de un shoot. */
+export type Deliverable = {
+  id: string;
+  title: string;
+  kind: (typeof DELIVERABLE_KINDS)[number];
+  status: "pendiente" | "entregado";
+  /** Portada (imagen guardada). */
+  cover: string | null;
+  /** Fotos extra (carrusel). */
+  slides: string[];
+  /** Videos y otros archivos entregados. */
+  files: Attachment[];
+  /** Publicación del feed donde se usó. */
+  postId: string | null;
+};
+
+export type Shoot = {
+  id: string;
+  project: string;
+  title: string;
+  /** Día del shoot. */
+  date: string | null;
+  /** Quién fotografió / grabó. */
+  crew: string;
+  /** Fecha en que prometieron entregar. */
+  due: string | null;
+  notes: string;
+  items: Deliverable[];
+  createdAt: number;
+};
+
 export type State = {
   version?: number;
+  shoots?: Shoot[];
   projects: Project[];
   posts: Post[];
   scripts?: Script[];

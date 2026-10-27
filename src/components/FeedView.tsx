@@ -4,13 +4,22 @@ import { useRef, useState, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { storeImage } from "@/lib/images";
 import { addPosts, newPost, savePosts } from "@/lib/store";
-import type { Post, Project } from "@/lib/types";
+import type { Post, Project, Shoot } from "@/lib/types";
+import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
 import { Logo } from "./Logo";
 import { PostDialog } from "./PostDialog";
 
-export function FeedView({ project, posts }: { project: Project; posts: Post[] }) {
+export function FeedView({
+  project,
+  posts,
+  shoots = [],
+}: {
+  project: Project;
+  posts: Post[];
+  shoots?: Shoot[];
+}) {
   const [editing, setEditing] = useState<Post | null>(null);
   const [uploading, setUploading] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -114,6 +123,7 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-8">
+      <ShootTray project={project} posts={posts} shoots={shoots} />
       <div className="grid items-start gap-10 lg:grid-cols-2">
         {/* Feed actual: solo lo ya subido */}
         <section

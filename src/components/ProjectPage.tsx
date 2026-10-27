@@ -8,6 +8,7 @@ import { DrinksView } from "./DrinksView";
 import { FeedView } from "./FeedView";
 import { GuionesView } from "./GuionesView";
 import { MenuView } from "./MenuView";
+import { ShootsView } from "./ShootsView";
 import { ProjectDialog } from "./ProjectDialog";
 import { Sidebar, TAB_ICON, TAB_LABEL, tabsFor, type Tab } from "./Sidebar";
 
@@ -67,9 +68,11 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
         {tab === "calendario" ? (
           <CalendarView project={project} posts={posts} notes={store.notes} />
         ) : tab === "feed" ? (
-          <FeedView project={project} posts={posts} />
+          <FeedView project={project} posts={posts} shoots={store.shoots} />
         ) : tab === "guiones" ? (
           <GuionesView project={project} posts={posts} scripts={store.scripts ?? []} />
+        ) : tab === "entregables" ? (
+          <ShootsView project={project} posts={posts} shoots={store.shoots ?? []} />
         ) : tab === "menu" ? (
           <MenuView project={project} />
         ) : (
