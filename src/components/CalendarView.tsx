@@ -264,7 +264,7 @@ export function CalendarView({
           </button>
         </div>
 
-        <MonthAnalysis project={project} posts={monthPosts} />
+        <MonthAnalysis project={project} posts={monthPosts} onEdit={edit} />
       </div>
 
       {openDay && (

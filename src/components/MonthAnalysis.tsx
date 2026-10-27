@@ -1,14 +1,29 @@
+"use client";
+
+import { useState } from "react";
+import { shortDate } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
 import { Orb } from "./Orb";
 
 const DONE = "#3d7a5c";
 
 /** "Análisis mensual non negociable": meta del mes y cuántos posts lleva cada categoría. */
-export function MonthAnalysis({ project, posts }: { project: Project; posts: Post[] }) {
+export function MonthAnalysis({
+  project,
+  posts,
+  onEdit,
+}: {
+  project: Project;
+  posts: Post[];
+  onEdit: (post: Post) => void;
+}) {
+  const [showUncategorized, setShowUncategorized] = useState(false);
   const feed = posts.filter((p) => p.format !== "Stories");
   const stories = posts.length - feed.length;
   const missing = Math.max(0, project.monthlyGoal - feed.length);
-  const uncategorized = feed.filter((p) => !p.pillar).length;
+  const uncategorized = feed
+    .filter((p) => !p.pillar)
+    .sort((a, b) => (a.date! < b.date! ? -1 : 1));
 
   return (
     <aside className="silver self-start rounded-[24px] p-6">
@@ -52,10 +67,33 @@ export function MonthAnalysis({ project, posts }: { project: Project; posts: Pos
           })}
         </ul>
       )}
-      {uncategorized > 0 && (
-        <p className="mt-4 text-[12px] text-graphite">
-          {uncategorized} sin categoría
-        </p>
+      {uncategorized.length > 0 && (
+        <div className="mt-4 text-[12px]">
+          <button
+            onClick={() => setShowUncategorized((v) => !v)}
+            className="flex items-center gap-1 text-graphite hover:text-ink"
+            aria-expanded={showUncategorized}
+          >
+            {uncategorized.length} sin categoría
+            <span className={`transition ${showUncategorized ? "rotate-90" : ""}`}>›</span>
+          </button>
+          {showUncategorized && (
+            <ul className="mt-2 space-y-1">
+              {uncategorized.map((post) => (
+                <li key={post.id}>
+                  <button
+                    onClick={() => onEdit(post)}
+                    className="flex w-full items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-white"
+                  >
+                    <span className="w-12 shrink-0 text-graphite">{shortDate(post.date!)}</span>
+                    <span className="flex-1 font-medium">{post.title || "Sin título"}</span>
+                    <span className="text-graphite">Asignar ›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </aside>
   );
