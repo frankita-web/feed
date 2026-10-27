@@ -57,9 +57,18 @@ export function shortDate(key: string) {
 
 /** Lunes y domingo (YYYY-MM-DD) de la semana actual. */
 export function weekRange() {
-  const d = new Date();
-  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
-  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
-  const key = (x: Date) => dateKey(x.getFullYear(), x.getMonth(), x.getDate());
-  return [key(monday), key(sunday)] as const;
+  const monday = mondayOf(todayKey());
+  return [monday, addDays(monday, 6)] as const;
+}
+
+export function addDays(key: string, n: number) {
+  const { year, month, day } = parseKey(key);
+  const d = new Date(year, month, day + n);
+  return dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Lunes de la semana de `key`. */
+export function mondayOf(key: string) {
+  const { year, month, day } = parseKey(key);
+  return addDays(key, -((new Date(year, month, day).getDay() + 6) % 7));
 }

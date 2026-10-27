@@ -6,10 +6,12 @@ export function Modal({
   title,
   onClose,
   children,
+  wide,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  wide?: boolean;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -30,7 +32,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="silver max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] p-7 sm:rounded-[28px]"
+        className={`silver max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] p-7 sm:rounded-[28px] ${wide ? "max-w-4xl" : "max-w-lg"}`}
       >
         <div className="mb-6 flex items-start justify-between gap-4">
           <h2 className="text-2xl leading-tight font-semibold tracking-[-0.03em]">{title}</h2>

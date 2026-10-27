@@ -79,6 +79,15 @@ export async function storeImage(file: File): Promise<string> {
   return id;
 }
 
+/** Guarda cualquier archivo tal cual (videos, PDFs, diseños). */
+export async function storeFile(file: File): Promise<string> {
+  const id = crypto.randomUUID();
+  await run("readwrite", (s) => s.put(file, id));
+  urls.set(id, URL.createObjectURL(file));
+  notify();
+  return id;
+}
+
 export async function removeImage(id: string) {
   if (isStatic(id)) return;
   await run("readwrite", (s) => s.delete(id));

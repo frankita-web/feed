@@ -34,6 +34,14 @@ export type Project = {
   pillars: Pillar[];
 };
 
+/** Archivo adjunto (video, PDF, diseño…) guardado en IndexedDB. */
+export type Attachment = {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+};
+
 export type Post = {
   id: string;
   project: string;
@@ -49,6 +57,11 @@ export type Post = {
   createdAt: number;
   /** Fijado arriba en el perfil de Instagram. */
   pinned?: boolean;
+  /** Hora de publicación, HH:MM. */
+  time?: string;
+  /** Resto de las imágenes del carrusel (la portada es `image`). */
+  slides?: string[];
+  files?: Attachment[];
 };
 
 export type State = {

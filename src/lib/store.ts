@@ -130,6 +130,13 @@ export function savePost(post: Post) {
   });
 }
 
+/** Guarda varias publicaciones de una vez (p. ej. al intercambiar su orden). */
+export function savePosts(changed: Post[]) {
+  const s = read();
+  const byId = new Map(changed.map((p) => [p.id, p]));
+  write({ ...s, posts: s.posts.map((p) => byId.get(p.id) ?? p) });
+}
+
 export function addPosts(posts: Post[]) {
   const s = read();
   write({ ...s, posts: [...s.posts, ...posts] });

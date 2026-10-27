@@ -3,7 +3,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { storeImage } from "@/lib/images";
-import { addPosts, newPost } from "@/lib/store";
+import { addPosts, newPost, savePosts } from "@/lib/store";
 import type { Post, Project } from "@/lib/types";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
@@ -15,6 +15,8 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
   const [uploading, setUploading] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [moving, setMoving] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
@@ -50,18 +52,54 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
     addPosts(created);
   };
 
+  // Reordenar: los posts nuevos intercambian fecha y orden; lo publicado queda fijo.
+  const swap = (fromId: string, to: Post) => {
+    const from = all.find((p) => p.id === fromId);
+    if (!from || from.id === to.id || !isPlanned(from) || !isPlanned(to)) return;
+    savePosts([
+      { ...from, date: to.date, createdAt: to.createdAt },
+      { ...to, date: from.date, createdAt: from.createdAt },
+    ]);
+  };
+
   const LIMIT = 18;
   const grid = (list: Post[], markPlanned: boolean) => (
     <>
       <div className="grid grid-cols-3 gap-[2px]">
-        {(showAll ? list : list.slice(0, LIMIT)).map((post) => (
-          <button key={post.id} onClick={() => setEditing(post)} className="block">
-            <FeedTile
-              post={post}
-              planned={markPlanned && isPlanned(post) ? plannedLabel(post) : undefined}
-            />
-          </button>
-        ))}
+        {(showAll ? list : list.slice(0, LIMIT)).map((post) => {
+          const movable = markPlanned && isPlanned(post);
+          return (
+            <button
+              key={post.id}
+              onClick={() => setEditing(post)}
+              draggable={movable}
+              onDragStart={(e) => {
+                e.dataTransfer.setData("text/plain", post.id);
+                setMoving(post.id);
+              }}
+              onDragEnd={() => {
+                setMoving(null);
+                setTarget(null);
+              }}
+              onDragOver={(e) => {
+                if (!movable || !moving) return;
+                e.preventDefault();
+                setTarget(post.id);
+              }}
+              onDragLeave={() => setTarget((t) => (t === post.id ? null : t))}
+              onDrop={(e) => {
+                e.preventDefault();
+                setTarget(null);
+                swap(e.dataTransfer.getData("text/plain"), post);
+              }}
+              className={`block transition ${movable ? "cursor-grab active:cursor-grabbing" : ""} ${
+                moving === post.id ? "opacity-40" : ""
+              } ${target === post.id && moving !== post.id ? "relative z-10 scale-[1.03] ring-2 ring-ink" : ""}`}
+            >
+              <FeedTile post={post} planned={movable ? plannedLabel(post) : undefined} />
+            </button>
+          );
+        })}
       </div>
       {list.length > LIMIT && (
         <button
@@ -80,6 +118,8 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
         {/* Feed actual: solo lo ya subido */}
         <section
           onDragOver={(e) => {
+            // Solo fotos desde la compu, no posts que se están reordenando
+            if (!e.dataTransfer.types.includes("Files")) return;
             e.preventDefault();
             setDragging(true);
           }}
@@ -137,7 +177,7 @@ export function FeedView({ project, posts }: { project: Project; posts: Post[] }
         <section>
           <ColumnHeader
             title="Con lo nuevo"
-            subtitle={`Así se verá con ${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"}`}
+            subtitle={`Así se verá con ${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} · arrastra para reordenar`}
             action={<Legend />}
           />
           <Phone
