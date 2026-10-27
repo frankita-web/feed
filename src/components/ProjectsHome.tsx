@@ -29,10 +29,18 @@ export function ProjectsHome() {
         </header>
 
         {store && (
-          <>
+          <section className="silver mt-6 mb-12 overflow-hidden rounded-[28px] p-6 sm:p-10">
+            <div className="flex flex-wrap items-end justify-between gap-8">
+              <h1 className="text-[clamp(44px,7vw,80px)] leading-[0.92] font-semibold tracking-[-0.06em]">
+                Mis
+                <br />
+                <Selected>Proyectos</Selected>
+              </h1>
+              <ProjectFolders store={store} onCreate={() => setCreating(true)} />
+            </div>
+            <div className="my-8 border-t border-black/10" />
             <WeekNotice store={store} />
-            <ProjectDesktop store={store} onCreate={() => setCreating(true)} />
-          </>
+          </section>
         )}
 
         <p className="pb-12 text-center text-[12px] text-graphite">hecho con cariño</p>
@@ -69,7 +77,7 @@ function WeekNotice({ store }: { store: State }) {
   const day = (key: string) => `${weekdayOf(key).toLowerCase()} ${parseKey(key).day}`;
 
   return (
-    <section className="silver mt-6 grid items-center gap-6 overflow-hidden rounded-[28px] p-6 sm:grid-cols-[1fr_1.1fr] sm:p-10">
+    <div className="grid items-center gap-6 sm:grid-cols-[1fr_1.1fr]">
       <div className="flex flex-col items-start">
         <p className="flex items-center gap-2 text-[12px] font-medium tracking-[0.08em] uppercase">
           <span className="pulse-dot h-2 w-2 rounded-full" style={{ background: project.accent }} />
@@ -113,7 +121,9 @@ function WeekNotice({ store }: { store: State }) {
             <p className="mt-8 text-2xl font-semibold tracking-[-0.03em]">
               Nada pendiente esta semana
             </p>
-            <p className="mt-1 text-[13px] text-graphite">Todo lo de estos días ya está publicado.</p>
+            <p className="mt-1 text-[13px] text-graphite">
+              Todo lo de estos días ya está publicado.
+            </p>
           </>
         )}
       </div>
@@ -135,17 +145,17 @@ function WeekNotice({ store }: { store: State }) {
               if (post) router.push(`/proyecto/${post.project}`);
             }}
           />
-          <p className="-mt-4 text-center text-[11px] text-graphite">
+          <p className="mt-3 text-center text-[11px] text-graphite">
             Desliza para ver cada una · clic para abrir
           </p>
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
-/** Escritorio: las carpetas de los proyectos en fila, sobre el título. */
-function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => void }) {
+/** Carpetas de los proyectos, en fila. */
+function ProjectFolders({ store, onCreate }: { store: State; onCreate: () => void }) {
   type Item = { key: string; node: ReactNode };
   const items: Item[] = [
     ...store.projects.map((p) => ({
@@ -163,7 +173,10 @@ function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => voi
     {
       key: "__nuevo__",
       node: (
-        <button onClick={onCreate} className="group flex flex-col items-center gap-1 opacity-70 hover:opacity-100">
+        <button
+          onClick={onCreate}
+          className="group flex flex-col items-center gap-1 opacity-70 hover:opacity-100"
+        >
           <Folder className="h-20 w-24 grayscale transition group-hover:-translate-y-1 group-hover:grayscale-0" />
           <span className="text-[14px]">nuevo proyecto</span>
         </button>
@@ -172,17 +185,10 @@ function ProjectDesktop({ store, onCreate }: { store: State; onCreate: () => voi
   ];
 
   return (
-    <div className="my-20 flex flex-col items-center gap-12">
-      <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 sm:gap-x-16">
-        {items.map((item) => (
-          <div key={item.key}>{item.node}</div>
-        ))}
-      </div>
-      <h1 className="text-center text-[clamp(52px,9vw,96px)] leading-[0.92] font-semibold tracking-[-0.06em]">
-        Mis
-        <br />
-        <Selected>Proyectos</Selected>
-      </h1>
+    <div className="flex flex-wrap gap-x-8 gap-y-6">
+      {items.map((item) => (
+        <div key={item.key}>{item.node}</div>
+      ))}
     </div>
   );
 }

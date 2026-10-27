@@ -7,6 +7,8 @@ export type WheelItem = { key: string; label: string; hint?: ReactNode };
 const RADIUS = 520;
 const STEP = 0.066; // radianes entre palabras
 const SPAN = 7; // palabras visibles hacia arriba y hacia abajo
+const ROW = RADIUS * Math.sin(STEP); // alto aproximado de cada palabra
+const PAD = 32;
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
@@ -77,10 +79,16 @@ export function WordWheel({
           touchY.current = e.touches[0].clientY;
         }
       }}
-      className="relative h-[460px] cursor-ns-resize touch-none overflow-hidden outline-none select-none"
-      style={{
-        maskImage: "linear-gradient(transparent, black 18%, black 82%, transparent)",
-      }}
+      className="relative cursor-ns-resize touch-none overflow-hidden outline-none select-none"
+      style={
+        loop
+          ? {
+              height: 460,
+              maskImage: "linear-gradient(transparent, black 18%, black 82%, transparent)",
+            }
+          : // Lista corta: el alto se ajusta a las palabras y la elegida va bajando.
+            { height: PAD * 2 + (items.length - 1) * ROW }
+      }
     >
       {Array.from({ length: SPAN * 2 + 1 }, (_, i) => {
         const d = i - SPAN;
@@ -97,8 +105,9 @@ export function WordWheel({
             aria-selected={selected}
             tabIndex={-1}
             onClick={() => (selected ? onPick(item) : onChange(abs))}
-            className="absolute top-1/2 left-6 flex origin-left -translate-y-1/2 items-center gap-3 text-[22px] whitespace-nowrap transition-[transform,opacity] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
+            className="absolute left-6 flex origin-left -translate-y-1/2 items-center gap-3 text-[22px] whitespace-nowrap transition-[transform,opacity,top] duration-500 ease-[cubic-bezier(.2,.8,.2,1)]"
             style={{
+              top: loop ? "50%" : PAD + index * ROW,
               transform: `translate(${RADIUS * Math.cos(a) - RADIUS}px, ${RADIUS * Math.sin(a)}px) rotate(${a}rad)`,
               opacity: selected ? 1 : Math.max(0, 0.75 - Math.abs(d) * 0.08),
             }}
