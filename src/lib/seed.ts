@@ -8,6 +8,7 @@ const CANCINO_PILLARS: Pillar[] = [
   { name: "Vegano", target: 1 },
   { name: "Barrio", target: 1 },
   { name: "Plato fuerte", target: 1 },
+  { name: "Postre", target: 1 },
 ];
 
 type SeedPost = [
@@ -21,7 +22,7 @@ type SeedPost = [
 // Calendario de Cancino tal como estaba en Canva (oct–dic 2026).
 const CANCINO_POSTS: SeedPost[] = [
   ["2026-10-01", "PDM Ximena", "Reel vertical", "pendiente", "PDM"],
-  ["2026-10-04", "Crumble", "Foto", "pendiente", null],
+  ["2026-10-04", "Crumble", "Foto", "pendiente", "Postre"],
   ["2026-10-08", "Fotos PDM", "Post carrusel", "pendiente", "PDM"],
   ["2026-10-10", "Un día en Cancino Cabrera", "Post carrusel", "pendiente", "Barrio"],
   ["2026-10-15", "Vídeo PDM", "Reel horizontal", "pendiente", "PDM"],
@@ -67,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   pinned: true,
 };
 
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 
 // Feed actual de Crissis (captura del grid, 26 oct). Lo más nuevo primero.
 const CRISSIS_FEED: [date: string | null, title: string, format: Format, caption: string][] = [

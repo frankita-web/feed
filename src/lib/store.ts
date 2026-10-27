@@ -72,12 +72,24 @@ function migrate(s: State): State {
     const ids = new Set(posts.map((p) => p.id));
     posts = [...posts, ...CRISSIS_POSTS.filter((p) => !ids.has(p.id))];
   }
+  let projects = s.projects;
+  // v5: categoría Postre en Cancino, con el crumble.
+  if ((s.version ?? 1) < 5) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" && !p.pillars.some((x) => x.name === "Postre")
+        ? { ...p, pillars: [...p.pillars, { name: "Postre", target: 1 }] }
+        : p,
+    );
+    posts = posts.map((p) =>
+      p.id === "seed-cancino-1" && !p.pillar ? { ...p, pillar: "Postre" } : p,
+    );
+  }
   return {
     ...s,
     version: SEED_VERSION,
     posts,
     notes,
-    projects: s.projects.map((p) => ({
+    projects: projects.map((p) => ({
       ...p,
       ...OLD_COLORS[p.bg],
       instagram: p.instagram || HANDLES[p.slug] || "",
