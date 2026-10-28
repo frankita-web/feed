@@ -203,6 +203,15 @@ export function savePosts(changed: Post[]) {
   write({ ...s, posts: s.posts.map((p) => byId.get(p.id) ?? p) });
 }
 
+/** Guarda varias publicaciones: cambia las que existen y agrega las nuevas. */
+export function upsertPosts(changed: Post[]) {
+  const s = read();
+  const byId = new Map(changed.map((p) => [p.id, p]));
+  const kept = s.posts.map((p) => byId.get(p.id) ?? p);
+  const ids = new Set(s.posts.map((p) => p.id));
+  write({ ...s, posts: [...kept, ...changed.filter((p) => !ids.has(p.id))] });
+}
+
 export function addPosts(posts: Post[]) {
   const s = read();
   write({ ...s, posts: [...s.posts, ...posts] });

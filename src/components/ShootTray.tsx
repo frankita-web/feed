@@ -48,7 +48,7 @@ export function ShootTray({
             Material de shoots
           </h2>
           <p className="mt-1 text-[13px] text-graphite">
-            Lo que ya te entregaron y falta poner en el feed
+            Lo que ya te entregaron · arrástralo al feed o tócalo para ponerle fecha
           </p>
         </div>
         <Link
@@ -79,6 +79,7 @@ export function ShootTray({
                 <TrayItem
                   key={item.id}
                   item={item}
+                  dragId={`deliverable:${shoot.id}:${item.id}`}
                   onUse={() =>
                     setSending({ shoot, item, post: postFromDeliverable(project.slug, item) })
                   }
@@ -111,12 +112,23 @@ export function ShootTray({
   );
 }
 
-function TrayItem({ item, onUse }: { item: Deliverable; onUse: () => void }) {
+function TrayItem({
+  item,
+  dragId,
+  onUse,
+}: {
+  item: Deliverable;
+  /** Lo que se suelta en el feed: "deliverable:<shoot>:<item>". */
+  dragId: string;
+  onUse: () => void;
+}) {
   const cover = useImageUrl(item.cover);
   return (
     <button
       onClick={onUse}
-      className="group relative aspect-[3/4] overflow-hidden rounded-xl bg-[#dedede] text-left"
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData("text/plain", dragId)}
+      className="group relative aspect-[3/4] cursor-grab overflow-hidden rounded-xl bg-[#dedede] text-left active:cursor-grabbing"
       title={`Poner "${item.title}" en el feed`}
     >
       {cover && (

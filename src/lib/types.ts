@@ -93,6 +93,8 @@ export type Post = {
   createdAt: number;
   /** Fijado arriba en el perfil de Instagram. */
   pinned?: boolean;
+  /** Lugar en el feed de un post sin fecha que se acomodó a mano (más alto = más arriba). */
+  order?: number;
   /** Hora de publicación, HH:MM. */
   time?: string;
   /** Resto de las imágenes del carrusel (la portada es `image`). */

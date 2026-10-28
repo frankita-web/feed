@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { useImageUrl } from "@/lib/images";
+import { feedRank } from "@/lib/feed-order";
 import type { Post } from "@/lib/types";
 
 function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
@@ -13,7 +14,14 @@ function FormatIcon({ format, color }: { format: Post["format"]; color: string }
     );
   if (format === "Post carrusel")
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke={color} strokeWidth="2" aria-label="Carrusel">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        aria-label="Carrusel"
+      >
         <rect x="7" y="7" width="13" height="13" rx="2" />
         <path d="M4 16V6a2 2 0 0 1 2-2h10" />
       </svg>
@@ -45,7 +53,11 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
-        <img src={url} alt={post.title} className="absolute inset-0 h-full w-full object-cover object-top" />
+        <img
+          src={url}
+          alt={post.title}
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
       ) : (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
           <span className="text-[15px] leading-tight font-semibold tracking-[-0.02em]">
@@ -93,11 +105,7 @@ export function feedPosts(posts: Post[], slug: string) {
     .filter((p) => p.project === slug && p.format !== "Stories")
     .sort((a, b) => {
       if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-      if (a.date !== b.date) {
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return a.date < b.date ? 1 : -1;
-      }
-      return b.createdAt - a.createdAt;
+      const diff = feedRank(b) - feedRank(a);
+      return diff || b.createdAt - a.createdAt;
     });
 }
