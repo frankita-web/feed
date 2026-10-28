@@ -1,18 +1,31 @@
 import type { Post } from "./types";
 
-/** Por encima de cualquier fecha: lo que se acomoda a mano va arriba de lo publicado. */
+/** Por encima de cualquier fecha: los borradores sin fecha van arriba del feed. */
 const TOP = 9e15;
+/** Por debajo de cualquier fecha: lo publicado sin fecha (traído de Instagram) va al final. */
+const BOTTOM = -9e15;
+const DAY = 86_400_000;
 
 /** Posición en el feed (más alto = más arriba), igual que Instagram: lo más nuevo arriba. */
 export function feedRank(p: Post) {
   if (p.order !== undefined) return p.order;
   if (p.date) return Date.parse(`${p.date}T12:00:00Z`);
-  return p.status === "publicado" ? -Infinity : TOP + p.createdAt;
+  return (p.status === "publicado" ? BOTTOM : TOP) + p.createdAt;
 }
 
-/** Guarda el orden visual elegido (arriba → abajo) sin tocar las fechas. */
-export function arrange(list: Post[]): Post[] {
-  return list.map((p, i) => ({ ...p, order: TOP + (list.length - i) }));
+/**
+ * Pone `moved` (en ese orden) en la posición `at` de `list` (orden visual, arriba → abajo).
+ * Solo cambia el lugar de los que se mueven, sin tocar fechas ni el resto del feed.
+ */
+export function placeAt(list: Post[], moved: Post[], at: number): Post[] {
+  const ids = new Set(moved.map((p) => p.id));
+  const rest = list.filter((p) => !ids.has(p.id));
+  const above = at > 0 ? feedRank(rest[at - 1]) : undefined;
+  const below = at < rest.length ? feedRank(rest[at]) : undefined;
+  const n = moved.length;
+  const hi = above ?? (below === undefined ? TOP + n + 1 : below + DAY * (n + 1));
+  const lo = below ?? hi - DAY * (n + 1);
+  return moved.map((p, k) => ({ ...p, order: hi - ((hi - lo) * (k + 1)) / (n + 1) }));
 }
 
 /**

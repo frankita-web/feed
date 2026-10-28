@@ -36,11 +36,25 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+// Se guarda como bytes + tipo: Safari no siempre acepta guardar Blobs en IndexedDB.
+type Stored = Blob | { type: string; data: ArrayBuffer };
+
+const toBlob = (v: Stored) => (v instanceof Blob ? v : new Blob([v.data], { type: v.type }));
+
+async function put(blob: Blob) {
+  const id = crypto.randomUUID();
+  const value: Stored = { type: blob.type, data: await blob.arrayBuffer() };
+  await run("readwrite", (s) => s.put(value, id));
+  urls.set(id, URL.createObjectURL(blob));
+  notify();
+  return id;
+}
+
 function load(id: string) {
   if (urls.has(id)) return;
   urls.set(id, null);
-  run<Blob | undefined>("readonly", (s) => s.get(id)).then((blob) => {
-    if (blob) urls.set(id, URL.createObjectURL(blob));
+  run<Stored | undefined>("readonly", (s) => s.get(id)).then((value) => {
+    if (value) urls.set(id, URL.createObjectURL(toBlob(value)));
     notify();
   });
 }
@@ -72,20 +86,12 @@ export async function storeImage(file: File): Promise<string> {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob"))), "image/jpeg", 0.85),
   );
 
-  const id = crypto.randomUUID();
-  await run("readwrite", (s) => s.put(blob, id));
-  urls.set(id, URL.createObjectURL(blob));
-  notify();
-  return id;
+  return put(blob);
 }
 
 /** Guarda cualquier archivo tal cual (videos, PDFs, diseños). */
 export async function storeFile(file: File): Promise<string> {
-  const id = crypto.randomUUID();
-  await run("readwrite", (s) => s.put(file, id));
-  urls.set(id, URL.createObjectURL(file));
-  notify();
-  return id;
+  return put(file);
 }
 
 export async function removeImage(id: string) {

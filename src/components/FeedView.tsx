@@ -2,10 +2,10 @@
 
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
-import { arrange, datesFollowOrder, outOfOrder } from "@/lib/feed-order";
+import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
-import { addPosts, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
+import { deletePost, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
 import type { Post, Project, Shoot } from "@/lib/types";
 import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
@@ -43,80 +43,65 @@ export function FeedView({
   const plannedCount = all.length - published.length;
   const handle = project.instagram || project.name.toLowerCase();
 
-  // Lo ya publicado entra sin fecha, en el orden elegido (la primera foto = la más reciente).
-  const importPublished = async (files: FileList | null) => {
-    const list = Array.from(files ?? []).filter((f) => f.type.startsWith("image/"));
-    if (!list.length) return;
-    setUploading(list.length);
-    const base = Date.now();
-    const created: Post[] = [];
-    for (const [i, file] of list.entries()) {
-      created.push(
-        newPost(project.slug, {
-          image: await storeImage(file),
-          status: "publicado",
-          format: "Foto",
-          title: file.name.replace(/\.[^.]+$/, ""),
-          createdAt: base - i,
-        }),
-      );
-      setUploading(list.length - i - 1);
-    }
-    addPosts(created);
-  };
-
-  // Planear el feed: los posts nuevos se acomodan a mano; lo publicado queda fijo, como en Instagram.
+  // Lo nuevo que no calza con su fecha de publicación (en Instagram lo más nuevo queda arriba).
   const planned = all.filter((p) => isPlanned(p) && !p.pinned);
-  // Lo acomodado a mano que no calza con su fecha de publicación.
   const mismatched = outOfOrder(planned);
 
-  /** Inserta posts (nuevos o movidos) antes de `before`, o arriba de todo. */
-  const place = (moved: Post[], before?: Post) => {
+  type Column = "actual" | "nuevo";
+  const listOf = (column: Column) =>
+    (column === "actual" ? published : all).filter((p) => !p.pinned);
+
+  /** Pone posts (nuevos o movidos) justo antes de `before`, o arriba de todo. */
+  const place = (moved: Post[], column: Column, before?: Post) => {
     const ids = new Set(moved.map((p) => p.id));
-    const rest = planned.filter((p) => !ids.has(p.id));
-    const at = before && !ids.has(before.id) ? rest.indexOf(before) : 0;
-    upsertPosts(
-      arrange([...rest.slice(0, Math.max(0, at)), ...moved, ...rest.slice(Math.max(0, at))]),
-    );
+    const rest = listOf(column).filter((p) => !ids.has(p.id));
+    const at = before && !ids.has(before.id) ? Math.max(0, rest.indexOf(before)) : 0;
+    upsertPosts(placeAt(rest, moved, at));
   };
 
-  /** Fotos o videos desde la compu: cada archivo es un post nuevo sin fecha. */
-  const addFiles = async (files: FileList | File[], before?: Post) => {
+  /** Fotos o videos desde la compu: un post por archivo, en el lugar donde se soltaron. */
+  const addFiles = async (files: FileList | File[], column: Column, before?: Post) => {
     const list = Array.from(files).filter((f) => /^(image|video)\//.test(f.type));
     if (!list.length) return;
     setUploading(list.length);
     const created: Post[] = [];
     for (const file of list) {
-      const media = await storeMedia([file], false);
-      const isVideo = file.type.startsWith("video/");
+      const media = await storeMedia([file], false).catch(() => null);
+      if (!media) {
+        alert(`No se pudo guardar "${file.name}" en este navegador.`);
+        setUploading((n) => n - 1);
+        continue;
+      }
       created.push(
         newPost(project.slug, {
           title: file.name.replace(/\.[^.]+$/, ""),
-          format: isVideo ? "Reel vertical" : "Foto",
+          format: file.type.startsWith("video/") ? "Reel vertical" : "Foto",
+          status: column === "actual" ? "publicado" : "pendiente",
           image: media.cover,
           files: media.files,
         }),
       );
       setUploading((n) => n - 1);
     }
-    place(created, before);
+    if (created.length) place(created, column, before);
   };
 
-  /** Soltar algo sobre el feed planeado: archivos, material de un shoot o un post que se mueve. */
-  const dropOn = async (e: DragEvent, before?: Post) => {
+  /** Soltar algo en el feed: archivos, material de un shoot o una foto que se mueve. */
+  const dropOn = async (e: DragEvent, column: Column, before?: Post) => {
     e.preventDefault();
     e.stopPropagation();
     setTarget(null);
     setPlanDrop(false);
+    setDragging(false);
     setMoving(null);
     const files = Array.from(e.dataTransfer.files);
     if (files.length) {
-      // Una foto sobre un espacio vacío: se vuelve su portada.
+      // Una foto sobre un espacio sin foto: se vuelve su portada.
       if (before && !before.image && files.length === 1 && files[0].type.startsWith("image/")) {
         upsertPosts([{ ...before, image: await storeImage(files[0]) }]);
         return;
       }
-      return addFiles(files, before);
+      return addFiles(files, column, before);
     }
     const data = e.dataTransfer.getData("text/plain");
     if (data.startsWith("deliverable:")) {
@@ -124,27 +109,39 @@ export function FeedView({
       const item = shoots.find((s) => s.id === shootId)?.items.find((i) => i.id === itemId);
       if (!item) return;
       const post = postFromDeliverable(project.slug, item);
-      place([post], before);
+      place([post], "nuevo", column === "nuevo" ? before : undefined);
       linkDeliverableToPost(shootId, itemId, post.id);
       return;
     }
-    const from = planned.find((p) => p.id === data);
-    if (from && from.id !== before?.id) place([from], before);
+    const from = all.find((p) => p.id === data);
+    if (from && !from.pinned && from.id !== before?.id) place([from], column, before);
+  };
+
+  const remove = (post: Post) => {
+    if (
+      confirm(`¿Quitar "${post.title || "esta foto"}" del feed? También se borra del calendario.`)
+    )
+      deletePost(post.id);
   };
 
   const LIMIT = 18;
-  const grid = (list: Post[], markPlanned: boolean) => (
+  const grid = (list: Post[], column: Column) => (
     <>
       <div className="grid grid-cols-3 gap-[2px]">
         {(showAll ? list : list.slice(0, LIMIT)).map((post) => {
-          const movable = markPlanned && isPlanned(post) && !post.pinned;
+          const movable = !post.pinned;
+          const isNew = column === "nuevo" && isPlanned(post);
           return (
-            <button
+            <div
               key={post.id}
+              role="button"
+              tabIndex={0}
               onClick={() => setEditing(post)}
+              onKeyDown={(e) => e.key === "Enter" && setEditing(post)}
               draggable={movable}
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/plain", post.id);
+                e.dataTransfer.effectAllowed = "move";
                 setMoving(post.id);
               }}
               onDragEnd={() => {
@@ -157,13 +154,36 @@ export function FeedView({
                 setTarget(post.id);
               }}
               onDragLeave={() => setTarget((t) => (t === post.id ? null : t))}
-              onDrop={(e) => movable && dropOn(e, post)}
-              className={`block transition ${movable ? "cursor-grab active:cursor-grabbing" : ""} ${
+              onDrop={(e) => movable && dropOn(e, column, post)}
+              className={`group relative block outline-none ${movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
                 moving === post.id ? "opacity-40" : ""
-              } ${target === post.id && moving !== post.id ? "relative z-10 shadow-[inset_4px_0_0_0_#161616] brightness-95" : ""}`}
+              } ${target === post.id && moving !== post.id ? "z-10 shadow-[inset_4px_0_0_0_#161616] brightness-95" : ""}`}
             >
-              <FeedTile post={post} planned={movable ? plannedLabel(post) : undefined} />
-            </button>
+              <FeedTile post={post} planned={isNew ? plannedLabel(post) : undefined} />
+              <div className="absolute right-1.5 bottom-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditing(post);
+                  }}
+                  className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
+                  title="Editar: foto, fecha, copy…"
+                >
+                  ✎ Editar
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    remove(post);
+                  }}
+                  className="h-7 w-7 rounded-full bg-white/95 text-[13px] shadow"
+                  aria-label="Quitar del feed"
+                  title="Quitar del feed"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           );
         })}
       </div>
@@ -194,12 +214,12 @@ export function FeedView({
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
-            importPublished(e.dataTransfer.files);
+            dropOn(e, "actual");
           }}
         >
           <ColumnHeader
             title="Feed actual"
-            subtitle="Lo que ya está subido en Instagram"
+            subtitle="Lo que ya está subido · arrastra para corregir el orden"
             action={
               <button
                 onClick={() => fileRef.current?.click()}
@@ -217,7 +237,7 @@ export function FeedView({
             multiple
             className="hidden"
             onChange={(e) => {
-              importPublished(e.target.files);
+              if (e.target.files) addFiles(e.target.files, "actual");
               e.target.value = "";
             }}
           />
@@ -228,7 +248,7 @@ export function FeedView({
             highlight={dragging}
           >
             {published.length ? (
-              grid(published, false)
+              grid(published, "actual")
             ) : (
               <EmptyFeed handle={project.instagram} onUpload={() => fileRef.current?.click()} />
             )}
@@ -249,7 +269,7 @@ export function FeedView({
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) setPlanDrop(false);
           }}
-          onDrop={(e) => dropOn(e)}
+          onDrop={(e) => dropOn(e, "nuevo")}
         >
           <ColumnHeader
             title="Con lo nuevo"
@@ -271,7 +291,7 @@ export function FeedView({
             multiple
             className="hidden"
             onChange={(e) => {
-              if (e.target.files) addFiles(e.target.files);
+              if (e.target.files) addFiles(e.target.files, "nuevo");
               e.target.value = "";
             }}
           />
@@ -282,7 +302,7 @@ export function FeedView({
             highlight={planDrop}
           >
             {all.length ? (
-              grid(all, true)
+              grid(all, "nuevo")
             ) : (
               <p className="px-6 pb-12 text-center text-[13px] text-graphite">
                 Arrastra fotos aquí o usa “+ Agregar fotos”.
