@@ -69,7 +69,7 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
         {tab === "calendario" ? (
           <CalendarView project={project} posts={posts} notes={store.notes} />
         ) : tab === "feed" ? (
-          <FeedView project={project} posts={posts} shoots={store.shoots} />
+          <FeedView project={project} posts={posts} shoots={store.shoots} bank={store.bank} />
         ) : tab === "guiones" ? (
           <GuionesView project={project} posts={posts} scripts={store.scripts ?? []} />
         ) : tab === "ideas" ? (

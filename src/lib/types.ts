@@ -190,8 +190,20 @@ export type Idea = {
   createdAt: number;
 };
 
+/** Foto o video del banco: material listo que todavía no está en el feed. */
+export type BankItem = {
+  id: string;
+  project: string;
+  name: string;
+  /** Imagen (o portada del video). */
+  image: string | null;
+  files: Attachment[];
+  createdAt: number;
+};
+
 export type State = {
   version?: number;
+  bank?: BankItem[];
   ideas?: Idea[];
   shoots?: Shoot[];
   projects: Project[];

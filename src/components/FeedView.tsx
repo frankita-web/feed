@@ -5,8 +5,9 @@ import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
-import { deletePost, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
-import type { Post, Project, Shoot } from "@/lib/types";
+import { bankToFeed, feedToBank, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
+import type { BankItem, Post, Project, Shoot } from "@/lib/types";
+import { BankPanel } from "./BankPanel";
 import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
@@ -17,10 +18,12 @@ export function FeedView({
   project,
   posts,
   shoots = [],
+  bank = [],
 }: {
   project: Project;
   posts: Post[];
   shoots?: Shoot[];
+  bank?: BankItem[];
 }) {
   const [editing, setEditing] = useState<Post | null>(null);
   const [uploading, setUploading] = useState(0);
@@ -47,16 +50,29 @@ export function FeedView({
   const planned = all.filter((p) => isPlanned(p) && !p.pinned);
   const mismatched = outOfOrder(planned);
 
+  // Lo publicado es fijo: solo "Con lo nuevo" se acomoda. Lo subido entra arriba del feed actual.
   type Column = "actual" | "nuevo";
-  const listOf = (column: Column) =>
-    (column === "actual" ? published : all).filter((p) => !p.pinned);
+  const listOf = (column: Column) => (column === "actual" ? published : planned);
 
-  /** Pone posts (nuevos o movidos) justo antes de `before`, o arriba de todo. */
-  const place = (moved: Post[], column: Column, before?: Post) => {
+  /** Posts (nuevos o movidos) puestos justo antes de `before`, o arriba de todo. */
+  const positioned = (moved: Post[], column: Column, before?: Post) => {
     const ids = new Set(moved.map((p) => p.id));
-    const rest = listOf(column).filter((p) => !ids.has(p.id));
+    const rest = listOf(column).filter((p) => !ids.has(p.id) && !p.pinned);
     const at = before && !ids.has(before.id) ? Math.max(0, rest.indexOf(before)) : 0;
-    upsertPosts(placeAt(rest, moved, at));
+    return placeAt(rest, moved, at);
+  };
+  const place = (moved: Post[], column: Column, before?: Post) =>
+    upsertPosts(positioned(moved, column, before));
+
+  /** Una foto del banco pasa al feed planeado. */
+  const fromBank = (item: BankItem, before?: Post) => {
+    const post = newPost(project.slug, {
+      title: item.name,
+      image: item.image,
+      files: item.files,
+      format: item.files.some((f) => f.type.startsWith("video/")) ? "Reel vertical" : "Foto",
+    });
+    bankToFeed(item.id, positioned([post], "nuevo", before));
   };
 
   /** Fotos o videos desde la compu: un post por archivo, en el lugar donde se soltaron. */
@@ -104,24 +120,32 @@ export function FeedView({
       return addFiles(files, column, before);
     }
     const data = e.dataTransfer.getData("text/plain");
+    if (column === "actual") return; // lo publicado no se mueve
+    if (data.startsWith("bank:")) {
+      const item = bank.find((b) => b.id === data.slice(5));
+      if (item) fromBank(item, before);
+      return;
+    }
     if (data.startsWith("deliverable:")) {
       const [, shootId, itemId] = data.split(":");
       const item = shoots.find((s) => s.id === shootId)?.items.find((i) => i.id === itemId);
       if (!item) return;
       const post = postFromDeliverable(project.slug, item);
-      place([post], "nuevo", column === "nuevo" ? before : undefined);
+      place([post], "nuevo", before);
       linkDeliverableToPost(shootId, itemId, post.id);
       return;
     }
-    const from = all.find((p) => p.id === data);
-    if (from && !from.pinned && from.id !== before?.id) place([from], column, before);
+    const from = planned.find((p) => p.id === data);
+    if (from && from.id !== before?.id) place([from], "nuevo", before);
   };
 
   const remove = (post: Post) => {
     if (
-      confirm(`¿Quitar "${post.title || "esta foto"}" del feed? También se borra del calendario.`)
+      confirm(
+        `¿Sacar "${post.title || "esta foto"}" del feed? Se borra del calendario y la foto vuelve al banco.`,
+      )
     )
-      deletePost(post.id);
+      feedToBank(post);
   };
 
   const LIMIT = 18;
@@ -129,15 +153,16 @@ export function FeedView({
     <>
       <div className="grid grid-cols-3 gap-[2px]">
         {(showAll ? list : list.slice(0, LIMIT)).map((post) => {
-          const movable = !post.pinned;
+          // Solo lo nuevo, en "Con lo nuevo", se mueve y se edita.
+          const movable = column === "nuevo" && isPlanned(post) && !post.pinned;
           const isNew = column === "nuevo" && isPlanned(post);
           return (
             <div
               key={post.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => setEditing(post)}
-              onKeyDown={(e) => e.key === "Enter" && setEditing(post)}
+              role={movable ? "button" : undefined}
+              tabIndex={movable ? 0 : undefined}
+              onClick={() => movable && setEditing(post)}
+              onKeyDown={(e) => movable && e.key === "Enter" && setEditing(post)}
               draggable={movable}
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/plain", post.id);
@@ -155,34 +180,36 @@ export function FeedView({
               }}
               onDragLeave={() => setTarget((t) => (t === post.id ? null : t))}
               onDrop={(e) => movable && dropOn(e, column, post)}
-              className={`group relative block outline-none ${movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
+              className={`group relative block outline-none ${movable ? "cursor-grab active:cursor-grabbing" : ""} ${
                 moving === post.id ? "opacity-40" : ""
               } ${target === post.id && moving !== post.id ? "z-10 shadow-[inset_4px_0_0_0_#161616] brightness-95" : ""}`}
             >
               <FeedTile post={post} planned={isNew ? plannedLabel(post) : undefined} />
-              <div className="absolute right-1.5 bottom-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditing(post);
-                  }}
-                  className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
-                  title="Editar: foto, fecha, copy…"
-                >
-                  ✎ Editar
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    remove(post);
-                  }}
-                  className="h-7 w-7 rounded-full bg-white/95 text-[13px] shadow"
-                  aria-label="Quitar del feed"
-                  title="Quitar del feed"
-                >
-                  ×
-                </button>
-              </div>
+              {movable && (
+                <div className="absolute right-1.5 bottom-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditing(post);
+                    }}
+                    className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
+                    title="Editar: foto, fecha, copy…"
+                  >
+                    ✎ Editar
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      remove(post);
+                    }}
+                    className="h-7 w-7 rounded-full bg-white/95 text-[13px] shadow"
+                    aria-label="Sacar del feed"
+                    title="Sacar del feed (vuelve al banco)"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -200,6 +227,7 @@ export function FeedView({
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-8">
+      <BankPanel project={project} bank={bank} onUse={(item) => fromBank(item)} />
       <ShootTray project={project} posts={posts} shoots={shoots} />
       <div className="grid items-start gap-10 lg:grid-cols-2">
         {/* Feed actual: solo lo ya subido */}
@@ -219,7 +247,7 @@ export function FeedView({
         >
           <ColumnHeader
             title="Feed actual"
-            subtitle="Lo que ya está subido · arrastra para corregir el orden"
+            subtitle="Lo que ya está publicado en Instagram (fijo)"
             action={
               <button
                 onClick={() => fileRef.current?.click()}

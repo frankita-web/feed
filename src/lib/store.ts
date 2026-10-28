@@ -16,7 +16,17 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import type { Deliverable, Idea, Post, Project, Scene, Script, Shoot, State } from "./types";
+import type {
+  BankItem,
+  Deliverable,
+  Idea,
+  Post,
+  Project,
+  Scene,
+  Script,
+  Shoot,
+  State,
+} from "./types";
 
 // Todo vive en el navegador (localStorage + IndexedDB para imágenes).
 const KEY = "feed-planner:v1";
@@ -124,6 +134,12 @@ function migrate(s: State): State {
       p.slug === "cancino" && !p.logo ? { ...p, logo: "/logos/cancino.svg" } : p,
     );
   }
+  // v14: lo publicado no se acomoda a mano (vuelve a su orden real).
+  if ((s.version ?? 1) < 14) {
+    posts = posts.map((p) =>
+      p.status === "publicado" && p.order !== undefined ? { ...p, order: undefined } : p,
+    );
+  }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {
     projects = projects.map((p) =>
@@ -210,6 +226,46 @@ export function upsertPosts(changed: Post[]) {
   const kept = s.posts.map((p) => byId.get(p.id) ?? p);
   const ids = new Set(s.posts.map((p) => p.id));
   write({ ...s, posts: [...kept, ...changed.filter((p) => !ids.has(p.id))] });
+}
+
+export function addToBank(items: BankItem[]) {
+  const s = read();
+  write({ ...s, bank: [...items, ...(s.bank ?? [])] });
+}
+
+export function removeFromBank(id: string) {
+  const s = read();
+  write({ ...s, bank: (s.bank ?? []).filter((x) => x.id !== id) });
+}
+
+/** Pasa una foto del banco al feed (en una sola escritura). */
+export function bankToFeed(id: string, posts: Post[]) {
+  const s = read();
+  const byId = new Map(posts.map((p) => [p.id, p]));
+  const ids = new Set(s.posts.map((p) => p.id));
+  write({
+    ...s,
+    bank: (s.bank ?? []).filter((x) => x.id !== id),
+    posts: [...s.posts.map((p) => byId.get(p.id) ?? p), ...posts.filter((p) => !ids.has(p.id))],
+  });
+}
+
+/** Saca un post nuevo del feed y devuelve su foto al banco. */
+export function feedToBank(post: Post) {
+  const s = read();
+  const item: BankItem = {
+    id: crypto.randomUUID(),
+    project: post.project,
+    name: post.title,
+    image: post.image,
+    files: post.files ?? [],
+    createdAt: Date.now(),
+  };
+  write({
+    ...s,
+    posts: s.posts.filter((p) => p.id !== post.id),
+    bank: post.image || post.files?.length ? [item, ...(s.bank ?? [])] : s.bank,
+  });
 }
 
 export function addPosts(posts: Post[]) {
