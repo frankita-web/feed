@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useBank } from "@/lib/bank";
 import { useStore } from "@/lib/store";
+import { AnalysisView } from "./AnalysisView";
 import { CalendarView } from "./CalendarView";
 import { DrinksView } from "./DrinksView";
 import { FeedView } from "./FeedView";
@@ -84,6 +85,8 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
             ideas={store.ideas ?? []}
             scripts={store.scripts ?? []}
           />
+        ) : tab === "analisis" ? (
+          <AnalysisView project={project} posts={posts} />
         ) : tab === "menu" ? (
           <MenuView project={project} />
         ) : (

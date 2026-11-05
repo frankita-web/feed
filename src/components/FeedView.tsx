@@ -4,6 +4,7 @@ import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
+import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
 import { bankToFeed, feedToBank, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
@@ -13,6 +14,7 @@ import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
 import { buttonClass, darkButtonClass } from "./Modal";
 import { Logo } from "./Logo";
+import { PdfButton } from "./PdfButton";
 import { PostDialog } from "./PostDialog";
 
 export function FeedView({
@@ -149,6 +151,17 @@ export function FeedView({
     )
       feedToBank(post);
   };
+
+  /** Para el cliente: todo lo nuevo y las últimas 12 ya publicadas, para ver cómo calza. */
+  const downloadPdf = () =>
+    feedPdf(
+      project,
+      [
+        ...all.filter(isPlanned).map((post) => ({ post, label: plannedLabel(post) })),
+        ...published.slice(0, 12).map((post) => ({ post })),
+      ],
+      `@${handle} · ${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} sobre el feed actual`,
+    );
 
   const LIMIT = 18;
   const grid = (list: Post[], column: Column) => (
@@ -305,13 +318,16 @@ export function FeedView({
             title="Con lo nuevo"
             subtitle={`${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} · arrastra para acomodar`}
             action={
-              <button
-                onClick={() => planRef.current?.click()}
-                disabled={uploading > 0}
-                className={darkButtonClass}
-              >
-                {uploading ? `Subiendo… (${uploading})` : "+ Agregar fotos"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <PdfButton make={downloadPdf} />
+                <button
+                  onClick={() => planRef.current?.click()}
+                  disabled={uploading > 0}
+                  className={darkButtonClass}
+                >
+                  {uploading ? `Subiendo… (${uploading})` : "+ Agregar fotos"}
+                </button>
+              </div>
             }
           />
           <input

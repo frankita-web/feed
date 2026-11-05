@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type DragEvent } from "react";
 import { removeImage, storeFile, storeImage, useImageUrl } from "@/lib/images";
+import { storeMedia } from "@/lib/media";
 import { deletePost, savePost, usedByShoots } from "@/lib/store";
 import {
   FORMATS,
@@ -16,6 +17,8 @@ import { StatusDot } from "./Status";
 
 const NO_PILLAR = "Sin categoría";
 const CAPTION_LIMIT = 2200; // máximo de Instagram
+
+const isVideo = (f: Attachment) => f.type.startsWith("video/");
 
 /** Imágenes y archivos guardados en el navegador que pertenecen a un post. */
 const ownedIds = (p: Post) =>
@@ -45,6 +48,7 @@ export function PostDialog({
 
   const media = [draft.image, ...(draft.slides ?? [])].filter((id): id is string => !!id);
   const files = draft.files ?? [];
+  const videos = files.filter(isVideo);
   const setMedia = (list: string[]) => set({ image: list[0] ?? null, slides: list.slice(1) });
 
   const removeAll = (ids: string[]) =>
@@ -71,19 +75,39 @@ export function PostDialog({
     onClose();
   };
 
-  const addImages = async (list: File[]) => {
-    const images = list.filter((f) => f.type.startsWith("image/"));
-    if (!images.length) return;
-    setUploading(images.length);
-    const ids: string[] = [];
-    for (const file of images) {
-      ids.push(await storeImage(file));
-      setUploading((n) => n - 1);
+  /** Fotos y videos desde la compu. Un video sin portada usa uno de sus cuadros. */
+  const addMedia = async (list: File[]) => {
+    const chosen = list.filter((f) => /^(image|video)\//.test(f.type));
+    if (!chosen.length) return;
+    setUploading(chosen.length);
+    try {
+      const added = await storeMedia(chosen, media.length > 0);
+      const ids = [added.cover, ...added.slides].filter((id): id is string => !!id);
+      setDraft((d) => {
+        const next = [d.image, ...(d.slides ?? [])].filter((id): id is string => !!id).concat(ids);
+        return {
+          ...d,
+          image: next[0] ?? null,
+          slides: next.slice(1),
+          files: [...(d.files ?? []), ...added.files],
+        };
+      });
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo agregar ese archivo.");
     }
+    setUploading(0);
+  };
+
+  /** Un cuadro del video pasa a ser la portada. */
+  const useFrame = async (frame: File) => {
+    const id = await storeImage(frame);
     setDraft((d) => {
-      const next = [d.image, ...(d.slides ?? [])].filter((id): id is string => !!id).concat(ids);
-      return { ...d, image: next[0] ?? null, slides: next.slice(1) };
+      const current = [d.image, ...(d.slides ?? [])].filter((x): x is string => !!x);
+      const next = current.length > 1 ? [id, ...current] : [id];
+      return { ...d, image: next[0], slides: next.slice(1) };
     });
+    setView(0);
   };
 
   const addFiles = async (list: File[]) => {
@@ -98,8 +122,17 @@ export function PostDialog({
   };
 
   const removeMedia = (i: number) => {
-    setMedia(media.filter((_, j) => j !== i));
-    setView((v) => Math.max(0, Math.min(v, media.length - 2)));
+    if (i < media.length) setMedia(media.filter((_, j) => j !== i));
+    else set({ files: files.filter((f) => f.id !== videos[i - media.length].id) });
+    setView((v) => Math.max(0, Math.min(v, media.length + videos.length - 2)));
+  };
+
+  const moveMedia = (from: number, to: number) => {
+    if (to < 0 || to >= media.length || from === to) return;
+    const next = [...media];
+    next.splice(to, 0, ...next.splice(from, 1));
+    setMedia(next);
+    setView(to);
   };
 
   const makeCover = (i: number) => {
@@ -120,15 +153,18 @@ export function PostDialog({
         <div className="space-y-6">
           <Carousel
             media={media}
-            view={Math.min(view, Math.max(0, media.length - 1))}
+            videos={videos}
+            view={Math.min(view, Math.max(0, media.length + videos.length - 1))}
             onView={setView}
             onRemove={removeMedia}
             onCover={makeCover}
-            onAdd={addImages}
+            onMove={moveMedia}
+            onFrame={useFrame}
+            onAdd={addMedia}
             uploading={uploading > 0}
           />
           <Files
-            files={files}
+            files={files.filter((f) => !isVideo(f))}
             onAdd={addFiles}
             onRemove={(id) => set({ files: files.filter((f) => f.id !== id) })}
           />
@@ -262,24 +298,56 @@ export function PostDialog({
 
 function Carousel({
   media,
+  videos,
   view,
   onView,
   onRemove,
   onCover,
+  onMove,
+  onFrame,
   onAdd,
   uploading,
 }: {
   media: string[];
+  videos: Attachment[];
   view: number;
   onView: (i: number) => void;
   onRemove: (i: number) => void;
   onCover: (i: number) => void;
+  onMove: (from: number, to: number) => void;
+  onFrame: (frame: File) => void;
   onAdd: (files: File[]) => void;
   uploading: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const url = useImageUrl(media[view] ?? null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
+  const total = media.length + videos.length;
+  const video = view >= media.length ? videos[view - media.length] : undefined;
+  const url = useImageUrl(video ? video.id : (media[view] ?? null));
   const pick = () => inputRef.current?.click();
+
+  const captureFrame = async () => {
+    const el = videoRef.current;
+    if (!el?.videoWidth) return;
+    el.pause();
+    const canvas = document.createElement("canvas");
+    canvas.width = el.videoWidth;
+    canvas.height = el.videoHeight;
+    canvas.getContext("2d")!.drawImage(el, 0, 0);
+    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.92));
+    if (blob) onFrame(new File([blob], "portada.jpg", { type: "image/jpeg" }));
+  };
+
+  const dropOnThumb = (e: DragEvent, i: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragged !== null) onMove(dragged, i);
+    else onAdd(Array.from(e.dataTransfer.files));
+    setDragged(null);
+    setOver(null);
+  };
 
   return (
     <div>
@@ -291,7 +359,16 @@ function Carousel({
         }}
         className="relative aspect-[3/4] w-full overflow-hidden rounded-2xl border-[3px] border-white bg-[#dedede] shadow-md"
       >
-        {url ? (
+        {video && url ? (
+          <video
+            key={video.id}
+            ref={videoRef}
+            src={url}
+            controls
+            playsInline
+            className="absolute inset-0 h-full w-full bg-black object-contain"
+          />
+        ) : url ? (
           // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
           <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
         ) : (
@@ -301,13 +378,13 @@ function Carousel({
             className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-[13px] text-graphite hover:text-ink"
           >
             <span className="text-2xl">+</span>
-            {uploading ? "Subiendo…" : "Sube o arrastra la portada"}
+            {uploading ? "Subiendo…" : "Sube o arrastra fotos o videos"}
           </button>
         )}
-        {media.length > 1 && (
+        {total > 1 && (
           <>
             <span className="absolute top-3 right-3 rounded-full bg-ink/70 px-2 py-0.5 text-[11px] text-white">
-              {view + 1}/{media.length}
+              {view + 1}/{total}
             </span>
             {view > 0 && (
               <button
@@ -319,7 +396,7 @@ function Carousel({
                 ‹
               </button>
             )}
-            {view < media.length - 1 && (
+            {view < total - 1 && (
               <button
                 type="button"
                 onClick={() => onView(view + 1)}
@@ -331,21 +408,47 @@ function Carousel({
             )}
           </>
         )}
-        {media.length > 0 && (
+        {total > 0 && !video && (
           <div className="absolute inset-x-3 bottom-3 flex justify-between gap-2">
-            {view === 0 ? (
-              <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium">
-                Portada
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onCover(view)}
-                className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium hover:bg-white"
-              >
-                Hacer portada
-              </button>
-            )}
+            <div className="flex gap-1.5">
+              {view === 0 ? (
+                <span className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium">
+                  Portada
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onCover(view)}
+                  className="rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-medium hover:bg-white"
+                >
+                  Hacer portada
+                </button>
+              )}
+              {media.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    disabled={view === 0}
+                    onClick={() => onMove(view, view - 1)}
+                    className="h-6 w-6 rounded-full bg-white/90 text-[12px] hover:bg-white disabled:opacity-40"
+                    aria-label="Mover antes"
+                    title="Mover antes"
+                  >
+                    ←
+                  </button>
+                  <button
+                    type="button"
+                    disabled={view === media.length - 1}
+                    onClick={() => onMove(view, view + 1)}
+                    className="h-6 w-6 rounded-full bg-white/90 text-[12px] hover:bg-white disabled:opacity-40"
+                    aria-label="Mover después"
+                    title="Mover después"
+                  >
+                    →
+                  </button>
+                </>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => onRemove(view)}
@@ -357,26 +460,82 @@ function Carousel({
         )}
       </div>
 
+      {video && (
+        <div className="mt-3 rounded-xl border border-black/10 bg-white/80 p-3">
+          <p className="text-[12px] text-graphite">
+            Pausa el video en el momento que te guste y úsalo de portada.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button type="button" onClick={captureFrame} className={darkButtonClass}>
+              Usar este cuadro de portada
+            </button>
+            {url && (
+              <a
+                href={url}
+                download={video.name}
+                className="text-[13px] text-graphite hover:text-ink"
+              >
+                Bajar
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => onRemove(view)}
+              className="ml-auto text-[13px] text-graphite hover:text-ink"
+            >
+              Quitar video
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         {media.map((id, i) => (
-          <Thumb key={id} id={id} active={i === view} onClick={() => onView(i)} />
+          <Thumb
+            key={id}
+            id={id}
+            active={i === view}
+            cover={i === 0}
+            target={over === i && dragged !== null && dragged !== i}
+            onClick={() => onView(i)}
+            onDragStart={() => setDragged(i)}
+            onDragEnd={() => {
+              setDragged(null);
+              setOver(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setOver(i);
+            }}
+            onDrop={(e) => dropOnThumb(e, i)}
+          />
+        ))}
+        {videos.map((file, i) => (
+          <VideoThumb
+            key={file.id}
+            id={file.id}
+            active={media.length + i === view}
+            onClick={() => onView(media.length + i)}
+          />
         ))}
         <button
           type="button"
           onClick={pick}
           className="flex h-16 w-12 items-center justify-center rounded-lg border border-dashed border-ink/30 text-lg text-graphite hover:border-ink hover:text-ink"
-          aria-label="Agregar imágenes al carrusel"
+          aria-label="Agregar fotos o videos"
         >
           +
         </button>
       </div>
       <p className="mt-1.5 text-[11px] text-graphite">
-        Carrusel: agrega varias fotos. La primera es la portada del feed.
+        {media.length > 1
+          ? "Arrastra las miniaturas para cambiar el orden. La primera es la portada del feed."
+          : "Agrega fotos o videos con el +. La primera foto es la portada del feed."}
       </p>
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -388,20 +547,84 @@ function Carousel({
   );
 }
 
-function Thumb({ id, active, onClick }: { id: string; active: boolean; onClick: () => void }) {
+function Thumb({
+  id,
+  active,
+  cover,
+  target,
+  onClick,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+}: {
+  id: string;
+  active: boolean;
+  cover: boolean;
+  target: boolean;
+  onClick: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onDragOver: (e: DragEvent) => void;
+  onDrop: (e: DragEvent) => void;
+}) {
+  const url = useImageUrl(id);
+  return (
+    <button
+      type="button"
+      draggable
+      onClick={onClick}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      title="Arrastra para cambiar el orden"
+      className={`relative h-16 w-12 cursor-grab overflow-hidden rounded-lg bg-[#dedede] transition active:cursor-grabbing ${
+        target
+          ? "ring-2 ring-ink ring-offset-2 scale-105"
+          : active
+            ? "ring-2 ring-ink ring-offset-2"
+            : "opacity-70 hover:opacity-100"
+      }`}
+    >
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
+        <img src={url} alt="" draggable={false} className="h-full w-full object-cover" />
+      )}
+      {cover && (
+        <span className="absolute inset-x-0 bottom-0 bg-ink/70 text-center text-[8px] text-white">
+          Portada
+        </span>
+      )}
+    </button>
+  );
+}
+
+function VideoThumb({
+  id,
+  active,
+  onClick,
+}: {
+  id: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   const url = useImageUrl(id);
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`h-16 w-12 overflow-hidden rounded-lg bg-[#dedede] transition ${
+      aria-label="Ver video"
+      className={`relative h-16 w-12 overflow-hidden rounded-lg bg-black transition ${
         active ? "ring-2 ring-ink ring-offset-2" : "opacity-70 hover:opacity-100"
       }`}
     >
       {url && (
-        // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
-        <img src={url} alt="" className="h-full w-full object-cover" />
+        <video src={url} muted playsInline preload="metadata" className="h-full w-full object-cover" />
       )}
+      <span className="absolute inset-0 flex items-center justify-center text-[14px] text-white">
+        ▶
+      </span>
     </button>
   );
 }
@@ -427,7 +650,7 @@ function Files({
           onClick={() => inputRef.current?.click()}
           className={`${buttonClass} w-full border-dashed`}
         >
-          + Adjuntar video, PDF o diseño
+          + Adjuntar PDF o diseño
         </button>
         <input
           ref={inputRef}
@@ -446,13 +669,11 @@ function Files({
 
 function FileRow({ file, onRemove }: { file: Attachment; onRemove: () => void }) {
   const url = useImageUrl(file.id);
-  const isVideo = file.type.startsWith("video/");
   const size =
     file.size > 1e6 ? `${(file.size / 1e6).toFixed(1)} MB` : `${Math.ceil(file.size / 1e3)} KB`;
 
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-white/80">
-      {isVideo && url && <video src={url} controls className="max-h-56 w-full bg-black" />}
       <div className="flex items-center gap-3 px-3 py-2 text-[13px]">
         <span className="rounded bg-ink/5 px-1.5 py-0.5 text-[10px] font-medium uppercase">
           {file.name.split(".").pop()?.slice(0, 4) || "file"}

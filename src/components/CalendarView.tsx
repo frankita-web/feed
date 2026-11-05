@@ -16,9 +16,11 @@ import {
   weekdayOf,
 } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
+import { calendarPdf } from "@/lib/pdf";
 import { newPost, saveNote, savePost } from "@/lib/store";
 import { STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/types";
 import { MonthAnalysis } from "./MonthAnalysis";
+import { PdfButton } from "./PdfButton";
 import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
 import { PostDialog } from "./PostDialog";
 import { StatusDot } from "./Status";
@@ -146,7 +148,10 @@ export function CalendarView({
             ))}
           </nav>
         </div>
-        <Legend project={project} />
+        <div className="flex flex-wrap items-center gap-4">
+          <Legend project={project} />
+          <PdfButton make={() => calendarPdf(project, monthPosts, year, month)} />
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
