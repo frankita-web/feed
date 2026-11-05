@@ -140,6 +140,10 @@ function migrate(s: State): State {
       p.status === "publicado" && p.order !== undefined ? { ...p, order: undefined } : p,
     );
   }
+  // v15: "A base de plantas" vuelve a quedar fijada en Cancino.
+  if ((s.version ?? 1) < 15) {
+    posts = posts.map((p) => (p.id === CANCINO_PINNED.id ? { ...p, pinned: true } : p));
+  }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {
     projects = projects.map((p) =>

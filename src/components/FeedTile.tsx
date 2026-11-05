@@ -85,10 +85,18 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
         />
       )}
       {/* Las fotos traídas de Instagram ya traen su ícono */}
-      {(planned || !url) && (
+      {(planned || !url) && !post.pinned && (
         <div className="absolute top-2.5 right-2.5 drop-shadow">
           <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
         </div>
+      )}
+      {post.pinned && (
+        <span
+          className="absolute top-2.5 right-2.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-medium text-white"
+          title="Fijada en el perfil"
+        >
+          Fijada
+        </span>
       )}
       {planned && (
         <>

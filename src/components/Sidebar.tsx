@@ -375,19 +375,19 @@ export function Sidebar({
             </Link>
           ))}
         </div>
-        <nav className="mt-2.5 flex gap-1 text-[13px]">
+        <nav className="mt-2.5 flex gap-1 overflow-x-auto text-[13px] whitespace-nowrap">
           {tabs.map((t) => (
             <Link
               key={t}
               href={tabHref(project.slug, t)}
-              className={`rounded-full px-3 py-1.5 ${
+              className={`shrink-0 rounded-full px-3 py-1.5 ${
                 tab === t ? "bg-ink font-medium text-white" : "text-ink/70"
               }`}
             >
               {TAB_LABEL[t]}
             </Link>
           ))}
-          <button onClick={onSettings} className="rounded-full px-3 py-1.5 text-ink/70">
+          <button onClick={onSettings} className="shrink-0 rounded-full px-3 py-1.5 text-ink/70">
             Ajustes
           </button>
         </nav>

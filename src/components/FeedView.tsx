@@ -7,7 +7,14 @@ import { storeImage } from "@/lib/images";
 import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
-import { bankToFeed, feedToBank, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
+import {
+  bankToFeed,
+  feedToBank,
+  linkDeliverableToPost,
+  newPost,
+  savePost,
+  upsertPosts,
+} from "@/lib/store";
 import type { BankItem, Post, Project, Shoot } from "@/lib/types";
 import { BankPanel } from "./BankPanel";
 import { ShootTray } from "./ShootTray";
@@ -171,10 +178,10 @@ export function FeedView({
           return (
             <div
               key={post.id}
-              role={movable ? "button" : undefined}
-              tabIndex={movable ? 0 : undefined}
-              onClick={() => movable && setEditing(post)}
-              onKeyDown={(e) => movable && e.key === "Enter" && setEditing(post)}
+              role="button"
+              tabIndex={0}
+              onClick={() => setEditing(post)}
+              onKeyDown={(e) => e.key === "Enter" && setEditing(post)}
               draggable={movable}
               onDragStart={(e) => {
                 e.dataTransfer.setData("text/plain", post.id);
@@ -192,23 +199,33 @@ export function FeedView({
               }}
               onDragLeave={() => setTarget((t) => (t === post.id ? null : t))}
               onDrop={(e) => movable && dropOn(e, column, post)}
-              className={`group relative block outline-none ${movable ? "cursor-grab active:cursor-grabbing" : ""} ${
+              className={`group relative block outline-none ${movable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
                 moving === post.id ? "opacity-40" : ""
               } ${target === post.id && moving !== post.id ? "z-10 shadow-[inset_4px_0_0_0_#161616] brightness-95" : ""}`}
             >
               <FeedTile post={post} planned={isNew ? plannedLabel(post) : undefined} />
-              {movable && (
-                <div className="absolute right-1.5 bottom-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditing(post);
-                    }}
-                    className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
-                    title="Editar: foto, fecha, copy…"
-                  >
-                    ✎ Editar
-                  </button>
+              <div className="absolute right-1.5 bottom-1.5 flex gap-1 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    savePost({ ...post, pinned: !post.pinned });
+                  }}
+                  className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
+                  title="Las fijadas van primero en el feed"
+                >
+                  {post.pinned ? "Desfijar" : "Fijar"}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditing(post);
+                  }}
+                  className="h-7 rounded-full bg-white/95 px-2.5 text-[11px] font-medium shadow"
+                  title="Editar: foto, fecha, copy…"
+                >
+                  ✎ Editar
+                </button>
+                {movable && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -220,8 +237,8 @@ export function FeedView({
                   >
                     ×
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           );
         })}
