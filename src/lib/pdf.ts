@@ -9,6 +9,7 @@ import {
   dateKey,
   daysInMonth,
   leadingBlanks,
+  monthKey,
   shortDate,
   todayKey,
 } from "./dates";
@@ -152,17 +153,26 @@ const fileName = (project: Project, what: string) => `${project.name} - ${what}.
 
 type FeedItem = { post: Post; label?: string };
 
-/** Todo lo nuevo y las últimas 12 ya publicadas, para ver cómo calza en el perfil. */
-function feedItems(project: Project, posts: Post[]): FeedItem[] {
+/** Cuántos posts anteriores se muestran, para ver cómo empalma con lo que ya está. */
+const PREVIOUS = 3;
+
+/**
+ * Con mes: los posts de ese mes y los 3 anteriores a que empiece.
+ * Sin mes: todo lo nuevo y los últimos 3 ya publicados.
+ */
+function feedItems(project: Project, posts: Post[], month?: string): FeedItem[] {
   const today = todayKey();
   const all = feedPosts(posts, project.slug);
   const isNew = (p: Post) => p.status !== "publicado";
   const label = (p: Post) =>
     p.date ? `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}` : "Nuevo · sin fecha";
-  return [
-    ...all.filter(isNew).map((post) => ({ post, label: label(post) })),
-    ...all.filter((p) => !isNew(p)).slice(0, 12).map((post) => ({ post })),
-  ];
+  const item = (post: Post) => ({ post, label: isNew(post) ? label(post) : undefined });
+  if (month)
+    return [
+      ...all.filter((p) => p.date?.startsWith(month)),
+      ...all.filter((p) => p.date && p.date < month).slice(0, PREVIOUS),
+    ].map(item);
+  return [...all.filter(isNew), ...all.filter((p) => !isNew(p)).slice(0, PREVIOUS)].map(item);
 }
 
 const feedSubtitle = (project: Project, items: FeedItem[]) => {
@@ -177,9 +187,14 @@ async function feedPages(doc: jsPDF, project: Project, items: FeedItem[]) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const gap = 1.5;
-  const width = (pageWidth - MARGIN * 2 - gap * 2) / 3;
-  const height = (width * 4) / 3;
   const top = MARGIN + 20;
+  // Hasta 5 filas entran en una página: los cuadros se achican en vez de saltar a otra hoja.
+  const rows = Math.min(5, Math.max(3, Math.ceil(items.length / 3)));
+  const fullWidth = (pageWidth - MARGIN * 2 - gap * 2) / 3;
+  const roomHeight = (pageHeight - MARGIN - top - gap * (rows - 1)) / rows;
+  const height = Math.min((fullWidth * 4) / 3, roomHeight);
+  const width = (height * 3) / 4;
+  const left = (pageWidth - width * 3 - gap * 2) / 2;
   const images = await Promise.all(items.map(({ post }) => picture(post.image, 540, 720)));
 
   header(doc, `${project.name} · Feed`, subtitle);
@@ -190,7 +205,7 @@ async function feedPages(doc: jsPDF, project: Project, items: FeedItem[]) {
       doc.addPage("a4", "portrait");
       y = MARGIN;
     }
-    const x = MARGIN + (i % 3) * (width + gap);
+    const x = left + (i % 3) * (width + gap);
     const image = images[i];
     doc.setFillColor("#ececec").rect(x, y, width, height, "F");
     if (image) doc.addImage(image, "JPEG", x, y, width, height);
@@ -381,7 +396,7 @@ export async function calendarPdf(
   }
 
   doc.addPage("a4", "portrait");
-  await feedPages(doc, project, feedItems(project, allPosts));
+  await feedPages(doc, project, feedItems(project, allPosts, monthKey(year, month)));
   await detailPages(doc, dated, `${monthName} ${year} · Detalle`, project.name);
 
   doc.save(fileName(project, `Calendario ${monthName} ${year}`));
