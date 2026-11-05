@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { BANK_LIMIT, deleteBankItem, useBank } from "@/lib/bank";
 import { useImageUrl } from "@/lib/images";
 import { storeMedia } from "@/lib/media";
-import { addToBank, removeFromBank } from "@/lib/store";
+import { addToBank } from "@/lib/store";
 import type { BankItem, Project } from "@/lib/types";
 import { buttonClass } from "./Modal";
 
@@ -22,10 +23,19 @@ export function BankPanel({
   const [uploading, setUploading] = useState(0);
   const [over, setOver] = useState(false);
   const mine = bank.filter((b) => b.project === project.slug);
+  const { moving, failed, used } = useBank();
+  const megas = (bytes: number) => Math.round(bytes / 1024 ** 2);
 
   const upload = async (files: File[]) => {
     const list = files.filter((f) => /^(image|video)\//.test(f.type));
     if (!list.length) return;
+    const size = list.reduce((sum, f) => sum + f.size, 0);
+    if (used + size > BANK_LIMIT) {
+      alert(
+        `No cabe: el banco usa ${megas(used)} MB de 1 GB y esto pesa ${megas(size)} MB. Quita algo del banco primero.`,
+      );
+      return;
+    }
     setUploading(list.length);
     const items: BankItem[] = [];
     for (const file of list) {
@@ -75,6 +85,13 @@ export function BankPanel({
               ? `${mine.length} sin subir · arrástralas a “Con lo nuevo” para probar dónde van`
               : "Sube aquí las fotos y videos que todavía no van al feed"}
           </p>
+          <p className="mt-0.5 text-[11px] text-graphite">
+            {failed
+              ? `Quedan ${moving} sin guardar en internet: siguen en este navegador y se reintenta al volver a entrar.`
+              : moving
+                ? `Guardando en internet… faltan ${moving}. No cierres la página.`
+                : `Guardado en internet · ${megas(used)} MB de 1 GB`}
+          </p>
         </div>
         <button
           onClick={() => inputRef.current?.click()}
@@ -99,7 +116,12 @@ export function BankPanel({
       {mine.length ? (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {mine.map((item) => (
-            <BankTile key={item.id} item={item} onUse={() => onUse(item)} />
+            <BankTile
+              key={item.id}
+              item={item}
+              onUse={() => onUse(item)}
+              onRemove={() => deleteBankItem(item)}
+            />
           ))}
         </div>
       ) : (
@@ -114,7 +136,15 @@ export function BankPanel({
   );
 }
 
-function BankTile({ item, onUse }: { item: BankItem; onUse: () => void }) {
+function BankTile({
+  item,
+  onUse,
+  onRemove,
+}: {
+  item: BankItem;
+  onUse: () => void;
+  onRemove: () => void;
+}) {
   const url = useImageUrl(item.image);
   const video = item.files.some((f) => f.type.startsWith("video/"));
   return (
@@ -142,7 +172,7 @@ function BankTile({ item, onUse }: { item: BankItem; onUse: () => void }) {
           Al feed
         </button>
         <button
-          onClick={() => confirm("¿Quitar del banco?") && removeFromBank(item.id)}
+          onClick={() => confirm("¿Quitar del banco? Se borra también de internet.") && onRemove()}
           className="h-6 w-6 rounded-full bg-white/95 text-[12px] shadow"
           aria-label="Quitar del banco"
         >

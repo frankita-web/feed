@@ -5,6 +5,7 @@ import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
+import { takeFromBank } from "@/lib/bank";
 import { bankToFeed, feedToBank, linkDeliverableToPost, newPost, upsertPosts } from "@/lib/store";
 import type { BankItem, Post, Project, Shoot } from "@/lib/types";
 import { BankPanel } from "./BankPanel";
@@ -73,6 +74,7 @@ export function FeedView({
       format: item.files.some((f) => f.type.startsWith("video/")) ? "Reel vertical" : "Foto",
     });
     bankToFeed(item.id, positioned([post], "nuevo", before));
+    takeFromBank(item.id);
   };
 
   /** Fotos o videos desde la compu: un post por archivo, en el lugar donde se soltaron. */

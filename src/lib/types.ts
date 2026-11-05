@@ -198,6 +198,8 @@ export type BankItem = {
   /** Imagen (o portada del video). */
   image: string | null;
   files: Attachment[];
+  /** Tamaño guardado en internet. */
+  bytes?: number;
   createdAt: number;
 };
 

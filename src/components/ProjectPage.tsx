@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useBank } from "@/lib/bank";
 import { useStore } from "@/lib/store";
 import { CalendarView } from "./CalendarView";
 import { DrinksView } from "./DrinksView";
@@ -18,6 +19,7 @@ export type { Tab };
 export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
   const store = useStore();
   const [settings, setSettings] = useState(false);
+  const bank = useBank(store?.bank);
 
   if (!store) return <div className="flex-1" />;
 
@@ -69,7 +71,7 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
         {tab === "calendario" ? (
           <CalendarView project={project} posts={posts} notes={store.notes} />
         ) : tab === "feed" ? (
-          <FeedView project={project} posts={posts} shoots={store.shoots} bank={store.bank} />
+          <FeedView project={project} posts={posts} shoots={store.shoots} bank={bank.items} />
         ) : tab === "guiones" ? (
           <GuionesView project={project} posts={posts} scripts={store.scripts ?? []} />
         ) : tab === "ideas" ? (

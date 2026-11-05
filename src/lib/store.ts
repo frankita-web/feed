@@ -28,7 +28,7 @@ import type {
   State,
 } from "./types";
 
-// Todo vive en el navegador (localStorage + IndexedDB para imágenes).
+// Vive en el navegador (localStorage + IndexedDB para imágenes), salvo el banco: ver bank.ts.
 const KEY = "feed-planner:v1";
 
 let state: State | null = null;
@@ -236,6 +236,26 @@ export function addToBank(items: BankItem[]) {
 export function removeFromBank(id: string) {
   const s = read();
   write({ ...s, bank: (s.bank ?? []).filter((x) => x.id !== id) });
+}
+
+/** Lo del banco que todavía no llega a internet. */
+export const localBank = () => read().bank ?? [];
+export const dropLocalBankItem = removeFromBank;
+
+export function updateLocalBankItem(item: BankItem) {
+  const s = read();
+  write({ ...s, bank: (s.bank ?? []).map((x) => (x.id === item.id ? item : x)) });
+}
+
+/** Archivo del navegador que sigue en uso por una publicación o un entregable. */
+export function usedLocally(fileId: string) {
+  return (
+    usedByShoots(fileId) ||
+    read().posts.some(
+      (p) =>
+        p.image === fileId || p.slides?.includes(fileId) || p.files?.some((f) => f.id === fileId),
+    )
+  );
 }
 
 /** Pasa una foto del banco al feed (en una sola escritura). */

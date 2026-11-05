@@ -59,8 +59,17 @@ function load(id: string) {
   });
 }
 
-// Las imágenes incluidas en el sitio (public/) se usan directo por su ruta.
+// Las imágenes del sitio (public/) y las guardadas en internet (/api/media/…) se usan por su ruta.
 const isStatic = (id: string) => id.startsWith("/");
+const isRemote = (id: string) => id.startsWith("/api/media/");
+
+/** Archivo guardado solo en este navegador. */
+export const isLocal = (id: string) => !isStatic(id);
+
+export async function readLocal(id: string) {
+  const value = await run<Stored | undefined>("readonly", (s) => s.get(id));
+  return value ? toBlob(value) : null;
+}
 
 export function useImageUrl(id: string | null) {
   const url = useSyncExternalStore(
@@ -95,6 +104,10 @@ export async function storeFile(file: File): Promise<string> {
 }
 
 export async function removeImage(id: string) {
+  if (isRemote(id)) {
+    await fetch(id, { method: "DELETE" });
+    return;
+  }
   if (isStatic(id)) return;
   await run("readwrite", (s) => s.delete(id));
   urls.delete(id);
