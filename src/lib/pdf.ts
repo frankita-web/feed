@@ -4,6 +4,7 @@ import type { jsPDF } from "jspdf";
 import { statusColor } from "@/components/Status";
 import { MONTHS, WEEKDAYS, dateKey, daysInMonth, leadingBlanks, shortDate } from "./dates";
 import { readLocal } from "./images";
+import { linkUrl } from "./media";
 import type { Report } from "./report";
 import { STATUSES, STATUS_LABEL, type Post, type Project } from "./types";
 
@@ -109,6 +110,16 @@ export async function feedPdf(
     else {
       doc.setTextColor(GRAPHITE).setFontSize(9);
       doc.text(fit(doc, post.title || "Sin foto", width - 8, 3), x + 4, y + height / 2);
+    }
+    const video = linkUrl(post.videoLink);
+    if (video) {
+      doc.link(x, y, width, height, { url: video });
+      doc.setFont("helvetica", "bold").setFontSize(8);
+      const text = "Ver video";
+      const pill = doc.getTextWidth(text) + 6;
+      doc.setFillColor("#ffffff").roundedRect(x + (width - pill) / 2, y + height - 9, pill, 6, 3, 3, "F");
+      doc.setTextColor(INK).text(text, x + width / 2, y + height - 4.8, { align: "center" });
+      doc.setFont("helvetica", "normal");
     }
     if (label) {
       doc.setFont("helvetica", "bold").setFontSize(7.5);
@@ -245,6 +256,8 @@ export async function calendarPdf(project: Project, posts: Post[], year: number,
       const image = thumbs.get(post.id);
       doc.setFillColor("#ececec").rect(x + 1.5, rowY, thumbWidth, thumbHeight, "F");
       if (image) doc.addImage(image, "JPEG", x + 1.5, rowY, thumbWidth, thumbHeight);
+      const video = linkUrl(post.videoLink);
+      if (video) doc.link(x + 1.5, rowY, cellWidth - 3, thumbHeight, { url: video });
       doc.setFillColor(statusColor(post.status, project));
       doc.circle(textX + 0.9, rowY + 1.4, 0.9, "F");
       doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(INK);
@@ -287,7 +300,14 @@ export async function calendarPdf(project: Project, posts: Post[], year: number,
       post.pillar,
       STATUS_LABEL[post.status],
     ].filter(Boolean);
-    doc.text(clean(facts.join(" · ")), x, y + 10.5);
+    const line = clean(facts.join(" · "));
+    doc.text(line, x, y + 10.5);
+    const video = linkUrl(post.videoLink);
+    if (video) {
+      doc.setFont("helvetica", "bold").setTextColor("#0b57d0");
+      doc.textWithLink("Ver video", x + doc.getTextWidth(line) + 5, y + 10.5, { url: video });
+      doc.setFont("helvetica", "normal");
+    }
     if (post.caption) {
       doc.setFontSize(9.5).setTextColor(INK);
       doc.text(fit(doc, post.caption, width, 6), x, y + 16.5);

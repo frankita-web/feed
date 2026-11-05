@@ -4,6 +4,12 @@ import { newPost } from "./store";
 import { storeFile, storeImage } from "./images";
 import type { Attachment, Deliverable, Format, Post } from "./types";
 
+/** Link listo para abrir (acepta que se pegue sin https://). */
+export function linkUrl(link?: string) {
+  if (!link) return undefined;
+  return /^https?:\/\//i.test(link) ? link : `https://${link}`;
+}
+
 /** Primer cuadro de un video (a los 0.5 s) como imagen, para usarlo de portada. */
 async function videoFrame(file: File): Promise<File | null> {
   const url = URL.createObjectURL(file);

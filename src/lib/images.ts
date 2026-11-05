@@ -66,6 +66,10 @@ const isRemote = (id: string) => id.startsWith("/api/media/");
 /** Archivo guardado solo en este navegador. */
 export const isLocal = (id: string) => !isStatic(id);
 
+/** Todos los archivos guardados en este navegador. */
+export const localFileIds = async () =>
+  (await run<IDBValidKey[]>("readonly", (s) => s.getAllKeys())).map(String);
+
 export async function readLocal(id: string) {
   const value = await run<Stored | undefined>("readonly", (s) => s.get(id));
   return value ? toBlob(value) : null;

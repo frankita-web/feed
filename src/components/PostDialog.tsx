@@ -2,7 +2,7 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { removeImage, storeFile, storeImage, useImageUrl } from "@/lib/images";
-import { storeMedia } from "@/lib/media";
+import { linkUrl, storeMedia } from "@/lib/media";
 import { deletePost, savePost, usedByShoots } from "@/lib/store";
 import {
   FORMATS,
@@ -239,6 +239,31 @@ export function PostDialog({
                 </button>
               ))}
             </div>
+          </Field>
+
+          <Field label="Link del video">
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                className={inputClass}
+                value={draft.videoLink ?? ""}
+                placeholder="Pega aquí el link de Dropbox"
+                onChange={(e) => set({ videoLink: e.target.value.trim() || undefined })}
+              />
+              {linkUrl(draft.videoLink) && (
+                <a
+                  href={linkUrl(draft.videoLink)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-[13px] text-graphite hover:text-ink"
+                >
+                  Abrir ↗
+                </a>
+              )}
+            </div>
+            <span className="mt-1 block text-[11px] text-graphite">
+              En el PDF aparece un botón “Ver video” para apretarlo.
+            </span>
           </Field>
 
           <label className="flex cursor-pointer items-center gap-2 text-[13px]">

@@ -22,6 +22,10 @@ export function MonthAnalysis({
   const feed = posts.filter((p) => p.format !== "Stories");
   const stories = posts.length - feed.length;
   const missing = Math.max(0, project.monthlyGoal - feed.length);
+  // Un post de más en una categoría no reemplaza al que falta en otra.
+  const short = project.pillars
+    .map((p) => ({ name: p.name, left: p.target - feed.filter((x) => x.pillar === p.name).length }))
+    .filter((p) => p.left > 0);
   const uncategorized = feed
     .filter((p) => !p.pillar)
     .sort((a, b) => (a.date! < b.date! ? -1 : 1));
@@ -41,7 +45,11 @@ export function MonthAnalysis({
         <span className="text-graphite/50">/{project.monthlyGoal}</span>
       </p>
       <p className="mt-2 text-[12px] text-graphite">
-        {missing ? `Faltan ${missing} posts` : "Meta cumplida"}
+        {missing
+          ? `Faltan ${missing} posts`
+          : short.length
+            ? `Total listo · falta ${short.map((p) => `${p.left} ${p.name}`).join(", ")}`
+            : "Meta cumplida"}
         {stories > 0 && ` · ${stories} ${stories === 1 ? "story" : "stories"}`}
       </p>
 

@@ -9,7 +9,8 @@ async function readList() {
   const result = await get(LIST, { access: "private", useCache: false });
   if (result?.statusCode !== 200) return { items: [] as BankItem[], etag: undefined };
   const items = (await new Response(result.stream).json()) as BankItem[];
-  return { items, etag: result.blob.etag };
+  // Los archivos grandes llegan con la marca "W/", que el almacenamiento no acepta al guardar.
+  return { items, etag: result.blob.etag.replace(/^W\//, "") };
 }
 
 /** Cambia la lista sin pisar lo que otro dispositivo haya guardado al mismo tiempo. */

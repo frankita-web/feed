@@ -79,6 +79,8 @@ export type Attachment = {
 };
 
 export type Post = {
+  /** Link para ver el video (Dropbox u otro); en el PDF queda para apretarlo. */
+  videoLink?: string;
   id: string;
   project: string;
   /** YYYY-MM-DD. `null` = publicado antes de usar el planner (solo aparece en el feed). */

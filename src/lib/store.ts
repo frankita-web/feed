@@ -173,7 +173,13 @@ function write(next: State) {
   listeners.forEach((l) => l());
 }
 
+let rescueStarted = false;
+
 function subscribe(listener: () => void) {
+  if (!rescueStarted) {
+    rescueStarted = true;
+    import("./rescate").then(({ rescue }) => rescue()).catch(console.error);
+  }
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
     if (e.key !== KEY) return;
