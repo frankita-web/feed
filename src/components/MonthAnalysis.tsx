@@ -20,7 +20,6 @@ export function MonthAnalysis({
   const [showUncategorized, setShowUncategorized] = useState(false);
   const DONE = statusColor("listo", project);
   const feed = posts.filter((p) => p.format !== "Stories");
-  const stories = posts.length - feed.length;
   const missing = Math.max(0, project.monthlyGoal - feed.length);
   // Un post de más en una categoría no reemplaza al que falta en otra.
   const short = project.pillars
@@ -50,7 +49,6 @@ export function MonthAnalysis({
           : short.length
             ? `Total listo · falta ${short.map((p) => `${p.left} ${p.name}`).join(", ")}`
             : "Meta cumplida"}
-        {stories > 0 && ` · ${stories} ${stories === 1 ? "story" : "stories"}`}
       </p>
 
       {project.pillars.length > 0 && (

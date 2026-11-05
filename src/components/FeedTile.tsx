@@ -69,13 +69,16 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
       {videoUrl && (
         <video
           ref={videoRef}
-          src={videoUrl}
+          src={url ? videoUrl : `${videoUrl}#t=0.1`}
           poster={url ?? undefined}
           muted
           loop
           playsInline
-          preload="none"
-          className="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-300 [&:not([data-paused])]:opacity-100"
+          preload={url ? "none" : "metadata"}
+          // Sin portada, el mismo video hace de portada.
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+            url ? "opacity-0 [&:not([data-paused])]:opacity-100" : ""
+          }`}
           data-paused=""
           onPlay={(e) => e.currentTarget.removeAttribute("data-paused")}
           onPause={(e) => e.currentTarget.setAttribute("data-paused", "")}

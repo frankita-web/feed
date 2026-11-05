@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
+import { takeFromBank, useBank } from "@/lib/bank";
 import { removeImage, storeFile, storeImage, useImageUrl } from "@/lib/images";
 import { linkUrl, storeMedia } from "@/lib/media";
 import { deletePost, savePost, usedByShoots } from "@/lib/store";
@@ -9,6 +10,7 @@ import {
   STATUSES,
   STATUS_LABEL,
   type Attachment,
+  type BankItem,
   type Post,
   type Project,
 } from "@/lib/types";
@@ -51,8 +53,33 @@ export function PostDialog({
   const videos = files.filter(isVideo);
   const setMedia = (list: string[]) => set({ image: list[0] ?? null, slides: list.slice(1) });
 
+  const bank = useBank();
+  const [picked, setPicked] = useState<BankItem[]>([]);
+  const available = bank.items.filter(
+    (b) => b.project === project.slug && !picked.some((p) => p.id === b.id),
+  );
+  const borrowed = new Set(picked.flatMap((b) => [b.image, ...b.files.map((f) => f.id)]));
+
+  /** Lo del banco entra a la ficha; sale del banco recién al guardar. */
+  const pickFromBank = (item: BankItem) => {
+    setPicked((list) => [...list, item]);
+    setDraft((d) => {
+      const current = [d.image, ...(d.slides ?? [])].filter((id): id is string => !!id);
+      const next = item.image ? [...current, item.image] : current;
+      return {
+        ...d,
+        image: next[0] ?? null,
+        slides: next.slice(1),
+        files: [...(d.files ?? []), ...item.files],
+        title: d.title || item.name,
+      };
+    });
+  };
+
   const removeAll = (ids: string[]) =>
-    ids.filter((id) => !usedByShoots(id)).forEach((id) => removeImage(id));
+    ids
+      .filter((id) => !usedByShoots(id) && !borrowed.has(id))
+      .forEach((id) => removeImage(id));
   const without = (a: Post, b: Post) => ownedIds(a).filter((id) => !ownedIds(b).includes(id));
 
   const cancel = () => {
@@ -64,6 +91,9 @@ export function PostDialog({
     removeAll(without(post, draft));
     const saved = { ...draft, title: draft.title.trim() };
     savePost(saved);
+    picked
+      .filter((b) => [b.image, ...b.files.map((f) => f.id)].some((id) => id && ownedIds(saved).includes(id)))
+      .forEach((b) => takeFromBank(b.id));
     onSaved?.(saved);
     onClose();
   };
@@ -163,6 +193,15 @@ export function PostDialog({
             onAdd={addMedia}
             uploading={uploading > 0}
           />
+          {available.length > 0 && (
+            <Field label="Elegir del banco">
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {available.map((item) => (
+                  <BankChoice key={item.id} item={item} onPick={() => pickFromBank(item)} />
+                ))}
+              </div>
+            </Field>
+          )}
           <Files
             files={files.filter((f) => !isVideo(f))}
             onAdd={addFiles}
@@ -348,6 +387,7 @@ function Carousel({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [dragged, setDragged] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
+  const [broken, setBroken] = useState<string | null>(null);
   const total = media.length + videos.length;
   const video = view >= media.length ? videos[view - media.length] : undefined;
   const url = useImageUrl(video ? video.id : (media[view] ?? null));
@@ -355,7 +395,10 @@ function Carousel({
 
   const captureFrame = async () => {
     const el = videoRef.current;
-    if (!el?.videoWidth) return;
+    if (!el?.videoWidth) {
+      alert("El video todavía no carga. Espera un momento e inténtalo de nuevo.");
+      return;
+    }
     el.pause();
     const canvas = document.createElement("canvas");
     canvas.width = el.videoWidth;
@@ -391,6 +434,7 @@ function Carousel({
             src={url}
             controls
             playsInline
+            onError={() => setBroken(video.id)}
             className="absolute inset-0 h-full w-full bg-black object-contain"
           />
         ) : url ? (
@@ -488,12 +532,16 @@ function Carousel({
       {video && (
         <div className="mt-3 rounded-xl border border-black/10 bg-white/80 p-3">
           <p className="text-[12px] text-graphite">
-            Pausa el video en el momento que te guste y úsalo de portada.
+            {broken === video.id
+              ? "Este video no se puede abrir: ya no está guardado o el archivo falló. Quítalo y elige otro del banco o súbelo de nuevo."
+              : "Pausa el video en el momento que te guste y úsalo de portada."}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button type="button" onClick={captureFrame} className={darkButtonClass}>
-              Usar este cuadro de portada
-            </button>
+            {broken !== video.id && (
+              <button type="button" onClick={captureFrame} className={darkButtonClass}>
+                Usar este cuadro de portada
+              </button>
+            )}
             {url && (
               <a
                 href={url}
@@ -620,6 +668,38 @@ function Thumb({
         <span className="absolute inset-x-0 bottom-0 bg-ink/70 text-center text-[8px] text-white">
           Portada
         </span>
+      )}
+    </button>
+  );
+}
+
+function BankChoice({ item, onPick }: { item: BankItem; onPick: () => void }) {
+  const video = item.files.find(isVideo);
+  const image = useImageUrl(item.image);
+  const clip = useImageUrl(item.image ? null : (video?.id ?? null));
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      title={item.name}
+      className="relative h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-[#dedede] opacity-80 transition hover:opacity-100"
+    >
+      {image ? (
+        // eslint-disable-next-line @next/next/no-img-element -- archivo guardado
+        <img src={image} alt={item.name} className="h-full w-full object-cover" />
+      ) : (
+        clip && (
+          <video
+            src={`${clip}#t=0.1`}
+            muted
+            playsInline
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+        )
+      )}
+      {video && (
+        <span className="absolute top-1 left-1 text-[10px] text-white drop-shadow">▶</span>
       )}
     </button>
   );
