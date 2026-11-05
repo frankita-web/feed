@@ -46,6 +46,9 @@ export function PostDialog({
   const [draft, setDraft] = useState(post);
   const [uploading, setUploading] = useState(0);
   const [view, setView] = useState(0);
+  // Lo ya guardado de esta publicación: la portada elegida se guarda en el momento.
+  const committed = useRef(post);
+  const frameId = useRef<string | null>(null);
   const set = (fields: Partial<Post>) => setDraft((d) => ({ ...d, ...fields }));
 
   const media = [draft.image, ...(draft.slides ?? [])].filter((id): id is string => !!id);
@@ -83,12 +86,12 @@ export function PostDialog({
   const without = (a: Post, b: Post) => ownedIds(a).filter((id) => !ownedIds(b).includes(id));
 
   const cancel = () => {
-    removeAll(without(draft, post));
+    removeAll(without(draft, committed.current));
     onClose();
   };
 
   const save = () => {
-    removeAll(without(post, draft));
+    removeAll(without(committed.current, draft));
     const saved = { ...draft, title: draft.title.trim() };
     savePost(saved);
     picked
@@ -100,7 +103,7 @@ export function PostDialog({
 
   const remove = () => {
     if (!confirm("¿Borrar esta publicación?")) return;
-    removeAll([...new Set([...ownedIds(post), ...ownedIds(draft)])]);
+    removeAll([...new Set([...ownedIds(committed.current), ...ownedIds(draft)])]);
     deletePost(post.id);
     onClose();
   };
@@ -131,13 +134,31 @@ export function PostDialog({
 
   /** Un cuadro del video pasa a ser la portada. */
   const useFrame = async (frame: File) => {
-    const id = await storeImage(frame);
-    setDraft((d) => {
-      const current = [d.image, ...(d.slides ?? [])].filter((x): x is string => !!x);
-      const next = current.length > 1 ? [id, ...current] : [id];
-      return { ...d, image: next[0], slides: next.slice(1) };
-    });
-    setView(0);
+    setUploading(1);
+    try {
+      const id = await storeImage(frame);
+      const swap = (p: Post) => {
+        const current = [p.image, ...(p.slides ?? [])].filter((x): x is string => !!x);
+        // Volver a elegir reemplaza el cuadro anterior; en un carrusel no se pierden las fotos.
+        const others = current.filter((x) => x !== frameId.current);
+        const next = others.length > 1 ? [id, ...others] : [id];
+        return { ...p, image: next[0], slides: next.slice(1) };
+      };
+      const before = committed.current;
+      frameId.current = id;
+      setDraft((d) => swap(d));
+      setView(0);
+      if (!isNew) {
+        const saved = swap(before);
+        committed.current = saved;
+        savePost(saved);
+        removeAll(without(before, saved));
+      }
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo guardar la portada. Inténtalo de nuevo.");
+    }
+    setUploading(0);
   };
 
   const addFiles = async (list: File[]) => {

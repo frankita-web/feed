@@ -12,7 +12,7 @@ import type { BankItem, Post, Project, Shoot } from "@/lib/types";
 import { BankPanel } from "./BankPanel";
 import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
-import { buttonClass, darkButtonClass } from "./Modal";
+import { darkButtonClass } from "./Modal";
 import { Logo } from "./Logo";
 import { PdfButton } from "./PdfButton";
 import { PostDialog } from "./PostDialog";
@@ -30,12 +30,10 @@ export function FeedView({
 }) {
   const [editing, setEditing] = useState<Post | null>(null);
   const [uploading, setUploading] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [moving, setMoving] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [planDrop, setPlanDrop] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const planRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
@@ -112,7 +110,6 @@ export function FeedView({
     e.stopPropagation();
     setTarget(null);
     setPlanDrop(false);
-    setDragging(false);
     setMoving(null);
     const files = Array.from(e.dataTransfer.files);
     if (files.length) {
@@ -244,65 +241,7 @@ export function FeedView({
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-8">
       <BankPanel project={project} bank={bank} onUse={(item) => fromBank(item)} />
       <ShootTray project={project} posts={posts} shoots={shoots} />
-      <div className="grid items-start gap-10 lg:grid-cols-2">
-        {/* Feed actual: solo lo ya subido */}
-        <section
-          onDragOver={(e) => {
-            // Solo fotos desde la compu, no posts que se están reordenando
-            if (!e.dataTransfer.types.includes("Files")) return;
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            dropOn(e, "actual");
-          }}
-        >
-          <ColumnHeader
-            title="Feed actual"
-            subtitle="Lo que ya está publicado en Instagram (fijo)"
-            action={
-              <button
-                onClick={() => fileRef.current?.click()}
-                disabled={uploading > 0}
-                className={buttonClass}
-              >
-                {uploading ? `Subiendo… (${uploading})` : "+ Agregar fotos"}
-              </button>
-            }
-          />
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) addFiles(e.target.files, "actual");
-              e.target.value = "";
-            }}
-          />
-          <Phone
-            project={project}
-            handle={handle}
-            stats={`${published.length} publicaciones`}
-            highlight={dragging}
-          >
-            {published.length ? (
-              grid(published, "actual")
-            ) : (
-              <EmptyFeed handle={project.instagram} onUpload={() => fileRef.current?.click()} />
-            )}
-          </Phone>
-          {published.length > 0 && (
-            <p className="mt-3 text-center text-[12px] text-graphite">
-              Arrastra aquí más fotos de tu feed (la primera = la más reciente)
-            </p>
-          )}
-        </section>
-
+      <div className="mx-auto max-w-xl">
         {/* Con lo nuevo: aquí se arma el feed que viene */}
         <section
           onDragOver={(e) => {
@@ -458,29 +397,3 @@ function Phone({
   );
 }
 
-function EmptyFeed({ handle, onUpload }: { handle: string; onUpload: () => void }) {
-  return (
-    <div className="mx-5 mb-6 flex flex-col items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-ink/25 px-6 py-12 text-center">
-      <p className="text-[15px] font-semibold tracking-[-0.02em]">Trae tu feed de Instagram</p>
-      <p className="max-w-xs text-[13px] text-graphite">
-        Instagram no deja leer las fotos automáticamente. Guarda las imágenes de tus últimos posts y
-        arrástralas aquí (la primera = la más reciente).
-      </p>
-      <div className="mt-1 flex gap-2">
-        <button onClick={onUpload} className={darkButtonClass}>
-          Elegir fotos
-        </button>
-        {handle && (
-          <a
-            href={`https://www.instagram.com/${handle}/`}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClass}
-          >
-            Abrir @{handle} ↗
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}

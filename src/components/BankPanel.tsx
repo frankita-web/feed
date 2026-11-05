@@ -98,7 +98,7 @@ export function BankPanel({
           disabled={uploading > 0}
           className={buttonClass}
         >
-          {uploading ? `Subiendo… (${uploading})` : "+ Subir al banco"}
+          {uploading ? `Procesando… (${uploading})` : "+ Subir al banco"}
         </button>
         <input
           ref={inputRef}

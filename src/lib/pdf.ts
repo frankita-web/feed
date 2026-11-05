@@ -78,6 +78,66 @@ function legend(doc: jsPDF, project: Project, y: number) {
   }
 }
 
+/** Una publicación por bloque: datos, copy y todas sus fotos, para entender qué se publicará. */
+async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: string) {
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const width = pageWidth - MARGIN * 2;
+  const photo = 34;
+  const photoHeight = (photo * 4) / 3;
+  const gap = 2;
+  const perRow = Math.floor((width + gap) / (photo + gap));
+  let y = pageHeight;
+
+  for (const post of posts) {
+    const ids = [post.image, ...(post.slides ?? [])].filter((id): id is string => !!id);
+    const images = (await Promise.all(ids.map((id) => picture(id, 360, 480)))).filter(
+      (image): image is string => !!image,
+    );
+    doc.setFont("helvetica", "normal").setFontSize(9.5);
+    const caption = post.caption ? fit(doc, post.caption, width, 5) : [];
+    const rows = Math.ceil(images.length / perRow);
+    const height = 12 + caption.length * 4.2 + rows * (photoHeight + gap) + 6;
+
+    if (y + height > pageHeight - MARGIN) {
+      doc.addPage();
+      header(doc, title, subtitle);
+      y = MARGIN + 20;
+    }
+
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(INK);
+    doc.text(fit(doc, post.title || "Sin título", width, 1), MARGIN, y + 4);
+    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(GRAPHITE);
+    const facts = clean(
+      [post.date && shortDate(post.date), post.time, post.format, post.pillar, STATUS_LABEL[post.status]]
+        .filter(Boolean)
+        .join(" · "),
+    );
+    doc.text(facts, MARGIN, y + 9);
+    const video = linkUrl(post.videoLink);
+    if (video) {
+      doc.setFont("helvetica", "bold").setTextColor("#0b57d0");
+      doc.textWithLink("Ver video", MARGIN + doc.getTextWidth(facts) + 5, y + 9, { url: video });
+      doc.setFont("helvetica", "normal");
+    }
+    let next = y + 12;
+    if (caption.length) {
+      doc.setFontSize(9.5).setTextColor(INK);
+      doc.text(caption, MARGIN, next + 2.5);
+      next += caption.length * 4.2;
+    }
+    images.forEach((image, i) => {
+      const x = MARGIN + (i % perRow) * (photo + gap);
+      const rowY = next + 1 + Math.floor(i / perRow) * (photoHeight + gap);
+      doc.addImage(image, "JPEG", x, rowY, photo, photoHeight);
+      doc.setFillColor(INK).rect(x + 1, rowY + 1, 5, 4, "F");
+      doc.setFont("helvetica", "bold").setFontSize(7).setTextColor("#ffffff");
+      doc.text(String(i + 1), x + 3.5, rowY + 3.8, { align: "center" });
+    });
+    y += height;
+  }
+}
+
 const fileName = (project: Project, what: string) => `${project.name} - ${what}.pdf`;
 
 /** Grid del feed como lo verá el cliente: primero lo nuevo, después lo ya publicado. */
@@ -129,6 +189,12 @@ export async function feedPdf(
       doc.setFont("helvetica", "normal");
     }
   });
+  await detailPages(
+    doc,
+    items.filter((item) => item.label).map((item) => item.post),
+    "Lo nuevo · Detalle",
+    project.name,
+  );
   doc.save(fileName(project, "Feed"));
 }
 
@@ -275,45 +341,7 @@ export async function calendarPdf(project: Project, posts: Post[], year: number,
     }
   }
 
-  // Detalle: portada, datos y copy de cada publicación.
-  const size = 30;
-  const rowHeight = (size * 4) / 3 + 6;
-  let y = pageHeight;
-  dated.forEach((post) => {
-    if (y + rowHeight > pageHeight - MARGIN) {
-      doc.addPage();
-      header(doc, `${monthName} ${year} · Detalle`, project.name);
-      y = MARGIN + 20;
-    }
-    const image = thumbs.get(post.id);
-    doc.setFillColor("#ececec").rect(MARGIN, y, size, rowHeight - 6, "F");
-    if (image) doc.addImage(image, "JPEG", MARGIN, y, size, rowHeight - 6);
-    const x = MARGIN + size + 6;
-    const width = pageWidth - MARGIN - x;
-    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(INK);
-    doc.text(fit(doc, post.title || "Sin título", width, 1), x, y + 5);
-    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(GRAPHITE);
-    const facts = [
-      shortDate(post.date!),
-      post.time,
-      post.format,
-      post.pillar,
-      STATUS_LABEL[post.status],
-    ].filter(Boolean);
-    const line = clean(facts.join(" · "));
-    doc.text(line, x, y + 10.5);
-    const video = linkUrl(post.videoLink);
-    if (video) {
-      doc.setFont("helvetica", "bold").setTextColor("#0b57d0");
-      doc.textWithLink("Ver video", x + doc.getTextWidth(line) + 5, y + 10.5, { url: video });
-      doc.setFont("helvetica", "normal");
-    }
-    if (post.caption) {
-      doc.setFontSize(9.5).setTextColor(INK);
-      doc.text(fit(doc, post.caption, width, 6), x, y + 16.5);
-    }
-    y += rowHeight;
-  });
+  await detailPages(doc, dated, `${monthName} ${year} · Detalle`, project.name);
 
   doc.save(fileName(project, `Calendario ${monthName} ${year}`));
 }

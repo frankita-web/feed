@@ -37,6 +37,63 @@ async function videoFrame(file: File): Promise<File | null> {
   }
 }
 
+// En la página el video solo sirve de referencia: los pesados se guardan en baja calidad.
+const HEAVY_VIDEO = 15 * 1024 * 1024;
+const VIDEO_BITRATE = 1_200_000;
+
+/**
+ * Vuelve a grabar el video con menos calidad. Tarda lo que dura el video.
+ * Si el navegador no puede, o no resulta más liviano, se queda el original.
+ */
+export async function shrinkVideo(file: File): Promise<File> {
+  if (file.size < HEAVY_VIDEO || typeof MediaRecorder === "undefined") return file;
+  const mimeType = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"].find(
+    (type) => MediaRecorder.isTypeSupported(type),
+  );
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video") as HTMLVideoElement & {
+    captureStream?: () => MediaStream;
+  };
+  try {
+    if (!mimeType || !video.captureStream) return file;
+    video.src = url;
+    video.playsInline = true;
+    video.volume = 0;
+    await new Promise((ok, fail) => {
+      video.onloadedmetadata = ok;
+      video.onerror = fail;
+    });
+    const recorder = new MediaRecorder(video.captureStream(), {
+      mimeType,
+      videoBitsPerSecond: VIDEO_BITRATE,
+      audioBitsPerSecond: 96_000,
+    });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    const stopped = new Promise((ok) => (recorder.onstop = ok));
+    const ended = new Promise((ok, fail) => {
+      video.onended = ok;
+      video.onerror = fail;
+    });
+    await video.play();
+    recorder.start(1000);
+    await ended;
+    recorder.stop();
+    await stopped;
+    const type = mimeType.split(";")[0];
+    const blob = new Blob(chunks, { type });
+    if (!blob.size || blob.size >= file.size) return file;
+    const name = file.name.replace(/\.[^.]+$/, `.${type.split("/")[1]}`);
+    return new File([blob], name, { type });
+  } catch (error) {
+    console.error(error);
+    return file;
+  } finally {
+    video.pause();
+    URL.revokeObjectURL(url);
+  }
+}
+
 /** Guarda fotos y videos entregados. La primera imagen (o cuadro de video) es la portada. */
 export async function storeMedia(list: File[], hasCover: boolean) {
   const images: string[] = [];
@@ -46,7 +103,13 @@ export async function storeMedia(list: File[], hasCover: boolean) {
       images.push(await storeImage(file));
       continue;
     }
-    files.push({ id: await storeFile(file), name: file.name, type: file.type, size: file.size });
+    const stored = file.type.startsWith("video/") ? await shrinkVideo(file) : file;
+    files.push({
+      id: await storeFile(stored),
+      name: stored.name,
+      type: stored.type,
+      size: stored.size,
+    });
     if (!hasCover && !images.length && file.type.startsWith("video/")) {
       const frame = await videoFrame(file);
       if (frame) images.push(await storeImage(frame));
