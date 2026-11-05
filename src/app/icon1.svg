@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Mouse beige de los 90, con cable -->
+  <path d="M32 9c0-4 3-6 7-6s7 2 9 5" fill="none" stroke="#2b2b2b" stroke-width="2.6" stroke-linecap="round"/>
+  <rect x="15" y="9" width="34" height="50" rx="15" fill="#e7dfcc" stroke="#2b2b2b" stroke-width="2.6"/>
+  <path d="M16.3 27h31.4" stroke="#2b2b2b" stroke-width="2.2"/>
+  <path d="M32 10.3V27" stroke="#2b2b2b" stroke-width="2.2"/>
+  <path d="M18 24c0-6.5 4-11.5 12-12.5V24z" fill="#d1c6ad"/>
+  <path d="M34 11.5c8 1 12 6 12 12.5H34z" fill="#d1c6ad"/>
+  <rect x="21" y="37" width="22" height="3" rx="1.5" fill="#cfc3a8"/>
+  <rect x="21" y="43" width="22" height="3" rx="1.5" fill="#cfc3a8"/>
+  <path d="M19 47c2 6 6 9.5 13 9.5" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
+</svg>
