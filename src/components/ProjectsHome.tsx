@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { MONTHS, parseKey, shortDate, todayKey, weekRange, weekdayOf } from "@/lib/dates";
+import { MONTHS, parseKey, shortDate, weekRange, weekdayOf } from "@/lib/dates";
 import { useStore } from "@/lib/store";
 import { STATUS_LABEL, type Project, type State } from "@/lib/types";
 import { Folder } from "./Desktop";
@@ -102,7 +102,6 @@ function WeekNotice({ store }: { store: State }) {
               <span className="flex items-center gap-1">
                 <StatusDot status={selected.status} project={project} className="h-1.5 w-1.5" />
                 {STATUS_LABEL[selected.status]}
-                {selected.date! < todayKey() && " (atrasado)"}
               </span>
             </p>
             <div className="mt-5 flex gap-2">

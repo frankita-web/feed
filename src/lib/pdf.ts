@@ -37,27 +37,68 @@ async function newDocument(orientation: "portrait" | "landscape") {
   return doc;
 }
 
+/** Recorta una imagen o un cuadro de video a la medida, como en el feed. */
+function cropped(source: CanvasImageSource, from: [number, number], width: number, height: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const scale = Math.max(width / from[0], height / from[1]);
+  const w = from[0] * scale;
+  const h = from[1] * scale;
+  canvas.getContext("2d")!.drawImage(source, (width - w) / 2, (height - h) / 2, w, h);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
+const fileBlob = (id: string) =>
+  id.startsWith("/") ? fetch(id).then((r) => (r.ok ? r.blob() : null)) : readLocal(id);
+
 /** Foto recortada a la medida del cuadro, lista para ponerla en el PDF. */
 async function picture(id: string | null, width: number, height: number) {
   if (!id) return null;
   try {
-    const blob = id.startsWith("/")
-      ? await fetch(id).then((r) => (r.ok ? r.blob() : null))
-      : await readLocal(id);
+    const blob = await fileBlob(id);
     if (!blob) return null;
     const bitmap = await createImageBitmap(blob);
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const scale = Math.max(width / bitmap.width, height / bitmap.height);
-    const w = bitmap.width * scale;
-    const h = bitmap.height * scale;
-    canvas.getContext("2d")!.drawImage(bitmap, (width - w) / 2, (height - h) / 2, w, h);
-    return canvas.toDataURL("image/jpeg", 0.82);
+    return cropped(bitmap, [bitmap.width, bitmap.height], width, height);
   } catch {
     return null;
   }
 }
+
+/** Primer cuadro del video: lo que muestra el feed cuando el post no tiene foto de portada. */
+async function videoPicture(post: Post, width: number, height: number) {
+  const file = post.files?.find((f) => f.type.startsWith("video/"));
+  if (!file) return null;
+  const local = file.id.startsWith("/") ? null : await readLocal(file.id);
+  if (!file.id.startsWith("/") && !local) return null;
+  const url = local ? URL.createObjectURL(local) : file.id;
+  try {
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "auto";
+    video.src = url;
+    await new Promise((ok, fail) => {
+      video.onloadeddata = ok;
+      video.onerror = fail;
+      setTimeout(fail, 20_000);
+    });
+    video.currentTime = Math.min(0.1, video.duration / 2 || 0);
+    await new Promise((ok) => {
+      video.onseeked = ok;
+      setTimeout(ok, 5000);
+    });
+    return cropped(video, [video.videoWidth, video.videoHeight], width, height);
+  } catch {
+    return null;
+  } finally {
+    if (local) URL.revokeObjectURL(url);
+  }
+}
+
+/** La portada del post: su foto o, si no tiene o no abre, un cuadro de su video. */
+const coverPicture = async (post: Post, width: number, height: number) =>
+  (await picture(post.image, width, height)) ?? videoPicture(post, width, height);
 
 function header(doc: jsPDF, title: string, subtitle: string) {
   doc.setTextColor(INK).setFont("helvetica", "bold").setFontSize(20);
@@ -102,9 +143,11 @@ async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: s
 
   for (const post of posts) {
     const ids = [post.image, ...(post.slides ?? [])].filter((id): id is string => !!id);
-    const images = (await Promise.all(ids.map((id) => picture(id, 360, 480)))).filter(
+    const found = (await Promise.all(ids.map((id) => picture(id, 360, 480)))).filter(
       (image): image is string => !!image,
     );
+    const frame = found.length ? null : await videoPicture(post, 360, 480);
+    const images = frame ? [frame] : found;
     doc.setFont("helvetica", "normal").setFontSize(9.5);
     const caption = post.caption ? fit(doc, post.caption, width, 5) : [];
     const rows = Math.ceil(images.length / perRow);
@@ -165,12 +208,15 @@ function feedItems(project: Project, posts: Post[], month?: string): FeedItem[] 
   const all = feedPosts(posts, project.slug);
   const isNew = (p: Post) => p.status !== "publicado";
   const label = (p: Post) =>
-    p.date ? `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}` : "Nuevo · sin fecha";
+    p.date ? `${p.date < today ? "" : "Nuevo · "}${shortDate(p.date)}` : "Nuevo · sin fecha";
   const item = (post: Post) => ({ post, label: isNew(post) ? label(post) : undefined });
   if (month)
     return [
       ...all.filter((p) => p.date?.startsWith(month)),
-      ...all.filter((p) => p.date && p.date < month).slice(0, PREVIOUS),
+      ...all
+        .filter((p) => p.date && p.date < month)
+        .sort((x, y) => y.date!.localeCompare(x.date!))
+        .slice(0, PREVIOUS),
     ].map(item);
   return [...all.filter(isNew), ...all.filter((p) => !isNew(p)).slice(0, PREVIOUS)].map(item);
 }
@@ -195,7 +241,7 @@ async function feedPages(doc: jsPDF, project: Project, items: FeedItem[]) {
   const height = Math.min((fullWidth * 4) / 3, roomHeight);
   const width = (height * 3) / 4;
   const left = (pageWidth - width * 3 - gap * 2) / 2;
-  const images = await Promise.all(items.map(({ post }) => picture(post.image, 540, 720)));
+  const images = await Promise.all(items.map(({ post }) => coverPicture(post, 540, 720)));
 
   header(doc, `${project.name} · Feed`, subtitle);
   let y = top;
@@ -257,11 +303,10 @@ export async function reportPdf(project: Project, report: Report, year: number, 
   const stats: [string, string][] = [
     [`${report.feed}/${report.goal}`, "Posts del mes"],
     [String(report.published), "Publicados"],
-    [String(report.late), "Atrasados"],
     [String(report.stories), "Stories"],
   ];
   stats.forEach(([value, label], i) => {
-    const x = MARGIN + (i * width) / 4;
+    const x = MARGIN + (i * width) / stats.length;
     doc.setFont("helvetica", "normal").setFontSize(24).setTextColor(INK).text(value, x, y);
     doc.setFontSize(9).setTextColor(GRAPHITE).text(label, x, y + 6);
   });
@@ -336,7 +381,7 @@ export async function calendarPdf(
     .sort((a, b) => a.date!.localeCompare(b.date!) || a.createdAt - b.createdAt);
   const thumbs = new Map(
     await Promise.all(
-      dated.map(async (p) => [p.id, await picture(p.image, 240, 320)] as const),
+      dated.map(async (p) => [p.id, await coverPicture(p, 240, 320)] as const),
     ),
   );
 

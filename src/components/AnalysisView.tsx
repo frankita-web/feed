@@ -40,10 +40,9 @@ export function AnalysisView({ project, posts }: { project: Project; posts: Post
         <PdfButton make={() => reportPdf(project, report, y, m)} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-3 gap-3">
         <Stat label="Posts del mes" value={`${report.feed}/${report.goal}`} />
         <Stat label="Publicados" value={report.published} />
-        <Stat label="Atrasados" value={report.late} />
         <Stat label="Stories" value={report.stories} />
       </div>
 

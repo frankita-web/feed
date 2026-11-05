@@ -1,4 +1,4 @@
-import { MONTHS, monthKey, todayKey } from "./dates";
+import { MONTHS, monthKey } from "./dates";
 import { FORMATS, type Post, type Project } from "./types";
 
 export type Report = ReturnType<typeof monthReport>;
@@ -8,11 +8,9 @@ const monthPosts = (posts: Post[], year: number, month: number) =>
 
 /** Lo que se planificó y publicó en un mes, comparado con las metas del proyecto. */
 export function monthReport(project: Project, posts: Post[], year: number, month: number) {
-  const today = todayKey();
   const all = monthPosts(posts, year, month);
   const feed = all.filter((p) => p.format !== "Stories");
   const published = all.filter((p) => p.status === "publicado").length;
-  const late = all.filter((p) => p.status !== "publicado" && p.date! < today);
   const uncategorized = feed.filter((p) => !p.pillar).length;
   const pillars = project.pillars.map((pillar) => ({
     ...pillar,
@@ -39,8 +37,6 @@ export function monthReport(project: Project, posts: Post[], year: number, month
     ...pillars
       .filter((p) => p.count < p.target)
       .map((p) => `Faltan ${p.target - p.count} de ${p.name}.`),
-    late.length > 0 &&
-      `${late.length} ${late.length === 1 ? "publicación quedó atrasada" : "publicaciones quedaron atrasadas"}.`,
     uncategorized > 0 &&
       `${uncategorized} ${uncategorized === 1 ? "post" : "posts"} sin categoría.`,
   ].filter((text): text is string => !!text);
@@ -51,7 +47,6 @@ export function monthReport(project: Project, posts: Post[], year: number, month
     stories: all.length - feed.length,
     goal: project.monthlyGoal,
     published,
-    late: late.length,
     pillars,
     formats,
     history,

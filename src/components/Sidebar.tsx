@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { todayKey, weekRange } from "@/lib/dates";
+import { weekRange } from "@/lib/dates";
 import type { Post, Project } from "@/lib/types";
 import { ProjectDialog } from "./ProjectDialog";
 
@@ -197,10 +197,8 @@ export function Sidebar({
   }, [switcher]);
 
   const [from, to] = weekRange();
-  const today = todayKey();
   const pending = (p: Post) => p.status !== "publicado";
   const thisWeek = posts.filter((p) => p.date && p.date >= from && p.date <= to && pending(p));
-  const overdue = posts.filter((p) => p.date && p.date < today && pending(p)).length;
 
   const tabs = tabsFor(project);
   const badges: Partial<Record<Tab, number>> = { calendario: thisWeek.length || undefined };
@@ -309,12 +307,6 @@ export function Sidebar({
             {!collapsed && "Ajustes"}
           </button>
         </nav>
-
-        {!collapsed && overdue > 0 && (
-          <p className="mt-3 px-3 text-[12px] text-graphite">
-            {overdue} {overdue === 1 ? "publicación atrasada" : "publicaciones atrasadas"}
-          </p>
-        )}
 
         <p className={`mt-7 mb-1.5 px-3 text-[12px] text-graphite ${collapsed ? "sr-only" : ""}`}>
           Clientes

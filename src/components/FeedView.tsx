@@ -49,7 +49,7 @@ export function FeedView({
   const plannedLabel = (p: Post) =>
     !p.date
       ? "Nuevo · sin fecha"
-      : `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}${mismatched.has(p.id) ? " ⚠" : ""}`;
+      : `${p.date < today ? "" : "Nuevo · "}${shortDate(p.date)}${mismatched.has(p.id) ? " ⚠" : ""}`;
   const published = all.filter((p) => !isPlanned(p));
   const plannedCount = all.length - published.length;
   const handle = project.instagram || project.name.toLowerCase();
