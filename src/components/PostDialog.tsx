@@ -92,7 +92,12 @@ export function PostDialog({
 
   const save = () => {
     removeAll(without(committed.current, draft));
-    const saved = { ...draft, title: draft.title.trim() };
+    const saved = {
+      ...draft,
+      title: draft.title.trim(),
+      // Con fecha nueva, el post vuelve a su lugar según la fecha.
+      ...(draft.date !== post.date && { order: undefined }),
+    };
     savePost(saved);
     picked
       .filter((b) => [b.image, ...b.files.map((f) => f.id)].some((id) => id && ownedIds(saved).includes(id)))

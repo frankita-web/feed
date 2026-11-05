@@ -66,10 +66,9 @@ export const CANCINO_PINNED: Post = {
   caption: "",
   image: "/feed/cancino-1.jpg",
   createdAt: 0,
-  pinned: true,
 };
 
-export const SEED_VERSION = 15;
+export const SEED_VERSION = 16;
 
 /** Menú Cancino Cibeles 2026 (v13). */
 export const CANCINO_MENU: Project["menu"] = {

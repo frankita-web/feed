@@ -156,17 +156,6 @@ export function FeedView({
       feedToBank(post);
   };
 
-  /** Para el cliente: todo lo nuevo y las últimas 12 ya publicadas, para ver cómo calza. */
-  const downloadPdf = () =>
-    feedPdf(
-      project,
-      [
-        ...all.filter(isPlanned).map((post) => ({ post, label: plannedLabel(post) })),
-        ...published.slice(0, 12).map((post) => ({ post })),
-      ],
-      `@${handle} · ${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} sobre el feed actual`,
-    );
-
   const LIMIT = 18;
   const grid = (list: Post[], column: Column) => (
     <>
@@ -275,7 +264,7 @@ export function FeedView({
             subtitle={`${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} · arrastra para acomodar`}
             action={
               <div className="flex flex-wrap gap-2">
-                <PdfButton make={downloadPdf} />
+                <PdfButton make={() => feedPdf(project, posts)} />
                 <button
                   onClick={() => planRef.current?.click()}
                   disabled={uploading > 0}
@@ -317,16 +306,26 @@ export function FeedView({
                 ⚠ {mismatched.size} {mismatched.size === 1 ? "post no calza" : "posts no calzan"}{" "}
                 con su fecha: en Instagram lo más nuevo queda arriba.
               </span>
-              <button
-                onClick={() =>
-                  confirm(
-                    "Las fechas de los posts nuevos se van a reordenar según cómo los acomodaste. ¿Seguir?",
-                  ) && upsertPosts(datesFollowOrder(planned))
-                }
-                className="font-medium underline"
-              >
-                Ajustar fechas al orden
-              </button>
+              <span className="flex flex-wrap gap-3">
+                <button
+                  onClick={() =>
+                    upsertPosts(planned.map((p) => (p.date ? { ...p, order: undefined } : p)))
+                  }
+                  className="font-medium underline"
+                >
+                  Ordenar por fecha
+                </button>
+                <button
+                  onClick={() =>
+                    confirm(
+                      "Las fechas de los posts nuevos se van a reordenar según cómo los acomodaste. ¿Seguir?",
+                    ) && upsertPosts(datesFollowOrder(planned))
+                  }
+                  className="underline"
+                >
+                  Ajustar fechas al orden
+                </button>
+              </span>
             </div>
           )}
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12px] text-graphite">

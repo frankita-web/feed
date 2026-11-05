@@ -150,7 +150,7 @@ export function CalendarView({
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <Legend project={project} />
-          <PdfButton make={() => calendarPdf(project, monthPosts, year, month)} />
+          <PdfButton make={() => calendarPdf(project, monthPosts, posts, year, month)} />
         </div>
       </div>
 

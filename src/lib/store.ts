@@ -140,9 +140,14 @@ function migrate(s: State): State {
       p.status === "publicado" && p.order !== undefined ? { ...p, order: undefined } : p,
     );
   }
-  // v15: "A base de plantas" vuelve a quedar fijada en Cancino.
-  if ((s.version ?? 1) < 15) {
-    posts = posts.map((p) => (p.id === CANCINO_PINNED.id ? { ...p, pinned: true } : p));
+  // v16: en Cancino, "A base de plantas" ya no va fijada y lo nuevo vuelve a ir por fecha.
+  if ((s.version ?? 1) < 16) {
+    posts = posts.map((p) => {
+      if (p.id === CANCINO_PINNED.id) return { ...p, pinned: false };
+      return p.project === "cancino" && p.status !== "publicado" && p.date
+        ? { ...p, order: undefined }
+        : p;
+    });
   }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {

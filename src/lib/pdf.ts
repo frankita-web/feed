@@ -1,8 +1,17 @@
 "use client";
 
 import type { jsPDF } from "jspdf";
+import { feedPosts } from "@/components/FeedTile";
 import { statusColor } from "@/components/Status";
-import { MONTHS, WEEKDAYS, dateKey, daysInMonth, leadingBlanks, shortDate } from "./dates";
+import {
+  MONTHS,
+  WEEKDAYS,
+  dateKey,
+  daysInMonth,
+  leadingBlanks,
+  shortDate,
+  todayKey,
+} from "./dates";
 import { readLocal } from "./images";
 import { linkUrl } from "./media";
 import type { Report } from "./report";
@@ -80,8 +89,9 @@ function legend(doc: jsPDF, project: Project, y: number) {
 
 /** Una publicación por bloque: datos, copy y todas sus fotos, para entender qué se publicará. */
 async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: string) {
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
+  // Siempre en vertical, aunque la página anterior sea el mes apaisado.
+  const pageWidth = 210;
+  const pageHeight = 297;
   const width = pageWidth - MARGIN * 2;
   const photo = 34;
   const photoHeight = (photo * 4) / 3;
@@ -100,7 +110,7 @@ async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: s
     const height = 12 + caption.length * 4.2 + rows * (photoHeight + gap) + 6;
 
     if (y + height > pageHeight - MARGIN) {
-      doc.addPage();
+      doc.addPage("a4", "portrait");
       header(doc, title, subtitle);
       y = MARGIN + 20;
     }
@@ -140,13 +150,30 @@ async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: s
 
 const fileName = (project: Project, what: string) => `${project.name} - ${what}.pdf`;
 
+type FeedItem = { post: Post; label?: string };
+
+/** Todo lo nuevo y las últimas 12 ya publicadas, para ver cómo calza en el perfil. */
+function feedItems(project: Project, posts: Post[]): FeedItem[] {
+  const today = todayKey();
+  const all = feedPosts(posts, project.slug);
+  const isNew = (p: Post) => p.status !== "publicado";
+  const label = (p: Post) =>
+    p.date ? `${p.date < today ? "Atrasado" : "Nuevo"} · ${shortDate(p.date)}` : "Nuevo · sin fecha";
+  return [
+    ...all.filter(isNew).map((post) => ({ post, label: label(post) })),
+    ...all.filter((p) => !isNew(p)).slice(0, 12).map((post) => ({ post })),
+  ];
+}
+
+const feedSubtitle = (project: Project, items: FeedItem[]) => {
+  const count = items.filter((item) => item.label).length;
+  const handle = project.instagram || project.name.toLowerCase();
+  return `@${handle} · ${count} ${count === 1 ? "post nuevo" : "posts nuevos"} sobre el feed actual`;
+};
+
 /** Grid del feed como lo verá el cliente: primero lo nuevo, después lo ya publicado. */
-export async function feedPdf(
-  project: Project,
-  items: { post: Post; label?: string }[],
-  subtitle: string,
-) {
-  const doc = await newDocument("portrait");
+async function feedPages(doc: jsPDF, project: Project, items: FeedItem[]) {
+  const subtitle = feedSubtitle(project, items);
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const gap = 1.5;
@@ -160,7 +187,7 @@ export async function feedPdf(
   items.forEach(({ post, label }, i) => {
     if (i && i % 3 === 0) y += height + gap;
     if (y + height > pageHeight - MARGIN) {
-      doc.addPage();
+      doc.addPage("a4", "portrait");
       y = MARGIN;
     }
     const x = MARGIN + (i % 3) * (width + gap);
@@ -189,6 +216,12 @@ export async function feedPdf(
       doc.setFont("helvetica", "normal");
     }
   });
+}
+
+export async function feedPdf(project: Project, posts: Post[]) {
+  const doc = await newDocument("portrait");
+  const items = feedItems(project, posts);
+  await feedPages(doc, project, items);
   await detailPages(
     doc,
     items.filter((item) => item.label).map((item) => item.post),
@@ -271,8 +304,14 @@ export async function reportPdf(project: Project, report: Report, year: number, 
   doc.save(fileName(project, `Reporte ${monthName} ${year}`));
 }
 
-/** Mes en cuadrícula y, en las páginas siguientes, el detalle de cada publicación. */
-export async function calendarPdf(project: Project, posts: Post[], year: number, month: number) {
+/** Todo en un solo PDF: el mes en cuadrícula, el feed y el detalle de cada publicación. */
+export async function calendarPdf(
+  project: Project,
+  posts: Post[],
+  allPosts: Post[],
+  year: number,
+  month: number,
+) {
   const doc = await newDocument("landscape");
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -341,6 +380,8 @@ export async function calendarPdf(project: Project, posts: Post[], year: number,
     }
   }
 
+  doc.addPage("a4", "portrait");
+  await feedPages(doc, project, feedItems(project, allPosts));
   await detailPages(doc, dated, `${monthName} ${year} · Detalle`, project.name);
 
   doc.save(fileName(project, `Calendario ${monthName} ${year}`));
