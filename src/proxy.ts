@@ -1,10 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE, validSession } from "@/lib/auth";
+import { COOKIE, cookieOptions, validSession } from "@/lib/auth";
 
 /** Toda la página pide la clave, salvo la pantalla para escribirla. */
 export async function proxy(request: NextRequest) {
-  if (await validSession(request.cookies.get(COOKIE)?.value)) return NextResponse.next();
+  const session = request.cookies.get(COOKIE)?.value;
   const { pathname, search } = request.nextUrl;
+  if (await validSession(session)) {
+    const response = NextResponse.next();
+    // Se renueva al usar la página, para que nunca vuelva a pedir la clave en este dispositivo.
+    if (pathname === "/api/banco") response.cookies.set(COOKIE, session!, cookieOptions);
+    return response;
+  }
   if (pathname.startsWith("/api/"))
     return NextResponse.json({ error: "Falta la clave" }, { status: 401 });
   const login = new URL("/entrar", request.url);

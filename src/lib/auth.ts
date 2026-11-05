@@ -1,6 +1,12 @@
 /** Clave de la página: una cookie firmada que dura un año en cada dispositivo. */
 export const COOKIE = "feed-clave";
-export const YEAR = 60 * 60 * 24 * 365;
+export const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 60 * 60 * 24 * 365,
+} as const;
 
 async function signature() {
   const { APP_PASSWORD: password, SITE_SECRET: secret } = process.env;
