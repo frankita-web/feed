@@ -58,3 +58,27 @@ export function datesFollowOrder(list: Post[]): Post[] {
   let k = 0;
   return list.map((p) => (p.date ? { ...p, date: dates[k++] } : p));
 }
+
+export type PhotoKind = "drink" | "plato" | "ambiente" | "personas" | "otro";
+export type PhotoLight = "dia" | "noche";
+
+/**
+ * Reglas del feed: nunca dos drinks seguidos y, en lo posible, alternar foto de día y de noche.
+ * Respeta el orden propuesto y solo cambia lo necesario. Devuelve los ids en orden de publicación.
+ */
+export function feedRhythm<T extends { id: string; kind: PhotoKind; light: PhotoLight }>(items: T[]) {
+  const left = [...items];
+  const order: T[] = [];
+  const fits = (prev: T | undefined, next: T, strict: boolean) =>
+    !prev ||
+    (!(prev.kind === "drink" && next.kind === "drink") && (!strict || prev.light !== next.light));
+  while (left.length) {
+    const prev = order[order.length - 1];
+    const pick =
+      left.findIndex((x) => fits(prev, x, true)) >= 0
+        ? left.findIndex((x) => fits(prev, x, true))
+        : Math.max(0, left.findIndex((x) => fits(prev, x, false)));
+    order.push(left.splice(pick, 1)[0]);
+  }
+  return order.map((x) => x.id);
+}

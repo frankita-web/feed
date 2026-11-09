@@ -35,6 +35,10 @@ const planSchema = z.object({
       caption: z.string().describe("copy listo para Instagram"),
       pillar: z.string().nullable().describe("una de las categorías, o null"),
       format: z.enum(FORMATS),
+      kind: z
+        .enum(["drink", "plato", "ambiente", "personas", "otro"])
+        .describe("qué muestra la foto; drink = cualquier trago o bebida"),
+      light: z.enum(["dia", "noche"]).describe("si la foto se siente de día o de noche"),
     }),
   ),
 });
@@ -44,7 +48,8 @@ export type OrganizePlan = z.infer<typeof planSchema>;
 const SYSTEM = `Eres la community manager del estudio Franca Mandiola, que lleva el Instagram de restaurantes en Ciudad de México.
 Te pasan fotos que todavía no se publican. Arma con ellas el calendario del feed:
 - Elige la fecha de cada foto desde el primer día disponible, sin repetir días ocupados, con un ritmo parecido a la meta mensual (no todo seguido).
-- Ordénalas para que el grid se vea bien: alterna oscuras y claras, platos y ambiente/personas, primeros planos y planos abiertos; nunca dos casi iguales seguidas.
+- Ordénalas para que el grid se vea bien. Reglas fijas: nunca dos drinks seguidos y alterna una foto de noche con una de día. Además, alterna platos con ambiente/personas y primeros planos con planos abiertos; nunca dos casi iguales seguidas.
+- Marca cada foto con su tipo (drink, plato, ambiente, personas u otro) y si es de día o de noche.
 - Escribe un copy por foto en español de México, con el tono del cliente, sin inventar datos (precios, ingredientes, nombres o fechas que no se vean o no te digan).
 - Usa solo las categorías que te dan. El formato: "Foto" para fotos y "Reel vertical" para videos, salvo que otro calce claramente.
 Devuelve todas las fotos, cada una una sola vez.`;

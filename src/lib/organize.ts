@@ -4,6 +4,7 @@ import type { CopysRequest, CopysResult } from "@/app/api/copys/route";
 import type { OrganizePlan, OrganizeRequest } from "@/app/api/organizar/route";
 import { markInFeed } from "./bank";
 import { addDays, todayKey } from "./dates";
+import { feedRhythm } from "./feed-order";
 import { readLocal } from "./images";
 import { newPost, upsertPosts } from "./store";
 import type { BankItem, Post, Project } from "./types";
@@ -81,6 +82,12 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
   if (!withoutAi && (!response.ok || !answer.posts))
     throw new Error(answer.error ?? "No se pudo organizar.");
   const result = withoutAi ? simplePlan(request) : (answer as OrganizePlan);
+
+  // Regla fija: nunca dos drinks seguidos y día/noche alternados. Las fechas se reparten en ese orden.
+  const dates = result.posts.map((p) => p.date).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const order = feedRhythm(result.posts);
+  const dateOf = new Map(order.map((id, i) => [id, dates[i] ?? null]));
+  result.posts = order.map((id) => ({ ...result.posts.find((p) => p.id === id)!, date: dateOf.get(id) ?? "" }));
 
   const byId = new Map(items.map((item) => [item.id, item]));
   const pillars = new Set(project.pillars.map((p) => p.name));
@@ -172,6 +179,8 @@ function simplePlan({ project, start, taken, items }: OrganizeRequest): Organize
         caption: "",
         pillar: null,
         format: item.video ? ("Reel vertical" as const) : ("Foto" as const),
+        kind: "otro" as const,
+        light: item.brightness < 45 ? ("noche" as const) : ("dia" as const),
       };
     }),
   };
