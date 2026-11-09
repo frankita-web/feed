@@ -7,12 +7,13 @@ export const scriptPatchSchema = z.object({
   hook: z.string().optional().describe("Gancho: lo que pasa y se dice en los primeros 3 segundos"),
   scenes: z
     .array(
+      // Cualquier dato de la toma puede faltar (algunos modelos los omiten): queda vacío.
       z.object({
-        shot: z.string().describe('Plano o encuadre, ej. "Detalle cenital de la pizza"'),
-        action: z.string().describe("Qué pasa en la toma"),
-        onScreen: z.string().describe("Texto en pantalla (vacío si no hay)"),
-        audio: z.string().describe("Voz en off, diálogo, sonido o música"),
-        seconds: z.string().describe('Duración de la toma, ej. "3"'),
+        shot: z.string().default("").describe('Plano o encuadre, ej. "Detalle cenital de la pizza"'),
+        action: z.string().default("").describe("Qué pasa en la toma"),
+        onScreen: z.string().default("").describe("Texto en pantalla (vacío si no hay)"),
+        audio: z.string().default("").describe("Voz en off, diálogo, sonido o música"),
+        seconds: z.string().default("").describe('Duración de la toma, ej. "3"'),
       }),
     )
     .optional()
