@@ -13,6 +13,7 @@ import {
   CANCINO_VIDEOS_SINCE,
   CRISSIS_POSTS,
   CRISSIS_VOICE,
+  CANCINO_VOICE,
   SEED_VERSION,
   seedState,
 } from "./seed";
@@ -154,6 +155,12 @@ function migrate(s: State): State {
   if ((s.version ?? 1) < 17) {
     projects = projects.map((p) =>
       p.slug === "crissis" && !p.voice ? { ...p, voice: CRISSIS_VOICE } : p,
+    );
+  }
+  // v19: tono de los copys de Cancino (venta y llamado a la acción).
+  if ((s.version ?? 1) < 19) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" && !p.voice ? { ...p, voice: CANCINO_VOICE } : p,
     );
   }
   // v18: Crissis publica 2 veces por semana.
