@@ -73,8 +73,12 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
   });
-  const result = (await response.json()) as Partial<OrganizePlan> & { error?: string };
-  if (!response.ok || !result.posts) throw new Error(result.error ?? "No se pudo organizar.");
+  const answer = (await response.json()) as Partial<OrganizePlan> & { error?: string };
+  // Sin IA activada se ordena igual (claras y oscuras alternadas, con fechas), sin copy.
+  const withoutAi = !response.ok && !!answer.error?.includes("no está activada");
+  if (!withoutAi && (!response.ok || !answer.posts))
+    throw new Error(answer.error ?? "No se pudo organizar.");
+  const result = withoutAi ? simplePlan(request) : (answer as OrganizePlan);
 
   const byId = new Map(items.map((item) => [item.id, item]));
   const pillars = new Set(project.pillars.map((p) => p.name));
@@ -100,5 +104,35 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
 
   upsertPosts(created.map((c) => c.post));
   await markInFeed(created.map(({ item, post }) => ({ ...item, inFeed: { postId: post.id, date: post.date } })));
-  return created.map((c) => c.post);
+  return { posts: created.map((c) => c.post), withoutAi };
+}
+
+/** Orden sin IA: alterna oscuras y claras y reparte las fechas según la meta del mes. */
+function simplePlan({ project, start, taken, items }: OrganizeRequest): OrganizePlan {
+  const sorted = [...items].sort((a, b) => a.brightness - b.brightness);
+  const alternated: typeof items = [];
+  while (sorted.length) {
+    alternated.push(sorted.shift()!);
+    if (sorted.length) alternated.push(sorted.pop()!);
+  }
+  const every = Math.max(1, Math.round(30 / Math.max(1, project.monthlyGoal)));
+  const busy = new Set(taken);
+  let day = start;
+  return {
+    posts: alternated.map((item) => {
+      while (busy.has(day)) day = addDays(day, 1);
+      const date = day;
+      busy.add(date);
+      day = addDays(day, every);
+      return {
+        id: item.id,
+        date,
+        time: "13:00",
+        title: item.name,
+        caption: "",
+        pillar: null,
+        format: item.video ? ("Reel vertical" as const) : ("Foto" as const),
+      };
+    }),
+  };
 }

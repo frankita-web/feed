@@ -46,7 +46,7 @@ export function BankPanel({
     setOrganizing(true);
     setNotice(null);
     try {
-      const created = await organizeInFeed(
+      const { posts: created, withoutAi } = await organizeInFeed(
         project,
         mine.filter((b) => chosen.has(b.id)),
         posts,
@@ -55,7 +55,11 @@ export function BankPanel({
       setNotice(
         `Listo: ${created.length} ${created.length === 1 ? "post nuevo" : "posts nuevos"}${
           dates.length ? ` del ${shortDate(dates[0])} al ${shortDate(dates[dates.length - 1])}` : ""
-        } en “Con lo nuevo”. Revisa los copys antes de publicar.`,
+        } en “Con lo nuevo”. ${
+          withoutAi
+            ? "Quedaron sin copy: la IA todavía no está activada en Vercel."
+            : "Revisa los copys antes de publicar."
+        }`,
       );
       setChosen(null);
     } catch (error) {
