@@ -16,11 +16,10 @@ import {
   weekdayOf,
 } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
-import { calendarPdf } from "@/lib/pdf";
 import { newPost, saveNote, savePost } from "@/lib/store";
 import { STATUSES, STATUS_LABEL, type Post, type Project } from "@/lib/types";
 import { MonthAnalysis } from "./MonthAnalysis";
-import { PdfButton } from "./PdfButton";
+import { MonthsPdfButton } from "./MonthsPdfButton";
 import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
 import { PostDialog } from "./PostDialog";
 import { StatusDot } from "./Status";
@@ -150,7 +149,7 @@ export function CalendarView({
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <Legend project={project} />
-          <PdfButton make={() => calendarPdf(project, monthPosts, posts, year, month)} />
+          <MonthsPdfButton project={project} posts={posts} year={year} month={month} />
         </div>
       </div>
 

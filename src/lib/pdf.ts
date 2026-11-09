@@ -169,22 +169,28 @@ function pill(
 }
 
 /**
- * Una tarjeta por publicación, con los colores de la marca: día, categoría, foto,
- * formato y copy. Tres por fila, seis por hoja.
+ * Una publicación por fila, en orden de publicación y sobre fondo blanco: día, etiquetas con los
+ * colores de la marca, la foto, el copy y, si es carrusel, el resto de sus fotos. Cuatro por hoja.
  */
 async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: string, subtitle: string) {
   const { strong, soft } = brand(project);
-  const pageWidth = 210;
-  const gap = 5;
-  const cardWidth = (pageWidth - MARGIN * 2 - gap * 2) / 3;
-  const cardHeight = 124;
-  const photoWidth = cardWidth - 10;
-  const photoHeight = (photoWidth * 5) / 4;
+  const rowHeight = 62;
   const top = MARGIN + 22;
-  const pictures = await Promise.all(posts.map((p) => coverPicture(p, 480, 600)));
+  const photoX = MARGIN + 50;
+  const photoWidth = 44;
+  const photoHeight = 55;
+  const textX = photoX + photoWidth + 8;
+  const textWidth = 210 - MARGIN - textX;
+  const ordered = [...posts].sort(
+    (a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999") || a.createdAt - b.createdAt,
+  );
+  const covers = await Promise.all(ordered.map((p) => coverPicture(p, 440, 550)));
+  const extras = await Promise.all(
+    ordered.map((p) => Promise.all((p.slides ?? []).slice(0, 5).map((id) => picture(id, 120, 150)))),
+  );
 
-  posts.forEach((post, i) => {
-    const slot = i % 6;
+  ordered.forEach((post, i) => {
+    const slot = i % 4;
     if (slot === 0) {
       doc.addPage("a4", "portrait");
       doc.setFillColor(strong).circle(MARGIN + 2.5, MARGIN + 5.2, 2.5, "F");
@@ -193,116 +199,58 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
       doc.setTextColor(GRAPHITE).setFont("helvetica", "normal").setFontSize(10);
       doc.text(clean(subtitle), MARGIN + 8, MARGIN + 13);
     }
-    const x = MARGIN + (slot % 3) * (cardWidth + gap);
-    const y = top + Math.floor(slot / 3) * (cardHeight + gap);
-    doc.setFillColor("#ededed").roundedRect(x, y, cardWidth, cardHeight, 6, 6, "F");
+    const y = top + slot * rowHeight;
 
-    // Día, grande y gris: "VIE 19".
+    // Columna izquierda: día grande, categoría, formato y título.
     const day = post.date
-      ? `${weekdayOf(post.date)} ${Number(post.date.slice(8))}`
+      ? `${weekdayOf(post.date)} ${Number(post.date.slice(8))} ${MONTHS[Number(post.date.slice(5, 7)) - 1].slice(0, 3).toUpperCase()}`
       : "SIN FECHA";
-    doc.setFont("helvetica", "bold").setFontSize(15).setTextColor("#a3a3a3");
-    doc.text(clean(day), x + 5, y + 11, { charSpace: 0.6 });
-
-    if (post.pillar) pill(doc, post.pillar, x + 5, y + 15, strong, soft, "bold");
-
-    const photoX = x + 5;
-    const photoY = y + 25;
-    const picture = pictures[i];
-    doc.setFillColor("#dcdcdc").rect(photoX, photoY, photoWidth, photoHeight, "F");
-    if (picture) doc.addImage(picture, "JPEG", photoX, photoY, photoWidth, photoHeight);
-    else {
-      doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(GRAPHITE);
-      doc.text(fit(doc, post.title || "Sin foto", photoWidth - 6, 3), photoX + 3, photoY + photoHeight / 2);
+    doc.setFont("helvetica", "bold").setFontSize(16).setTextColor("#a3a3a3");
+    doc.text(clean(day), MARGIN, y + 8, { charSpace: 0.6 });
+    let tagY = y + 13;
+    if (post.pillar) {
+      pill(doc, post.pillar, MARGIN, tagY, strong, soft, "bold");
+      tagY += 10;
     }
+    pill(doc, post.format, MARGIN, tagY, strong, null, "bolditalic");
+    doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(INK);
+    doc.text(fit(doc, post.title || "", 44, 3), MARGIN, tagY + 16);
+
+    // Foto de portada.
+    const cover = covers[i];
+    doc.setFillColor("#ececec").rect(photoX, y + 2, photoWidth, photoHeight, "F");
+    if (cover) doc.addImage(cover, "JPEG", photoX, y + 2, photoWidth, photoHeight);
     const slides = (post.slides ?? []).length;
     if (slides) {
       const count = `1/${slides + 1}`;
       doc.setFont("helvetica", "bold").setFontSize(7);
       const w = doc.getTextWidth(count) + 4;
-      doc.setFillColor(INK).roundedRect(photoX + photoWidth - w - 2, photoY + 2, w, 5, 2.5, 2.5, "F");
-      doc.setTextColor("#ffffff").text(count, photoX + photoWidth - w, photoY + 5.4);
+      doc.setFillColor(INK).roundedRect(photoX + photoWidth - w - 2, y + 4, w, 5, 2.5, 2.5, "F");
+      doc.setTextColor("#ffffff").text(count, photoX + photoWidth - w, y + 7.4);
     }
     const video = linkUrl(post.videoLink);
     if (video) {
-      doc.link(photoX, photoY, photoWidth, photoHeight, { url: video });
+      doc.link(photoX, y + 2, photoWidth, photoHeight, { url: video });
       doc.setFont("helvetica", "bold").setFontSize(7.5);
       const w = doc.getTextWidth("Ver video") + 6;
-      doc.setFillColor("#ffffff").roundedRect(photoX + (photoWidth - w) / 2, photoY + photoHeight - 8, w, 5.5, 2.75, 2.75, "F");
-      doc.setTextColor(INK).text("Ver video", photoX + photoWidth / 2, photoY + photoHeight - 4.3, { align: "center" });
+      doc.setFillColor("#ffffff").roundedRect(photoX + (photoWidth - w) / 2, y + photoHeight - 6, w, 5.5, 2.75, 2.75, "F");
+      doc.setTextColor(INK).text("Ver video", photoX + photoWidth / 2, y + photoHeight - 2.3, { align: "center" });
     }
 
-    const formatY = photoY + photoHeight + 4;
-    pill(doc, post.format, x + 5, formatY, strong, null, "bolditalic");
+    // Copy y, si es carrusel, el resto de las fotos debajo.
+    const thumbs = extras[i].filter((x): x is string => !!x);
+    doc.setFont("helvetica", "normal").setFontSize(9.5).setTextColor(post.caption ? INK : GRAPHITE);
+    const lines = post.caption ? fit(doc, post.caption, textWidth, thumbs.length ? 7 : 12) : ["sin copy todavía"];
+    doc.text(lines, textX, y + 6);
+    thumbs.forEach((thumb, k) => doc.addImage(thumb, "JPEG", textX + k * 14, y + 41, 12, 15));
 
-    doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(GRAPHITE);
-    const caption = post.caption ? fit(doc, post.caption, cardWidth - 10, 3) : ["sin copy todavía"];
-    doc.text(caption, x + 5, formatY + 12);
+    if (slot < 3 && i < ordered.length - 1) {
+      doc.setDrawColor("#e6e6e6").setLineWidth(0.3);
+      doc.line(MARGIN, y + rowHeight - 2.5, 210 - MARGIN, y + rowHeight - 2.5);
+    }
   });
 }
 
-/** Una publicación por bloque: datos, copy y todas sus fotos, para entender qué se publicará. */
-async function detailPages(doc: jsPDF, posts: Post[], title: string, subtitle: string) {
-  // Siempre en vertical, aunque la página anterior sea el mes apaisado.
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const width = pageWidth - MARGIN * 2;
-  const photo = 34;
-  const photoHeight = (photo * 4) / 3;
-  const gap = 2;
-  const perRow = Math.floor((width + gap) / (photo + gap));
-  let y = pageHeight;
-
-  for (const post of posts) {
-    const ids = [post.image, ...(post.slides ?? [])].filter((id): id is string => !!id);
-    const found = (await Promise.all(ids.map((id) => picture(id, 360, 480)))).filter(
-      (image): image is string => !!image,
-    );
-    const frame = found.length ? null : await videoPicture(post, 360, 480);
-    const images = frame ? [frame] : found;
-    doc.setFont("helvetica", "normal").setFontSize(9.5);
-    const caption = post.caption ? fit(doc, post.caption, width, 5) : [];
-    const rows = Math.ceil(images.length / perRow);
-    const height = 12 + caption.length * 4.2 + rows * (photoHeight + gap) + 6;
-
-    if (y + height > pageHeight - MARGIN) {
-      doc.addPage("a4", "portrait");
-      header(doc, title, subtitle);
-      y = MARGIN + 20;
-    }
-
-    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(INK);
-    doc.text(fit(doc, post.title || "Sin título", width, 1), MARGIN, y + 4);
-    doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(GRAPHITE);
-    const facts = clean(
-      [post.date && shortDate(post.date), post.time, post.format, post.pillar, STATUS_LABEL[post.status]]
-        .filter(Boolean)
-        .join(" · "),
-    );
-    doc.text(facts, MARGIN, y + 9);
-    const video = linkUrl(post.videoLink);
-    if (video) {
-      doc.setFont("helvetica", "bold").setTextColor("#0b57d0");
-      doc.textWithLink("Ver video", MARGIN + doc.getTextWidth(facts) + 5, y + 9, { url: video });
-      doc.setFont("helvetica", "normal");
-    }
-    let next = y + 12;
-    if (caption.length) {
-      doc.setFontSize(9.5).setTextColor(INK);
-      doc.text(caption, MARGIN, next + 2.5);
-      next += caption.length * 4.2;
-    }
-    images.forEach((image, i) => {
-      const x = MARGIN + (i % perRow) * (photo + gap);
-      const rowY = next + 1 + Math.floor(i / perRow) * (photoHeight + gap);
-      doc.addImage(image, "JPEG", x, rowY, photo, photoHeight);
-      doc.setFillColor(INK).rect(x + 1, rowY + 1, 5, 4, "F");
-      doc.setFont("helvetica", "bold").setFontSize(7).setTextColor("#ffffff");
-      doc.text(String(i + 1), x + 3.5, rowY + 3.8, { align: "center" });
-    });
-    y += height;
-  }
-}
 
 const fileName = (project: Project, what: string) => `${project.name} - ${what}.pdf`;
 
@@ -315,21 +263,23 @@ const PREVIOUS = 3;
  * Con mes: los posts de ese mes y los 3 anteriores a que empiece.
  * Sin mes: todo lo nuevo y los últimos 3 ya publicados.
  */
-function feedItems(project: Project, posts: Post[], month?: string): FeedItem[] {
+function feedItems(project: Project, posts: Post[], months?: string[]): FeedItem[] {
   const today = todayKey();
   const all = feedPosts(posts, project.slug);
   const isNew = (p: Post) => p.status !== "publicado";
   const label = (p: Post) =>
     p.date ? `${p.date < today ? "" : "Nuevo · "}${shortDate(p.date)}` : "Nuevo · sin fecha";
   const item = (post: Post) => ({ post, label: isNew(post) ? label(post) : undefined });
-  if (month)
+  if (months?.length) {
+    const first = [...months].sort()[0];
     return [
-      ...all.filter((p) => p.date?.startsWith(month)),
+      ...all.filter((p) => months.some((m) => p.date?.startsWith(m))),
       ...all
-        .filter((p) => p.date && p.date < month)
+        .filter((p) => p.date && p.date < first)
         .sort((x, y) => y.date!.localeCompare(x.date!))
         .slice(0, PREVIOUS),
     ].map(item);
+  }
   return [...all.filter(isNew), ...all.filter((p) => !isNew(p)).slice(0, PREVIOUS)].map(item);
 }
 
@@ -397,8 +347,6 @@ export async function feedPdf(project: Project, posts: Post[]) {
   await feedPages(doc, project, items);
   const fresh = items.filter((item) => item.label).map((item) => item.post);
   await cardPages(doc, project, fresh, "Lo nuevo", project.name);
-  const carousels = fresh.filter((p) => p.slides?.length);
-  if (carousels.length) await detailPages(doc, carousels, "Lo nuevo · Carruseles", project.name);
   doc.save(fileName(project, "Feed"));
 }
 
@@ -474,25 +422,28 @@ export async function reportPdf(project: Project, report: Report, year: number, 
   doc.save(fileName(project, `Reporte ${monthName} ${year}`));
 }
 
-/** Todo en un solo PDF: el mes en cuadrícula, el feed y el detalle de cada publicación. */
-export async function calendarPdf(
-  project: Project,
-  posts: Post[],
-  allPosts: Post[],
-  year: number,
-  month: number,
-) {
-  const doc = await newDocument("landscape");
+type MonthRef = { year: number; month: number };
+
+const titleOf = (months: MonthRef[]) => {
+  const names = months.map(({ year, month }, i) => {
+    const name = MONTHS[month][0].toUpperCase() + MONTHS[month].slice(1);
+    const nextYear = months[i + 1]?.year;
+    return nextYear === year ? name : `${name} ${year}`;
+  });
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} y ${names.at(-1)}` : names[0];
+};
+
+/** El mes en cuadrícula, en una hoja apaisada. */
+async function monthGrid(doc: jsPDF, project: Project, allPosts: Post[], { year, month }: MonthRef) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const monthName = MONTHS[month][0].toUpperCase() + MONTHS[month].slice(1);
-  const dated = posts
-    .filter((p) => p.date)
+  const key = monthKey(year, month);
+  const dated = allPosts
+    .filter((p) => p.date?.startsWith(key))
     .sort((a, b) => a.date!.localeCompare(b.date!) || a.createdAt - b.createdAt);
   const thumbs = new Map(
-    await Promise.all(
-      dated.map(async (p) => [p.id, await coverPicture(p, 240, 320)] as const),
-    ),
+    await Promise.all(dated.map(async (p) => [p.id, await coverPicture(p, 240, 320)] as const)),
   );
 
   header(doc, `${project.name} · ${monthName} ${year}`, `Calendario de contenido · ${dated.length} publicaciones`);
@@ -521,8 +472,7 @@ export async function calendarPdf(
 
     doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(INK);
     doc.text(String(day), x + 1.5, y + 4);
-    const key = dateKey(year, month, day);
-    const list = dated.filter((p) => p.date === key);
+    const list = dated.filter((p) => p.date === dateKey(year, month, day));
     const room = Math.max(1, Math.floor((cellHeight - 6) / (thumbHeight + 1)));
     const shown = list.length > room ? room - 1 || 1 : room;
     list.slice(0, shown).forEach((post, k) => {
@@ -536,11 +486,7 @@ export async function calendarPdf(
       doc.setFillColor(statusColor(post.status, project));
       doc.circle(textX + 0.9, rowY + 1.4, 0.9, "F");
       doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(INK);
-      doc.text(
-        fit(doc, post.title || post.format, cellWidth - thumbWidth - 6.5, 2),
-        textX + 2.6,
-        rowY + 2.2,
-      );
+      doc.text(fit(doc, post.title || post.format, cellWidth - thumbWidth - 6.5, 2), textX + 2.6, rowY + 2.2);
       doc.setFontSize(6).setTextColor(GRAPHITE);
       doc.text(fit(doc, post.format, cellWidth - thumbWidth - 4, 1), textX, rowY + thumbHeight - 0.5);
     });
@@ -549,13 +495,26 @@ export async function calendarPdf(
       doc.text(`+${list.length - shown} más`, x + cellWidth - 1.5, y + 4, { align: "right" });
     }
   }
+}
+
+/**
+ * Todo en un solo PDF, para uno o varios meses: cada mes en cuadrícula, el feed (con los 3 posts
+ * anteriores al primer mes) y una fila por publicación.
+ */
+export async function calendarPdf(project: Project, allPosts: Post[], picked: MonthRef[]) {
+  const months = [...picked].sort((a, b) => a.year - b.year || a.month - b.month);
+  const keys = months.map((m) => monthKey(m.year, m.month));
+  const doc = await newDocument("landscape");
+  for (const [i, ref] of months.entries()) {
+    if (i) doc.addPage("a4", "landscape");
+    await monthGrid(doc, project, allPosts, ref);
+  }
+  const dated = allPosts.filter((p) => p.date && keys.some((k) => p.date!.startsWith(k)));
+  const title = titleOf(months);
 
   doc.addPage("a4", "portrait");
-  await feedPages(doc, project, feedItems(project, allPosts, monthKey(year, month)));
-  await cardPages(doc, project, dated, `${monthName} ${year}`, `${project.name} · publicaciones del mes`);
-  const carousels = dated.filter((p) => p.slides?.length);
-  if (carousels.length)
-    await detailPages(doc, carousels, `${monthName} ${year} · Carruseles`, project.name);
+  await feedPages(doc, project, feedItems(project, allPosts, keys));
+  await cardPages(doc, project, dated, title, `${project.name} · publicaciones`);
 
-  doc.save(fileName(project, `Calendario ${monthName} ${year}`));
+  doc.save(fileName(project, `Calendario ${title}`));
 }
