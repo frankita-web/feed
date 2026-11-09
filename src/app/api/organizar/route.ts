@@ -39,11 +39,14 @@ const planSchema = z.object({
 
 export type OrganizePlan = z.infer<typeof planSchema>;
 
-// Solo modelos del crédito gratis de Vercel (Franca no quiere pagar): se prueba en orden.
+// Franca usa solo el crédito gratis de Vercel, que no incluye Claude: se prueba en orden
+// hasta dar con uno disponible. El último no ve fotos y ordena con la luminosidad y el nombre.
 const MODELS = [
-  "anthropic/claude-sonnet-5.5",
-  "anthropic/claude-haiku-5.5",
-  "anthropic/claude-haiku-4.5",
+  { id: "anthropic/claude-sonnet-5.5", vision: true },
+  { id: "google/gemini-3.5-flash-lite", vision: true },
+  { id: "google/gemini-2.5-flash-lite", vision: true },
+  { id: "openai/gpt-4.1-mini", vision: true },
+  { id: "nvidia/nemotron-3.5-lightning-free", vision: false },
 ];
 
 const SYSTEM = `Eres la community manager del estudio Franca Mandiola, que lleva el Instagram de restaurantes en Ciudad de México.
@@ -75,7 +78,7 @@ export async function POST(request: Request) {
   ].join("\n");
 
   const errors: string[] = [];
-  for (const model of MODELS) {
+  for (const { id: model, vision } of MODELS) {
     try {
       const { output } = await generateText({
         model,
@@ -91,11 +94,9 @@ export async function POST(request: Request) {
                   type: "text" as const,
                   text: `Foto id=${item.id} · archivo "${item.name}" · ${item.video ? "video" : "foto"} · luminosidad ${item.brightness}/100`,
                 },
-                {
-                  type: "file" as const,
-                  mediaType: "image/jpeg",
-                  data: item.image,
-                },
+                ...(vision
+                  ? [{ type: "file" as const, mediaType: "image/jpeg", data: item.image }]
+                  : []),
               ]),
             ],
           },
