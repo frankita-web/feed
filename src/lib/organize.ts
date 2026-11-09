@@ -5,7 +5,7 @@ import type { CopysRequest, CopysResult } from "@/app/api/copys/route";
 import type { OrganizePlan, OrganizeRequest } from "@/app/api/organizar/route";
 import { markInFeed } from "./bank";
 import { addDays, todayKey } from "./dates";
-import { feedRhythm, type PhotoKind, type PhotoLight } from "./feed-order";
+import { feedRhythm, weeklySlots, type PhotoKind, type PhotoLight } from "./feed-order";
 import { readLocal } from "./images";
 import { newPost, upsertPosts } from "./store";
 import type { BankItem, Post, Project } from "./types";
@@ -85,7 +85,10 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
   const result = withoutAi ? simplePlan(request) : (answer as OrganizePlan);
 
   // Regla fija: nunca dos drinks seguidos y día/noche alternados. Las fechas se reparten en ese orden.
-  const dates = result.posts.map((p) => p.date).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  // Con ritmo semanal, las fechas salen de ese ritmo (y nunca pegadas a otro post).
+  const dates = project.postsPerWeek
+    ? weeklySlots(request.start, project.postsPerWeek, result.posts.length, request.taken)
+    : result.posts.map((p) => p.date).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
   const order = feedRhythm(result.posts);
   const dateOf = new Map(order.map((id, i) => [id, dates[i] ?? null]));
   result.posts = order.map((id) => ({ ...result.posts.find((p) => p.id === id)!, date: dateOf.get(id) ?? "" }));
@@ -159,7 +162,7 @@ export async function rewriteCaptions(project: Project, posts: Post[]) {
  * Reparte de nuevo las fechas de los posts nuevos: nunca dos drinks seguidos y día/noche alternados.
  * Los posts no cambian de fecha si ya cumplen; solo se intercambian las mismas fechas.
  */
-export async function reorderFeed(posts: Post[]) {
+export async function reorderFeed(project: Project, posts: Post[]) {
   const dated = posts.filter((p) => p.date).sort((a, b) => a.date!.localeCompare(b.date!));
   const tagged: { id: string; kind: PhotoKind; light: PhotoLight }[] = [];
   for (let i = 0; i < dated.length; i += 10) {
@@ -193,7 +196,10 @@ export async function reorderFeed(posts: Post[]) {
       });
     });
   }
-  const dates = dated.map((p) => p.date!);
+  // Con ritmo semanal: fechas nuevas desde mañana (2 por semana = martes y viernes).
+  const dates = project.postsPerWeek
+    ? weeklySlots(addDays(todayKey(), 1), project.postsPerWeek, dated.length)
+    : dated.map((p) => p.date!);
   const order = feedRhythm(tagged);
   const changed = order.flatMap((id, i) => {
     const post = dated.find((p) => p.id === id)!;

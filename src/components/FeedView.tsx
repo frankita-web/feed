@@ -311,14 +311,14 @@ export function FeedView({
                     if (
                       targets.length < 2 ||
                       !confirm(
-                        `Se reacomodan las fechas de los ${targets.length} posts nuevos: nunca dos drinks seguidos y foto de día y de noche alternadas. ¿Seguir?`,
+                        `Se reacomodan las fechas de los ${targets.length} posts nuevos${project.postsPerWeek ? ` a ${project.postsPerWeek} por semana, desde mañana,` : ""}: nunca dos drinks seguidos y foto de día y de noche alternadas. ¿Seguir?`,
                       )
                     )
                       return;
                     setRewriting(true);
                     setRewriteNote(null);
                     try {
-                      const { moved, total } = await reorderFeed(targets);
+                      const { moved, total } = await reorderFeed(project, targets);
                       setRewriteNote(
                         moved
                           ? `Listo: se reacomodaron ${moved} de ${total} posts. Revisa que el orden te guste.`

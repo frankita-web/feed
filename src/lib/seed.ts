@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 17;
+export const SEED_VERSION = 18;
 
 /** Tono de Crissis, como lo pidió Franca (9 nov 2026). */
 export const CRISSIS_VOICE = `sin hashtags, nunca.
@@ -327,6 +327,7 @@ export function seedState(): State {
         monthlyGoal: 12,
         pillars: [],
         voice: CRISSIS_VOICE,
+        postsPerWeek: 2,
         ...BRAND_COLORS.crissis,
       },
       {

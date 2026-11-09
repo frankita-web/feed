@@ -156,6 +156,12 @@ function migrate(s: State): State {
       p.slug === "crissis" && !p.voice ? { ...p, voice: CRISSIS_VOICE } : p,
     );
   }
+  // v18: Crissis publica 2 veces por semana.
+  if ((s.version ?? 1) < 18) {
+    projects = projects.map((p) =>
+      p.slug === "crissis" && !p.postsPerWeek ? { ...p, postsPerWeek: 2, monthlyGoal: 9 } : p,
+    );
+  }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {
     projects = projects.map((p) =>

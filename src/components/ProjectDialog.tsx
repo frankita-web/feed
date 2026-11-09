@@ -205,6 +205,26 @@ export function ProjectDialog({
         </Field>
 
         <div className="w-40">
+          <Field label="Posts a la semana">
+            <input
+              type="number"
+              min={1}
+              max={7}
+              className={inputClass}
+              value={draft.postsPerWeek ?? ""}
+              placeholder="Ej. 2"
+              onChange={(e) => {
+                const perWeek = Number(e.target.value) || undefined;
+                set({
+                  postsPerWeek: perWeek,
+                  ...(perWeek && { monthlyGoal: Math.round((perWeek * 52) / 12) }),
+                });
+              }}
+            />
+          </Field>
+        </div>
+
+        <div className="w-40">
           <Field label="Posts al mes">
             <input
               type="number"
