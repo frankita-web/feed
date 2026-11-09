@@ -87,7 +87,7 @@ export function ProjectDialog({
             rows={5}
             className={inputClass}
             value={draft.voice ?? ""}
-            placeholder="Ej. sin hashtags, todo en minúscula, divertido. Pega aquí copys anteriores para que la IA se inspire."
+            placeholder="Ej. todo en minúscula, divertido. Pega aquí copys anteriores para que la IA se inspire."
             onChange={(e) => set({ voice: e.target.value })}
           />
         </Field>

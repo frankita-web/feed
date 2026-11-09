@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { voiceRule, withFreeModels } from "@/lib/free-ai";
+import { voiceRule, withFreeModels, withoutHashtags } from "@/lib/free-ai";
 
 export type CopysRequest = {
   project: { name: string; instagram: string; voice?: string };
@@ -73,7 +73,9 @@ export async function POST(request: Request) {
         ],
       });
       const known = new Set(body.posts.map((p) => p.id));
-      const captions = (output?.captions ?? []).filter((c) => known.has(c.id) && c.caption.trim());
+      const captions = (output?.captions ?? [])
+        .map((c) => ({ ...c, caption: withoutHashtags(c.caption) }))
+        .filter((c) => known.has(c.id) && c.caption);
       if (!captions.length) throw new Error("Respuesta vacía");
       return captions;
     });

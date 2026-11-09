@@ -1,7 +1,7 @@
 import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { FREE_MODELS, voiceRule } from "@/lib/free-ai";
+import { FREE_MODELS, voiceRule, withoutHashtags } from "@/lib/free-ai";
 import { FORMATS } from "@/lib/types";
 
 export type OrganizeRequest = {
@@ -101,7 +101,9 @@ export async function POST(request: Request) {
         ],
       });
       const known = new Set(body.items.map((i) => i.id));
-      const posts = (output?.posts ?? []).filter((p) => known.has(p.id));
+      const posts = (output?.posts ?? [])
+        .filter((p) => known.has(p.id))
+        .map((p) => ({ ...p, caption: withoutHashtags(p.caption) }));
       if (!posts.length) throw new Error("Respuesta vacía");
       return NextResponse.json({ posts, model });
     } catch (error) {

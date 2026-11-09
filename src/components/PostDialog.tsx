@@ -347,7 +347,7 @@ export function PostDialog({
               className={inputClass}
               value={draft.caption}
               maxLength={CAPTION_LIMIT}
-              placeholder="Texto del post, hashtags, menciones…"
+              placeholder="Texto del post, menciones…"
               onChange={(e) => set({ caption: e.target.value })}
             />
             <span className="mt-1 block text-right text-[11px] text-graphite">
