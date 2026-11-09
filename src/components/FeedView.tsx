@@ -5,6 +5,7 @@ import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { reorderFeed, rewriteCaptions } from "@/lib/organize";
+import { notify } from "@/lib/toast";
 import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
@@ -43,7 +44,6 @@ export function FeedView({
   const [target, setTarget] = useState<string | null>(null);
   const [planDrop, setPlanDrop] = useState(false);
   const [rewriting, setRewriting] = useState(false);
-  const [rewriteNote, setRewriteNote] = useState<string | null>(null);
   const planRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
@@ -290,12 +290,12 @@ export function FeedView({
                     )
                       return;
                     setRewriting(true);
-                    setRewriteNote(null);
+                    notify(`Escribiendo los copys de ${targets.length} posts…`, "loading", "feed-ai");
                     try {
                       const done = await rewriteCaptions(project, targets);
-                      setRewriteNote(`Listo: ${done} copys nuevos. Revísalos en cada ficha.`);
+                      notify(`Listo: ${done} copys nuevos. Revísalos en cada ficha.`, "ok", "feed-ai");
                     } catch (error) {
-                      setRewriteNote((error as Error).message);
+                      notify((error as Error).message, "error", "feed-ai");
                     }
                     setRewriting(false);
                   }}
@@ -316,16 +316,18 @@ export function FeedView({
                     )
                       return;
                     setRewriting(true);
-                    setRewriteNote(null);
+                    notify(`Reordenando ${targets.length} posts…`, "loading", "feed-ai");
                     try {
                       const { moved, total } = await reorderFeed(project, targets);
-                      setRewriteNote(
+                      notify(
                         moved
                           ? `Listo: se reacomodaron ${moved} de ${total} posts. Revisa que el orden te guste.`
                           : "Ya estaba bien: no hubo que mover nada.",
+                        "ok",
+                        "feed-ai",
                       );
                     } catch (error) {
-                      setRewriteNote((error as Error).message);
+                      notify((error as Error).message, "error", "feed-ai");
                     }
                     setRewriting(false);
                   }}
@@ -371,9 +373,6 @@ export function FeedView({
               </p>
             )}
           </Phone>
-          {rewriteNote && (
-            <p className="mt-3 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">{rewriteNote}</p>
-          )}
           {mismatched.size > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">
               <span>

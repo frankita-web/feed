@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ScrollToTop } from "@/components/ScrollToTop";
+import { Toaster } from "@/components/Toaster";
 import "./globals.css";
 
 // Helvetica primero (Mac/iPhone); Geist como respaldo en otros sistemas.
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${geistSans.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <ScrollToTop />
+        <Toaster />
         {children}
       </body>
     </html>

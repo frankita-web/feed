@@ -6,6 +6,7 @@ import { shortDate } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
 import { storeMedia } from "@/lib/media";
 import { organizeInFeed } from "@/lib/organize";
+import { notify } from "@/lib/toast";
 import { addToBank } from "@/lib/store";
 import type { BankItem, Post, Project } from "@/lib/types";
 import { buttonClass, darkButtonClass } from "./Modal";
@@ -29,7 +30,6 @@ export function BankPanel({
   // Elegir fotos para que la IA las ordene en el feed.
   const [chosen, setChosen] = useState<Set<string> | null>(null);
   const [organizing, setOrganizing] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const mine = bank.filter((b) => b.project === project.slug);
   const pending = mine.filter((b) => !b.inFeed);
 
@@ -44,7 +44,7 @@ export function BankPanel({
   const organize = async () => {
     if (!chosen?.size) return;
     setOrganizing(true);
-    setNotice(null);
+    notify(`Organizando ${chosen.size} fotos en el feed…`, "loading", "bank-ai");
     try {
       const { posts: created, withoutAi } = await organizeInFeed(
         project,
@@ -52,7 +52,7 @@ export function BankPanel({
         posts,
       );
       const dates = created.map((p) => p.date).filter((d): d is string => !!d).sort();
-      setNotice(
+      notify(
         `Listo: ${created.length} ${created.length === 1 ? "post nuevo" : "posts nuevos"}${
           dates.length ? ` del ${shortDate(dates[0])} al ${shortDate(dates[dates.length - 1])}` : ""
         } en “Con lo nuevo”. ${
@@ -60,10 +60,12 @@ export function BankPanel({
             ? "Quedaron sin copy: la IA todavía no está activada en Vercel."
             : "Revisa los copys antes de publicar."
         }`,
+        "ok",
+        "bank-ai",
       );
       setChosen(null);
     } catch (error) {
-      setNotice((error as Error).message);
+      notify((error as Error).message, "error", "bank-ai");
     }
     setOrganizing(false);
   };
@@ -161,7 +163,6 @@ export function BankPanel({
             mine.length > 0 && (
               <button
                 onClick={() => {
-                  setNotice(null);
                   setChosen(new Set());
                 }}
                 className={buttonClass}
@@ -198,7 +199,6 @@ export function BankPanel({
           alterna claras y oscuras. Las fotos se quedan en el banco.
         </p>
       )}
-      {notice && <p className="mb-2 rounded-xl bg-white/80 px-3 py-2 text-[13px]">{notice}</p>}
       {mine.length ? (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {mine.map((item) => (

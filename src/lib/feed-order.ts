@@ -83,16 +83,6 @@ export function feedRhythm<T extends { id: string; kind: PhotoKind; light: Photo
   return order.map((x) => x.id);
 }
 
-// Días de la semana para cada ritmo (0 = lunes). Hasta 3 por semana, nunca dos días seguidos.
-const WEEK_DAYS: Record<number, number[]> = {
-  1: [3],
-  2: [1, 4],
-  3: [0, 2, 4],
-  4: [0, 2, 4, 6],
-  5: [0, 1, 3, 4, 6],
-  6: [0, 1, 2, 3, 4, 5],
-  7: [0, 1, 2, 3, 4, 5, 6],
-};
 
 const shift = (key: string, n: number) => {
   const [y, m, d] = key.split("-").map(Number);
@@ -105,19 +95,32 @@ const weekday = (key: string) => {
 };
 
 /**
- * Próximas `count` fechas desde `start` con el ritmo semanal del cliente, sin caer en días
- * ocupados ni pegadas a ellos (nunca dos posts en días seguidos).
+ * Próximas fechas (tantas como pide count) desde start, con el ritmo semanal del cliente: días al azar cada semana,
+ * nunca dos posts en días seguidos ni pegados a un día ocupado.
  */
 export function weeklySlots(start: string, perWeek: number, count: number, taken: string[] = []) {
-  const days = WEEK_DAYS[Math.min(7, Math.max(1, Math.round(perWeek)))];
+  const n = Math.min(7, Math.max(1, Math.round(perWeek)));
   const busy = new Set(taken);
   const slots: string[] = [];
-  for (let day = start, guard = 0; slots.length < count && guard < 1000; day = shift(day, 1), guard++) {
-    if (!days.includes(weekday(day))) continue;
-    const near = [day, shift(day, -1), shift(day, 1)];
-    if (near.some((d) => busy.has(d))) continue;
-    if (perWeek <= 3 && slots.length && slots[slots.length - 1] === shift(day, -1)) continue;
-    slots.push(day);
+  const free = (day: string) =>
+    [day, shift(day, -1), shift(day, 1)].every((d) => !busy.has(d)) &&
+    (n > 3 || !slots.includes(shift(day, -1)));
+  // Lunes de la semana de start.
+  let monday = shift(start, -weekday(start));
+  for (let guard = 0; slots.length < count && guard < 200; guard++, monday = shift(monday, 7)) {
+    const week = Array.from({ length: 7 }, (_, i) => shift(monday, i)).filter((d) => d >= start);
+    // Orden al azar, para que no sea siempre el mismo día.
+    for (let i = week.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [week[i], week[j]] = [week[j], week[i]];
+    }
+    const picked: string[] = [];
+    for (const day of week) {
+      if (picked.length >= n || slots.length + picked.length >= count) break;
+      const apart = n > 3 || picked.every((p) => p !== shift(day, -1) && p !== shift(day, 1));
+      if (free(day) && apart) picked.push(day);
+    }
+    slots.push(...picked.sort());
   }
-  return slots;
+  return slots.sort();
 }
