@@ -1,5 +1,6 @@
 "use client";
 
+import type { CopysRequest, CopysResult } from "@/app/api/copys/route";
 import type { OrganizePlan, OrganizeRequest } from "@/app/api/organizar/route";
 import { markInFeed } from "./bank";
 import { addDays, todayKey } from "./dates";
@@ -8,7 +9,7 @@ import { newPost, upsertPosts } from "./store";
 import type { BankItem, Post, Project } from "./types";
 
 /** Miniatura chica para la IA y qué tan clara es (0 oscura, 100 clara). */
-async function thumbnail(item: BankItem) {
+async function thumbnail(item: Pick<BankItem, "image" | "files">) {
   const id = item.image ?? item.files.find((f) => f.type.startsWith("video/"))?.id;
   if (!id) return null;
   const blob = id.startsWith("/")
@@ -56,6 +57,7 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
       instagram: project.instagram,
       pillars: project.pillars.map((p) => p.name),
       monthlyGoal: project.monthlyGoal,
+      voice: project.voice,
     },
     start: addDays(todayKey(), 1),
     taken: [
@@ -105,6 +107,44 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
   upsertPosts(created.map((c) => c.post));
   await markInFeed(created.map(({ item, post }) => ({ ...item, inFeed: { postId: post.id, date: post.date } })));
   return { posts: created.map((c) => c.post), withoutAi };
+}
+
+/** La IA reescribe los copys de estos posts con el tono del cliente (de a 8, para no pedir de más). */
+export async function rewriteCaptions(project: Project, posts: Post[]) {
+  let done = 0;
+  for (let i = 0; i < posts.length; i += 8) {
+    const group = posts.slice(i, i + 8);
+    const request: CopysRequest = {
+      project: { name: project.name, instagram: project.instagram, voice: project.voice },
+      posts: await Promise.all(
+        group.map(async (post) => ({
+          id: post.id,
+          title: post.title,
+          format: post.format,
+          date: post.date,
+          pillar: post.pillar,
+          caption: post.caption,
+          image: (await thumbnail({ image: post.image, files: post.files ?? [] }).catch(() => null))
+            ?.image,
+        })),
+      ),
+    };
+    const response = await fetch("/api/copys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const result = (await response.json()) as Partial<CopysResult> & { error?: string };
+    if (!response.ok || !result.captions) throw new Error(result.error ?? "No se pudieron rehacer los copys.");
+    const byId = new Map(result.captions.map((c) => [c.id, c.caption]));
+    const changed = group.flatMap((post) => {
+      const caption = byId.get(post.id);
+      return caption ? [{ ...post, caption }] : [];
+    });
+    upsertPosts(changed);
+    done += changed.length;
+  }
+  return done;
 }
 
 /** Orden sin IA: alterna oscuras y claras y reparte las fechas según la meta del mes. */

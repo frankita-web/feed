@@ -82,6 +82,16 @@ export function ProjectDialog({
             onChange={(e) => set({ instagram: e.target.value })}
           />
         </Field>
+        <Field label="Tono de los copys">
+          <textarea
+            rows={5}
+            className={inputClass}
+            value={draft.voice ?? ""}
+            placeholder="Ej. sin hashtags, todo en minúscula, divertido. Pega aquí copys anteriores para que la IA se inspire."
+            onChange={(e) => set({ voice: e.target.value })}
+          />
+        </Field>
+
         <Field label="Logo">
           <div className="flex items-center gap-4">
             <Logo project={draft} className="h-14 w-14 shrink-0" />

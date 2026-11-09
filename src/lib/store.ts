@@ -12,6 +12,7 @@ import {
   CANCINO_VIDEOS,
   CANCINO_VIDEOS_SINCE,
   CRISSIS_POSTS,
+  CRISSIS_VOICE,
   SEED_VERSION,
   seedState,
 } from "./seed";
@@ -148,6 +149,12 @@ function migrate(s: State): State {
         ? { ...p, order: undefined }
         : p;
     });
+  }
+  // v17: tono de los copys de Crissis.
+  if ((s.version ?? 1) < 17) {
+    projects = projects.map((p) =>
+      p.slug === "crissis" && !p.voice ? { ...p, voice: CRISSIS_VOICE } : p,
+    );
   }
   // v8: colores de pendiente / listo / publicado desde la paleta.
   if ((s.version ?? 1) < 8) {

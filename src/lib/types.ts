@@ -42,6 +42,8 @@ export type Project = {
   menu?: Menu;
   /** Carta de drinks (sección Drinks). */
   drinks?: Drink[];
+  /** Cómo se escriben los copys de este cliente; la IA lo sigue al pie de la letra. */
+  voice?: string;
   /** Drink planeado para cada mes. Llave: YYYY-MM. */
   drinkPlan?: Record<string, DrinkPlan>;
 };

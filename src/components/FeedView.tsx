@@ -4,6 +4,7 @@ import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
+import { rewriteCaptions } from "@/lib/organize";
 import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
@@ -19,7 +20,7 @@ import type { BankItem, Post, Project, Shoot } from "@/lib/types";
 import { BankPanel } from "./BankPanel";
 import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
-import { darkButtonClass } from "./Modal";
+import { buttonClass, darkButtonClass } from "./Modal";
 import { Logo } from "./Logo";
 import { PdfButton } from "./PdfButton";
 import { PostDialog } from "./PostDialog";
@@ -41,6 +42,8 @@ export function FeedView({
   const [moving, setMoving] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
   const [planDrop, setPlanDrop] = useState(false);
+  const [rewriting, setRewriting] = useState(false);
+  const [rewriteNote, setRewriteNote] = useState<string | null>(null);
   const planRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
@@ -264,6 +267,32 @@ export function FeedView({
             subtitle={`${plannedCount} ${plannedCount === 1 ? "post nuevo" : "posts nuevos"} · arrastra para acomodar`}
             action={
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={async () => {
+                    const targets = all.filter(isPlanned);
+                    if (
+                      !targets.length ||
+                      !confirm(
+                        `Se reescriben los copys de los ${targets.length} posts nuevos con el tono de ${project.name}. Los copys actuales se reemplazan. ¿Seguir?`,
+                      )
+                    )
+                      return;
+                    setRewriting(true);
+                    setRewriteNote(null);
+                    try {
+                      const done = await rewriteCaptions(project, targets);
+                      setRewriteNote(`Listo: ${done} copys nuevos. Revísalos en cada ficha.`);
+                    } catch (error) {
+                      setRewriteNote((error as Error).message);
+                    }
+                    setRewriting(false);
+                  }}
+                  disabled={rewriting || !plannedCount}
+                  className={buttonClass}
+                  title="La IA reescribe los copys de lo nuevo con el tono del cliente"
+                >
+                  {rewriting ? "Escribiendo…" : "✨ Rehacer copys"}
+                </button>
                 <PdfButton make={() => feedPdf(project, posts)} />
                 <button
                   onClick={() => planRef.current?.click()}
@@ -300,6 +329,9 @@ export function FeedView({
               </p>
             )}
           </Phone>
+          {rewriteNote && (
+            <p className="mt-3 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">{rewriteNote}</p>
+          )}
           {mismatched.size > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">
               <span>

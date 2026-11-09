@@ -68,7 +68,19 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 16;
+export const SEED_VERSION = 17;
+
+/** Tono de Crissis, como lo pidió Franca (9 nov 2026). */
+export const CRISSIS_VOICE = `sin hashtags, nunca.
+todo en minúscula, también la primera letra y los nombres.
+divertido y corto: una frase con giro, juego de palabras o complicidad. emojis casi nunca.
+copys anteriores para inspirarse:
+- ❗️nuestro vermouth casero ❗️
+- la crisis acompañado, se vive distinto.
+- dollar pancakes + sbagliato + charly garcía.
+- crissis señala, el camarón con caviar responde.
+- bienvenidos al bistró de barrio.
+- alitas y cerveza. ninguna intención de irnos temprano.`;
 
 /** Menú Cancino Cibeles 2026 (v13). */
 export const CANCINO_MENU: Project["menu"] = {
@@ -314,6 +326,7 @@ export function seedState(): State {
         bg: "#ffff95",
         monthlyGoal: 12,
         pillars: [],
+        voice: CRISSIS_VOICE,
         ...BRAND_COLORS.crissis,
       },
       {

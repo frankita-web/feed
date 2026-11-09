@@ -1,10 +1,12 @@
 import { generateText, Output } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { FREE_MODELS, voiceRule } from "@/lib/free-ai";
 import { FORMATS } from "@/lib/types";
 
 export type OrganizeRequest = {
   project: {
+    voice?: string;
     name: string;
     instagram: string;
     pillars: string[];
@@ -39,21 +41,11 @@ const planSchema = z.object({
 
 export type OrganizePlan = z.infer<typeof planSchema>;
 
-// Franca usa solo el crédito gratis de Vercel, que no incluye Claude: se prueba en orden
-// hasta dar con uno disponible. El último no ve fotos y ordena con la luminosidad y el nombre.
-const MODELS = [
-  { id: "anthropic/claude-sonnet-5.5", vision: true },
-  { id: "google/gemini-3.5-flash-lite", vision: true },
-  { id: "google/gemini-2.5-flash-lite", vision: true },
-  { id: "openai/gpt-4.1-mini", vision: true },
-  { id: "nvidia/nemotron-3.5-lightning-free", vision: false },
-];
-
 const SYSTEM = `Eres la community manager del estudio Franca Mandiola, que lleva el Instagram de restaurantes en Ciudad de México.
 Te pasan fotos que todavía no se publican. Arma con ellas el calendario del feed:
 - Elige la fecha de cada foto desde el primer día disponible, sin repetir días ocupados, con un ritmo parecido a la meta mensual (no todo seguido).
 - Ordénalas para que el grid se vea bien: alterna oscuras y claras, platos y ambiente/personas, primeros planos y planos abiertos; nunca dos casi iguales seguidas.
-- Escribe un copy por foto: español de México, cercano y con frases cortas, sin inventar datos (precios, ingredientes, nombres o fechas que no se vean o no te digan). Emojis con moderación y 1 a 3 hashtags.
+- Escribe un copy por foto en español de México, con el tono del cliente, sin inventar datos (precios, ingredientes, nombres o fechas que no se vean o no te digan).
 - Usa solo las categorías que te dan. El formato: "Foto" para fotos y "Reel vertical" para videos, salvo que otro calce claramente.
 Devuelve todas las fotos, cada una una sola vez.`;
 
@@ -75,10 +67,11 @@ export async function POST(request: Request) {
     body.taken.length
       ? `Días ya ocupados: ${body.taken.join(", ")}.`
       : "No hay días ocupados.",
+    voiceRule(body.project.voice),
   ].join("\n");
 
   const errors: string[] = [];
-  for (const { id: model, vision } of MODELS) {
+  for (const { id: model, vision } of FREE_MODELS) {
     try {
       const { output } = await generateText({
         model,
