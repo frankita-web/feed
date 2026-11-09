@@ -1,10 +1,11 @@
 "use client";
 
+import type { ClassifyRequest, ClassifyResult } from "@/app/api/clasificar/route";
 import type { CopysRequest, CopysResult } from "@/app/api/copys/route";
 import type { OrganizePlan, OrganizeRequest } from "@/app/api/organizar/route";
 import { markInFeed } from "./bank";
 import { addDays, todayKey } from "./dates";
-import { feedRhythm } from "./feed-order";
+import { feedRhythm, type PhotoKind, type PhotoLight } from "./feed-order";
 import { readLocal } from "./images";
 import { newPost, upsertPosts } from "./store";
 import type { BankItem, Post, Project } from "./types";
@@ -152,6 +153,56 @@ export async function rewriteCaptions(project: Project, posts: Post[]) {
     done += changed.length;
   }
   return done;
+}
+
+/**
+ * Reparte de nuevo las fechas de los posts nuevos: nunca dos drinks seguidos y día/noche alternados.
+ * Los posts no cambian de fecha si ya cumplen; solo se intercambian las mismas fechas.
+ */
+export async function reorderFeed(posts: Post[]) {
+  const dated = posts.filter((p) => p.date).sort((a, b) => a.date!.localeCompare(b.date!));
+  const tagged: { id: string; kind: PhotoKind; light: PhotoLight }[] = [];
+  for (let i = 0; i < dated.length; i += 10) {
+    const group = dated.slice(i, i + 10);
+    const thumbs = await Promise.all(
+      group.map((p) => thumbnail({ image: p.image, files: p.files ?? [] }).catch(() => null)),
+    );
+    const request: ClassifyRequest = {
+      posts: group.map((p, k) => ({
+        id: p.id,
+        title: p.title,
+        caption: p.caption,
+        image: thumbs[k]?.image,
+        brightness: thumbs[k]?.brightness,
+      })),
+    };
+    const response = await fetch("/api/clasificar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+    const result = (await response.json()) as Partial<ClassifyResult> & { error?: string };
+    if (!response.ok || !result.tags) throw new Error(result.error ?? "No se pudo reordenar.");
+    const byId = new Map(result.tags.map((t) => [t.id, t]));
+    group.forEach((p, k) => {
+      const tag = byId.get(p.id);
+      tagged.push({
+        id: p.id,
+        kind: tag?.kind ?? "otro",
+        light: tag?.light ?? ((thumbs[k]?.brightness ?? 50) < 45 ? "noche" : "dia"),
+      });
+    });
+  }
+  const dates = dated.map((p) => p.date!);
+  const order = feedRhythm(tagged);
+  const changed = order.flatMap((id, i) => {
+    const post = dated.find((p) => p.id === id)!;
+    return post.date === dates[i] && post.order === undefined
+      ? []
+      : [{ ...post, date: dates[i], order: undefined }];
+  });
+  upsertPosts(changed);
+  return { moved: changed.length, total: dated.length };
 }
 
 /** Orden sin IA: alterna oscuras y claras y reparte las fechas según la meta del mes. */

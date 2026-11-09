@@ -4,7 +4,7 @@ import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
-import { rewriteCaptions } from "@/lib/organize";
+import { reorderFeed, rewriteCaptions } from "@/lib/organize";
 import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
@@ -304,6 +304,36 @@ export function FeedView({
                   title="La IA reescribe los copys de lo nuevo con el tono del cliente"
                 >
                   {rewriting ? "Escribiendo…" : "✨ Rehacer copys"}
+                </button>
+                <button
+                  onClick={async () => {
+                    const targets = all.filter((p) => isPlanned(p) && !p.pinned && p.date);
+                    if (
+                      targets.length < 2 ||
+                      !confirm(
+                        `Se reacomodan las fechas de los ${targets.length} posts nuevos: nunca dos drinks seguidos y foto de día y de noche alternadas. ¿Seguir?`,
+                      )
+                    )
+                      return;
+                    setRewriting(true);
+                    setRewriteNote(null);
+                    try {
+                      const { moved, total } = await reorderFeed(targets);
+                      setRewriteNote(
+                        moved
+                          ? `Listo: se reacomodaron ${moved} de ${total} posts. Revisa que el orden te guste.`
+                          : "Ya estaba bien: no hubo que mover nada.",
+                      );
+                    } catch (error) {
+                      setRewriteNote((error as Error).message);
+                    }
+                    setRewriting(false);
+                  }}
+                  disabled={rewriting || plannedCount < 2}
+                  className={buttonClass}
+                  title="Nunca dos drinks seguidos y día/noche alternados"
+                >
+                  ✨ Reordenar
                 </button>
                 <PdfButton make={() => feedPdf(project, posts)} />
                 <button
