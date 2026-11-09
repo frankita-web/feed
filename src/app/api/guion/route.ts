@@ -36,7 +36,8 @@ export async function POST(req: Request) {
     await req.json();
 
   const result = streamText({
-    model: "anthropic/claude-sonnet-5.5",
+    // Modelo incluido en el crédito gratis de Vercel (Claude no lo está).
+    model: "google/gemini-2.5-flash-lite",
     system: `${SYSTEM}\n\n${contextText(context)}`,
     messages: await convertToModelMessages(messages),
     tools: {
