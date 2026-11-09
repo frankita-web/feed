@@ -84,6 +84,8 @@ export async function POST(request: Request) {
         error: setup
           ? "La IA todavía no está activada en Vercel (AI Gateway)."
           : "No pude organizar las fotos. Intenta de nuevo en un momento.",
+        // Motivo técnico, para poder revisar qué falló (la página ya está protegida con clave).
+        detail: String(error).slice(0, 400),
       },
       { status: 502 },
     );
