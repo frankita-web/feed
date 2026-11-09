@@ -24,5 +24,5 @@ export async function withFreeModels<T>(run: (model: string, vision: boolean) =>
 /** El tono del cliente, si lo tiene, manda sobre las reglas generales de los copys. */
 export const voiceRule = (voice?: string) =>
   voice?.trim()
-    ? `Tono del cliente (síguelo al pie de la letra; manda sobre cualquier otra regla de estilo):\n${voice.trim()}`
+    ? `Tono del cliente (síguelo al pie de la letra; manda sobre cualquier otra regla de estilo):\n${voice.trim()}\nSi hay copys de ejemplo, inspírate en su estilo pero no repitas ninguno tal cual.`
     : "Tono: cercano y con frases cortas; emojis con moderación y 1 a 3 hashtags.";

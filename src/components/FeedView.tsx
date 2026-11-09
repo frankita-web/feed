@@ -147,7 +147,19 @@ export function FeedView({
       return;
     }
     const from = planned.find((p) => p.id === data);
-    if (from && from.id !== before?.id) place([from], "nuevo", before);
+    if (!from || from.id === before?.id) return;
+    // Sin fecha, solo cambia de lugar.
+    if (!from.date) return place([from], "nuevo", before);
+    // Con fecha: los posts nuevos se reparten las mismas fechas según el nuevo orden,
+    // así el calendario queda igual que el feed.
+    const rest = planned.filter((p) => p.id !== from.id);
+    const at = before ? Math.max(0, rest.indexOf(before)) : 0;
+    const reordered = [...rest.slice(0, at), from, ...rest.slice(at)];
+    upsertPosts(
+      datesFollowOrder(reordered)
+        .filter((p) => p.date)
+        .map((p) => ({ ...p, order: undefined })),
+    );
   };
 
   const remove = (post: Post) => {
