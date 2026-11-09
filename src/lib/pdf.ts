@@ -12,11 +12,12 @@ import {
   monthKey,
   shortDate,
   todayKey,
+  weekdayOf,
 } from "./dates";
 import { readLocal } from "./images";
 import { linkUrl } from "./media";
 import type { Report } from "./report";
-import { STATUSES, STATUS_LABEL, type Post, type Project } from "./types";
+import { STATUSES, STATUS_LABEL, paletteOf, type Post, type Project } from "./types";
 
 const MARGIN = 12;
 const INK = "#1d1818";
@@ -127,6 +128,117 @@ function legend(doc: jsPDF, project: Project, y: number) {
     doc.setFillColor(statusColor(status, project)).circle(x, y - 1, 1.1, "F");
     x -= 5;
   }
+}
+
+const luminance = (hex: string) => {
+  const n = parseInt(hex.replace("#", "").padEnd(6, "0").slice(0, 6), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+};
+
+/** Colores de la marca para el PDF: el principal y uno claro para el fondo de las etiquetas. */
+function brand(project: Project) {
+  const strong = project.accent;
+  const light = (c?: string) => !!c && luminance(c) > 0.6 && luminance(c) < 0.97;
+  const soft = [project.statusColors?.listo, ...paletteOf(project)].find(
+    (c) => light(c) && c !== strong,
+  );
+  // Un principal muy claro no se lee sobre el fondo: se usa tinta.
+  return { strong: luminance(strong) > 0.75 ? INK : strong, soft: soft ?? "#f1f0ee" };
+}
+
+/** Etiqueta redondeada; `outline` = solo borde. Devuelve su ancho. */
+function pill(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  color: string,
+  fill: string | null,
+  style: "bold" | "bolditalic",
+) {
+  doc.setFont("helvetica", style).setFontSize(8.5);
+  const label = clean(text);
+  const width = doc.getTextWidth(label) + (fill ? 8 : 11);
+  if (fill) doc.setFillColor(fill).roundedRect(x, y, width, 7, 3.5, 3.5, "F");
+  else {
+    doc.setDrawColor(color).setLineWidth(0.35).roundedRect(x, y, width, 7, 3.5, 3.5, "S");
+    doc.setFillColor(color).circle(x + 4, y + 3.5, 0.7, "F");
+  }
+  doc.setTextColor(color).text(label, x + (fill ? 4 : 6.5), y + 4.8);
+  return width;
+}
+
+/**
+ * Una tarjeta por publicación, con los colores de la marca: día, categoría, foto,
+ * formato y copy. Tres por fila, seis por hoja.
+ */
+async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: string, subtitle: string) {
+  const { strong, soft } = brand(project);
+  const pageWidth = 210;
+  const gap = 5;
+  const cardWidth = (pageWidth - MARGIN * 2 - gap * 2) / 3;
+  const cardHeight = 124;
+  const photoWidth = cardWidth - 10;
+  const photoHeight = (photoWidth * 5) / 4;
+  const top = MARGIN + 22;
+  const pictures = await Promise.all(posts.map((p) => coverPicture(p, 480, 600)));
+
+  posts.forEach((post, i) => {
+    const slot = i % 6;
+    if (slot === 0) {
+      doc.addPage("a4", "portrait");
+      doc.setFillColor(strong).circle(MARGIN + 2.5, MARGIN + 5.2, 2.5, "F");
+      doc.setTextColor(INK).setFont("helvetica", "bold").setFontSize(18);
+      doc.text(clean(title), MARGIN + 8, MARGIN + 7);
+      doc.setTextColor(GRAPHITE).setFont("helvetica", "normal").setFontSize(10);
+      doc.text(clean(subtitle), MARGIN + 8, MARGIN + 13);
+    }
+    const x = MARGIN + (slot % 3) * (cardWidth + gap);
+    const y = top + Math.floor(slot / 3) * (cardHeight + gap);
+    doc.setFillColor("#ededed").roundedRect(x, y, cardWidth, cardHeight, 6, 6, "F");
+
+    // Día, grande y gris: "VIE 19".
+    const day = post.date
+      ? `${weekdayOf(post.date)} ${Number(post.date.slice(8))}`
+      : "SIN FECHA";
+    doc.setFont("helvetica", "bold").setFontSize(15).setTextColor("#a3a3a3");
+    doc.text(clean(day), x + 5, y + 11, { charSpace: 0.6 });
+
+    if (post.pillar) pill(doc, post.pillar, x + 5, y + 15, strong, soft, "bold");
+
+    const photoX = x + 5;
+    const photoY = y + 25;
+    const picture = pictures[i];
+    doc.setFillColor("#dcdcdc").rect(photoX, photoY, photoWidth, photoHeight, "F");
+    if (picture) doc.addImage(picture, "JPEG", photoX, photoY, photoWidth, photoHeight);
+    else {
+      doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(GRAPHITE);
+      doc.text(fit(doc, post.title || "Sin foto", photoWidth - 6, 3), photoX + 3, photoY + photoHeight / 2);
+    }
+    const slides = (post.slides ?? []).length;
+    if (slides) {
+      const count = `1/${slides + 1}`;
+      doc.setFont("helvetica", "bold").setFontSize(7);
+      const w = doc.getTextWidth(count) + 4;
+      doc.setFillColor(INK).roundedRect(photoX + photoWidth - w - 2, photoY + 2, w, 5, 2.5, 2.5, "F");
+      doc.setTextColor("#ffffff").text(count, photoX + photoWidth - w, photoY + 5.4);
+    }
+    const video = linkUrl(post.videoLink);
+    if (video) {
+      doc.link(photoX, photoY, photoWidth, photoHeight, { url: video });
+      doc.setFont("helvetica", "bold").setFontSize(7.5);
+      const w = doc.getTextWidth("Ver video") + 6;
+      doc.setFillColor("#ffffff").roundedRect(photoX + (photoWidth - w) / 2, photoY + photoHeight - 8, w, 5.5, 2.75, 2.75, "F");
+      doc.setTextColor(INK).text("Ver video", photoX + photoWidth / 2, photoY + photoHeight - 4.3, { align: "center" });
+    }
+
+    const formatY = photoY + photoHeight + 4;
+    pill(doc, post.format, x + 5, formatY, strong, null, "bolditalic");
+
+    doc.setFont("helvetica", "italic").setFontSize(7.5).setTextColor(GRAPHITE);
+    const caption = post.caption ? fit(doc, post.caption, cardWidth - 10, 3) : ["sin copy todavía"];
+    doc.text(caption, x + 5, formatY + 12);
+  });
 }
 
 /** Una publicación por bloque: datos, copy y todas sus fotos, para entender qué se publicará. */
@@ -283,12 +395,10 @@ export async function feedPdf(project: Project, posts: Post[]) {
   const doc = await newDocument("portrait");
   const items = feedItems(project, posts);
   await feedPages(doc, project, items);
-  await detailPages(
-    doc,
-    items.filter((item) => item.label).map((item) => item.post),
-    "Lo nuevo · Detalle",
-    project.name,
-  );
+  const fresh = items.filter((item) => item.label).map((item) => item.post);
+  await cardPages(doc, project, fresh, "Lo nuevo", project.name);
+  const carousels = fresh.filter((p) => p.slides?.length);
+  if (carousels.length) await detailPages(doc, carousels, "Lo nuevo · Carruseles", project.name);
   doc.save(fileName(project, "Feed"));
 }
 
@@ -442,7 +552,10 @@ export async function calendarPdf(
 
   doc.addPage("a4", "portrait");
   await feedPages(doc, project, feedItems(project, allPosts, monthKey(year, month)));
-  await detailPages(doc, dated, `${monthName} ${year} · Detalle`, project.name);
+  await cardPages(doc, project, dated, `${monthName} ${year}`, `${project.name} · publicaciones del mes`);
+  const carousels = dated.filter((p) => p.slides?.length);
+  if (carousels.length)
+    await detailPages(doc, carousels, `${monthName} ${year} · Carruseles`, project.name);
 
   doc.save(fileName(project, `Calendario ${monthName} ${year}`));
 }
