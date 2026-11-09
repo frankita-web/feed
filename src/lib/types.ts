@@ -202,6 +202,8 @@ export type BankItem = {
   files: Attachment[];
   /** Tamaño guardado en internet. */
   bytes?: number;
+  /** Si ya se organizó en el feed: el post creado y su fecha. La foto sigue en el banco. */
+  inFeed?: { postId: string; date: string | null };
   createdAt: number;
 };
 

@@ -137,6 +137,16 @@ export async function syncBank() {
   }
 }
 
+/** Marca fotos del banco como organizadas en el feed, sin sacarlas del banco. */
+export async function markInFeed(items: BankItem[]) {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  update({ items: snapshot.items.map((x) => byId.get(x.id) ?? x) });
+  await post({ add: items }).catch((error) => {
+    console.error(error);
+    refresh();
+  });
+}
+
 /** Saca el item del banco (la foto ya pasó al feed, así que el archivo se conserva). */
 export async function takeFromBank(id: string) {
   update({ items: snapshot.items.filter((x) => x.id !== id) });

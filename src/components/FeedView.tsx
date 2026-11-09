@@ -245,7 +245,7 @@ export function FeedView({
 
   return (
     <div className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-8">
-      <BankPanel project={project} bank={bank} onUse={(item) => fromBank(item)} />
+      <BankPanel project={project} bank={bank} posts={posts} onUse={(item) => fromBank(item)} />
       <ShootTray project={project} posts={posts} shoots={shoots} />
       <div className="mx-auto max-w-xl">
         {/* Con lo nuevo: aquí se arma el feed que viene */}
