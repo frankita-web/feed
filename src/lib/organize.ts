@@ -8,7 +8,7 @@ import { addDays, todayKey } from "./dates";
 import { feedRhythm, weeklySlots, type PhotoKind, type PhotoLight } from "./feed-order";
 import { readLocal } from "./images";
 import { newPost, upsertPosts } from "./store";
-import type { BankItem, Post, Project } from "./types";
+import { perWeekOf, type BankItem, type Post, type Project } from "./types";
 
 /** Miniatura chica para la IA y qué tan clara es (0 oscura, 100 clara). */
 async function thumbnail(item: Pick<BankItem, "image" | "files">) {
@@ -85,10 +85,8 @@ export async function organizeInFeed(project: Project, items: BankItem[], posts:
   const result = withoutAi ? simplePlan(request) : (answer as OrganizePlan);
 
   // Regla fija: nunca dos drinks seguidos y día/noche alternados. Las fechas se reparten en ese orden.
-  // Con ritmo semanal, las fechas salen de ese ritmo (y nunca pegadas a otro post).
-  const dates = project.postsPerWeek
-    ? weeklySlots(request.start, project.postsPerWeek, result.posts.length, request.taken)
-    : result.posts.map((p) => p.date).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  // Las fechas salen del ritmo semanal (2 por semana si no hay otro), nunca pegadas a otro post.
+  const dates = weeklySlots(request.start, perWeekOf(project), result.posts.length, request.taken);
   const order = feedRhythm(result.posts);
   const dateOf = new Map(order.map((id, i) => [id, dates[i] ?? null]));
   result.posts = order.map((id) => ({ ...result.posts.find((p) => p.id === id)!, date: dateOf.get(id) ?? "" }));
@@ -196,10 +194,8 @@ export async function reorderFeed(project: Project, posts: Post[]) {
       });
     });
   }
-  // Con ritmo semanal: fechas nuevas desde mañana (2 por semana = martes y viernes).
-  const dates = project.postsPerWeek
-    ? weeklySlots(addDays(todayKey(), 1), project.postsPerWeek, dated.length)
-    : dated.map((p) => p.date!);
+  // Fechas nuevas desde mañana con el ritmo semanal (días al azar, nunca seguidos).
+  const dates = weeklySlots(addDays(todayKey(), 1), perWeekOf(project), dated.length);
   const order = feedRhythm(tagged);
   const changed = order.flatMap((id, i) => {
     const post = dated.find((p) => p.id === id)!;

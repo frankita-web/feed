@@ -73,6 +73,9 @@ export type Menu = {
 };
 
 /** Colores de la marca; si no hay paleta, usa los dos colores de antes. */
+/** Posts por semana: lo de Ajustes o, si no hay, 2 (lo que Franca usa por defecto). */
+export const perWeekOf = (project: Project) => project.postsPerWeek || 2;
+
 export function paletteOf(project: Project) {
   return project.palette?.length ? project.palette : [project.accent, project.bg];
 }

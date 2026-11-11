@@ -18,7 +18,7 @@ import {
   savePost,
   upsertPosts,
 } from "@/lib/store";
-import type { BankItem, Post, Project, Shoot } from "@/lib/types";
+import { perWeekOf, type BankItem, type Post, type Project, type Shoot } from "@/lib/types";
 import { BankPanel } from "./BankPanel";
 import { ShootTray } from "./ShootTray";
 import { FeedTile, feedPosts } from "./FeedTile";
@@ -343,7 +343,7 @@ export function FeedView({
                     if (
                       targets.length < 2 ||
                       !confirm(
-                        `Se reacomodan las fechas de los ${targets.length} posts nuevos${project.postsPerWeek ? ` a ${project.postsPerWeek} por semana, desde mañana,` : ""}: nunca dos drinks seguidos y foto de día y de noche alternadas. ¿Seguir?`,
+                        `Se reacomodan las fechas de los ${targets.length} posts nuevos a ${perWeekOf(project)} por semana, desde mañana,: nunca dos drinks seguidos y foto de día y de noche alternadas. ¿Seguir?`,
                       )
                     )
                       return;
@@ -375,7 +375,7 @@ export function FeedView({
                     const ordered = [...planned];
                     if (!ordered.length) return;
                     const perWeek =
-                      project.postsPerWeek ?? Math.max(1, Math.round((project.monthlyGoal * 12) / 52));
+                      perWeekOf(project);
                     if (
                       !confirm(
                         `Se ponen fechas a los ${ordered.length} posts nuevos sin cambiar tu orden: ${perWeek} por semana desde mañana, en días que no van seguidos. ¿Seguir?`,

@@ -158,6 +158,12 @@ function migrate(s: State): State {
       p.slug === "crissis" && !p.voice ? { ...p, voice: CRISSIS_VOICE } : p,
     );
   }
+  // v20: Crissis siempre 2 por semana (Franca, 11 nov 2026).
+  if ((s.version ?? 1) < 20) {
+    projects = projects.map((p) =>
+      p.slug === "crissis" && (p.postsPerWeek ?? 0) < 2 ? { ...p, postsPerWeek: 2, monthlyGoal: 9 } : p,
+    );
+  }
   // v19: tono de los copys de Cancino (venta y llamado a la acción).
   if ((s.version ?? 1) < 19) {
     projects = projects.map((p) =>
