@@ -545,7 +545,10 @@ export async function calendarPdf(project: Project, allPosts: Post[], picked: Mo
 
   doc.addPage("a4", "portrait");
   await feedPages(doc, project, feedItems(project, allPosts, keys));
-  await cardPages(doc, project, dated, title, `${project.name} · publicaciones`);
+  // En las filas solo lo que falta subir: lo ya publicado se ve en el mes y en el feed.
+  const pending = dated.filter((p) => p.status !== "publicado");
+  if (pending.length)
+    await cardPages(doc, project, pending, title, `${project.name} · por publicar`);
 
   doc.save(fileName(project, `Calendario ${title}`));
 }
