@@ -200,9 +200,10 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
       const frames = await Promise.all(fromCover.map((f) => videoFrame(f.id, 120, 150)));
       return [
         ...photos.map((image) => ({ image, video: false })),
+        // Un video que el navegador no puede abrir igual aparece, como cuadro gris con ▶.
         ...frames.map((image) => ({ image, video: true })),
       ]
-        .filter((x): x is { image: string; video: boolean } => !!x.image)
+        .filter((x): x is { image: string | null; video: boolean } => !!x.image || x.video)
         .slice(0, 5);
     }),
   );
@@ -265,7 +266,8 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
     doc.text(lines, textX, y + 6);
     thumbs.forEach((thumb, k) => {
       const tx = textX + k * 14;
-      doc.addImage(thumb.image, "JPEG", tx, y + 41, 12, 15);
+      if (thumb.image) doc.addImage(thumb.image, "JPEG", tx, y + 41, 12, 15);
+      else doc.setFillColor("#8a8a8a").rect(tx, y + 41, 12, 15, "F");
       if (thumb.video) {
         // Triángulo de "play" para que se note que es un video.
         doc.setFillColor("#ffffff");
