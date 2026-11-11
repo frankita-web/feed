@@ -40,7 +40,7 @@ function read(): State {
   if (state) return state;
   try {
     const raw = localStorage.getItem(KEY);
-    state = raw ? migrate(JSON.parse(raw) as State) : seedState();
+    state = migrate(raw ? (JSON.parse(raw) as State) : seedState());
   } catch {
     state = seedState();
   }
@@ -60,7 +60,8 @@ const HANDLES: Record<string, string> = {
 };
 
 function migrate(s: State): State {
-  let posts = s.posts;
+  // "Listo" ya no existe: esas publicaciones vuelven a pendiente.
+  let posts = s.posts.map((p) => (p.status === "listo" ? { ...p, status: "pendiente" as const } : p));
   // v2: fotos del Instagram actual de Cancino en los posts de octubre ya subidos.
   if ((s.version ?? 1) < 2) {
     posts = posts.map((p) => {

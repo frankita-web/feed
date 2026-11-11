@@ -3,15 +3,17 @@ export const FORMATS = [
   "Reel horizontal",
   "Post carrusel",
   "Foto",
+  "Video",
   "Stories",
   "Tbc",
 ] as const;
 
 export type Format = (typeof FORMATS)[number];
 
-export const STATUSES = ["pendiente", "listo", "publicado"] as const;
+/** Estados que se eligen. "listo" ya no se usa: los que lo tenían pasan a pendiente. */
+export const STATUSES = ["pendiente", "publicado"] as const;
 
-export type Status = (typeof STATUSES)[number];
+export type Status = (typeof STATUSES)[number] | "listo";
 
 export const STATUS_LABEL: Record<Status, string> = {
   pendiente: "Pendiente",
