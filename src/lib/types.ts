@@ -4,6 +4,7 @@ export const FORMATS = [
   "Post carrusel",
   "Foto",
   "Video",
+  "Video + fotos",
   "Stories",
   "Tbc",
 ] as const;

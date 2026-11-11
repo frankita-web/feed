@@ -6,7 +6,7 @@ import { feedRank } from "@/lib/feed-order";
 import type { Post } from "@/lib/types";
 
 function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
-  if (format.startsWith("Reel") || format === "Video")
+  if (format.startsWith("Reel") || format.startsWith("Video"))
     return (
       <svg viewBox="0 0 24 24" className="h-4 w-4" fill={color} aria-label="Reel">
         <path d="M8 5.5v13l11-6.5z" />
