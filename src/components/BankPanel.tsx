@@ -249,7 +249,7 @@ function BankTile({
     >
       {url && (
         // eslint-disable-next-line @next/next/no-img-element -- archivo local
-        <img src={url} alt={item.name} className="absolute inset-0 h-full w-full object-cover" />
+        <img draggable={false} src={url} alt={item.name} className="absolute inset-0 h-full w-full object-cover" />
       )}
       {video && (
         <span className="absolute top-1.5 left-1.5 rounded-full bg-ink/70 px-1.5 text-[10px] text-white">

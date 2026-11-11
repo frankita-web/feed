@@ -158,7 +158,14 @@ export function FeedView({
     setTarget(null);
     setPlanDrop(false);
     setMoving(null);
-    const files = Array.from(e.dataTransfer.files);
+    // Al arrastrar una foto de la página, Chrome agrega una copia del archivo: si viene un post
+    // o algo del banco, se mueve eso y la copia se ignora (si no, se duplicaba).
+    const internal = e.dataTransfer.getData("text/plain");
+    const isInternal =
+      internal.startsWith("bank:") ||
+      internal.startsWith("deliverable:") ||
+      posts.some((p) => p.id === internal);
+    const files = isInternal ? [] : Array.from(e.dataTransfer.files);
     if (files.length) {
       // Una foto sobre un espacio sin foto: se vuelve su portada.
       if (before && !before.image && files.length === 1 && files[0].type.startsWith("image/")) {

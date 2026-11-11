@@ -53,7 +53,7 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
     >
       {url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
-        <img
+        <img draggable={false}
           src={url}
           alt={post.title}
           className="absolute inset-0 h-full w-full object-cover object-top"
@@ -67,7 +67,7 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
         </div>
       )}
       {videoUrl && (
-        <video
+        <video draggable={false}
           ref={videoRef}
           src={url ? videoUrl : `${videoUrl}#t=0.1`}
           poster={url ?? undefined}
