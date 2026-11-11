@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
-import { shortDate, todayKey } from "@/lib/dates";
-import { datesFollowOrder, outOfOrder, placeAt } from "@/lib/feed-order";
+import { addDays, shortDate, todayKey } from "@/lib/dates";
+import { datesFollowOrder, outOfOrder, placeAt, weeklySlots } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { reorderFeed, rewriteCaptions } from "@/lib/organize";
 import { notify } from "@/lib/toast";
@@ -368,6 +368,38 @@ export function FeedView({
                   title="Nunca dos drinks seguidos y día/noche alternados"
                 >
                   ✨ Reordenar
+                </button>
+                <button
+                  onClick={() => {
+                    // Tal como está armado: lo de más arriba se publica último (como en Instagram).
+                    const ordered = [...planned];
+                    if (!ordered.length) return;
+                    const perWeek =
+                      project.postsPerWeek ?? Math.max(1, Math.round((project.monthlyGoal * 12) / 52));
+                    if (
+                      !confirm(
+                        `Se ponen fechas a los ${ordered.length} posts nuevos sin cambiar tu orden: ${perWeek} por semana desde mañana, en días que no van seguidos. ¿Seguir?`,
+                      )
+                    )
+                      return;
+                    const dates = weeklySlots(addDays(todayKey(), 1), perWeek, ordered.length);
+                    upsertPosts(
+                      ordered.map((post, i) => ({
+                        ...post,
+                        date: dates[ordered.length - 1 - i] ?? post.date,
+                        order: undefined,
+                      })),
+                    );
+                    notify(
+                      `Listo: ${ordered.length} posts con fecha, del ${shortDate(dates[0])} al ${shortDate(dates[dates.length - 1])}.`,
+                      "ok",
+                    );
+                  }}
+                  disabled={!plannedCount}
+                  className={buttonClass}
+                  title="Respeta tu orden y solo pone las fechas"
+                >
+                  📅 Poner fechas en este orden
                 </button>
                 <PdfButton make={() => feedPdf(project, posts)} />
                 <button
