@@ -11,6 +11,7 @@ import { postFromDeliverable, storeMedia } from "@/lib/media";
 import { takeFromBank } from "@/lib/bank";
 import {
   bankToFeed,
+  deletePost,
   feedToBank,
   linkDeliverableToPost,
   newPost,
@@ -76,7 +77,43 @@ export function FeedView({
     upsertPosts(positioned(moved, column, before));
 
   /** Una foto del banco pasa al feed planeado. */
+  /**
+   * Mover un post nuevo sobre otro: se intercambian lugar y fecha (nada se duplica).
+   * Soltado en un espacio vacío o sin fecha, solo cambia de lugar.
+   */
+  const movePost = (from: Post, before?: Post) => {
+    if (before?.id === from.id) return;
+    if (before && from.date && before.date) {
+      upsertPosts([
+        { ...from, date: before.date, time: before.time, order: undefined },
+        { ...before, date: from.date, time: from.time, order: undefined },
+      ]);
+      return;
+    }
+    place([from], "nuevo", before);
+  };
+
+  // Fotos repetidas en lo nuevo (misma foto en varios posts): se deja una, la que tiene fecha.
+  const repeated = (() => {
+    const seen = new Map<string, Post>();
+    const extra: Post[] = [];
+    for (const p of [...planned].sort(
+      (a, b) => Number(!a.date) - Number(!b.date) || a.createdAt - b.createdAt,
+    )) {
+      if (!p.image) continue;
+      if (seen.has(p.image)) extra.push(p);
+      else seen.set(p.image, p);
+    }
+    return extra;
+  })();
+
   const fromBank = (item: BankItem, before?: Post) => {
+    // Si esa foto ya está en el feed, se mueve esa publicación en vez de crear otra.
+    const existing = item.inFeed && posts.find((p) => p.id === item.inFeed!.postId);
+    if (existing) {
+      if (isPlanned(existing)) movePost(existing, before);
+      return;
+    }
     const post = newPost(project.slug, {
       title: item.name,
       image: item.image,
@@ -147,19 +184,7 @@ export function FeedView({
       return;
     }
     const from = planned.find((p) => p.id === data);
-    if (!from || from.id === before?.id) return;
-    // Sin fecha, solo cambia de lugar.
-    if (!from.date) return place([from], "nuevo", before);
-    // Con fecha: los posts nuevos se reparten las mismas fechas según el nuevo orden,
-    // así el calendario queda igual que el feed.
-    const rest = planned.filter((p) => p.id !== from.id);
-    const at = before ? Math.max(0, rest.indexOf(before)) : 0;
-    const reordered = [...rest.slice(0, at), from, ...rest.slice(at)];
-    upsertPosts(
-      datesFollowOrder(reordered)
-        .filter((p) => p.date)
-        .map((p) => ({ ...p, order: undefined })),
-    );
+    if (from) movePost(from, before);
   };
 
   const remove = (post: Post) => {
@@ -373,6 +398,28 @@ export function FeedView({
               </p>
             )}
           </Phone>
+          {repeated.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">
+              <span>
+                ⚠ {repeated.length} {repeated.length === 1 ? "foto está repetida" : "fotos están repetidas"} en lo nuevo.
+              </span>
+              <button
+                onClick={() => {
+                  if (
+                    !confirm(
+                      `Se quitan ${repeated.length} ${repeated.length === 1 ? "post repetido" : "posts repetidos"} (queda uno de cada foto, el que tiene fecha). ¿Seguir?`,
+                    )
+                  )
+                    return;
+                  repeated.forEach((p) => deletePost(p.id));
+                  notify(`Listo: quité ${repeated.length} repetidas.`, "ok");
+                }}
+                className="font-medium underline"
+              >
+                Quitar repetidas
+              </button>
+            </div>
+          )}
           {mismatched.size > 0 && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white/70 px-4 py-2.5 text-[12px]">
               <span>
