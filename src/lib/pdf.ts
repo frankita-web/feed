@@ -69,7 +69,12 @@ async function picture(id: string | null, width: number, height: number) {
 /** Primer cuadro del video: lo que muestra el feed cuando el post no tiene foto de portada. */
 async function videoPicture(post: Post, width: number, height: number) {
   const file = post.files?.find((f) => f.type.startsWith("video/"));
-  if (!file) return null;
+  return file ? videoFrame(file.id, width, height) : null;
+}
+
+/** Un cuadro de un video guardado, recortado a la medida. Null si el navegador no puede abrirlo. */
+async function videoFrame(id: string, width: number, height: number) {
+  const file = { id };
   const local = file.id.startsWith("/") ? null : await readLocal(file.id);
   if (!file.id.startsWith("/") && !local) return null;
   const url = local ? URL.createObjectURL(local) : file.id;
@@ -185,8 +190,21 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
     (a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999") || a.createdAt - b.createdAt,
   );
   const covers = await Promise.all(ordered.map((p) => coverPicture(p, 440, 550)));
+  // El resto del post, en miniatura: las otras fotos y un cuadro de cada video (con ▶).
   const extras = await Promise.all(
-    ordered.map((p) => Promise.all((p.slides ?? []).slice(0, 5).map((id) => picture(id, 120, 150)))),
+    ordered.map(async (p) => {
+      const videos = (p.files ?? []).filter((f) => f.type.startsWith("video/"));
+      // Si la portada salió del video (post sin foto), ese video no se repite abajo.
+      const fromCover = !p.image && videos.length ? videos.slice(1) : videos;
+      const photos = await Promise.all((p.slides ?? []).map((id) => picture(id, 120, 150)));
+      const frames = await Promise.all(fromCover.map((f) => videoFrame(f.id, 120, 150)));
+      return [
+        ...photos.map((image) => ({ image, video: false })),
+        ...frames.map((image) => ({ image, video: true })),
+      ]
+        .filter((x): x is { image: string; video: boolean } => !!x.image)
+        .slice(0, 5);
+    }),
   );
 
   ordered.forEach((post, i) => {
@@ -220,9 +238,12 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
     const cover = covers[i];
     doc.setFillColor("#ececec").rect(photoX, y + 2, photoWidth, photoHeight, "F");
     if (cover) doc.addImage(cover, "JPEG", photoX, y + 2, photoWidth, photoHeight);
-    const slides = (post.slides ?? []).length;
-    if (slides) {
-      const count = `1/${slides + 1}`;
+    const pieces =
+      (post.image ? 1 : 0) +
+      (post.slides ?? []).length +
+      (post.files ?? []).filter((f) => f.type.startsWith("video/")).length;
+    if (pieces > 1) {
+      const count = `1/${pieces}`;
       doc.setFont("helvetica", "bold").setFontSize(7);
       const w = doc.getTextWidth(count) + 4;
       doc.setFillColor(INK).roundedRect(photoX + photoWidth - w - 2, y + 4, w, 5, 2.5, 2.5, "F");
@@ -238,11 +259,19 @@ async function cardPages(doc: jsPDF, project: Project, posts: Post[], title: str
     }
 
     // Copy y, si es carrusel, el resto de las fotos debajo.
-    const thumbs = extras[i].filter((x): x is string => !!x);
+    const thumbs = extras[i];
     doc.setFont("helvetica", "normal").setFontSize(9.5).setTextColor(post.caption ? INK : GRAPHITE);
     const lines = post.caption ? fit(doc, post.caption, textWidth, thumbs.length ? 7 : 12) : ["sin copy todavía"];
     doc.text(lines, textX, y + 6);
-    thumbs.forEach((thumb, k) => doc.addImage(thumb, "JPEG", textX + k * 14, y + 41, 12, 15));
+    thumbs.forEach((thumb, k) => {
+      const tx = textX + k * 14;
+      doc.addImage(thumb.image, "JPEG", tx, y + 41, 12, 15);
+      if (thumb.video) {
+        // Triángulo de "play" para que se note que es un video.
+        doc.setFillColor("#ffffff");
+        doc.triangle(tx + 4.6, y + 46, tx + 4.6, y + 51, tx + 8.4, y + 48.5, "F");
+      }
+    });
 
     if (slot < 3 && i < ordered.length - 1) {
       doc.setDrawColor("#e6e6e6").setLineWidth(0.3);
