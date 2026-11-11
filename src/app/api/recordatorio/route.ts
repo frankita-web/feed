@@ -2,6 +2,7 @@ import { get } from "@vercel/blob";
 import { NextResponse, connection, type NextRequest } from "next/server";
 import { COOKIE, validSession } from "@/lib/auth";
 import type { AgendaItem } from "@/lib/agenda";
+import { signedPhotoUrl } from "@/lib/photo-link";
 import { AGENDA_FILE } from "../agenda/route";
 
 // Mail diario de las 8:00 (hora de Ciudad de México) con lo que toca publicar ese día.
@@ -14,7 +15,9 @@ const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: ZONE }).format(
 const escape = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-function email(items: AgendaItem[], date: string) {
+type MailItem = AgendaItem & { photoUrls: string[] };
+
+function email(items: MailItem[], date: string) {
   const day = new Intl.DateTimeFormat("es-MX", {
     timeZone: "UTC",
     weekday: "long",
@@ -27,6 +30,13 @@ function email(items: AgendaItem[], date: string) {
       <tr><td style="padding:18px 0;border-top:1px solid #e6e6e6">
         <p style="margin:0 0 4px;font:600 12px Helvetica,Arial;color:#8a8a8a;text-transform:uppercase;letter-spacing:.06em">${escape(item.project)}${item.time ? ` · ${item.time}` : ""} · ${escape(item.format)}</p>
         <p style="margin:0 0 8px;font:700 17px Helvetica,Arial;color:#1d1818">${escape(item.title || "Sin título")}</p>
+        ${item.photoUrls
+          .map(
+            (url, i) =>
+              `<a href="${url}"><img src="${url}" alt="Foto ${i + 1}" width="512" style="display:block;width:100%;max-width:512px;height:auto;margin:0 0 8px;border-radius:6px"></a>`,
+          )
+          .join("")}
+        ${item.photoUrls.length ? `<p style="margin:0 0 10px;font:12px Helvetica,Arial;color:#8a8a8a">Toca una foto para abrirla en tamaño completo y guardarla.</p>` : ""}
         <p style="margin:0;font:15px/1.5 Helvetica,Arial;color:#1d1818;white-space:pre-wrap">${escape(item.caption || "(sin copy todavía)")}</p>
         ${item.videoLink ? `<p style="margin:8px 0 0"><a href="${escape(item.videoLink.startsWith("http") ? item.videoLink : `https://${item.videoLink}`)}" style="font:600 14px Helvetica,Arial;color:#1d1818">Ver video</a></p>` : ""}
       </td></tr>`,
@@ -62,7 +72,19 @@ export async function GET(request: NextRequest) {
   const items = agenda.items.filter((item) => item.date === date);
   if (!items.length) return NextResponse.json({ date, sent: false, reason: "Nada para hoy" });
 
-  const message = email(items, date);
+  const origin = request.nextUrl.origin;
+  const withPhotos = await Promise.all(
+    items.map(async (item) => ({
+      ...item,
+      photoUrls: await Promise.all(
+        (item.photos ?? []).map((p) =>
+          // Las fotos del sitio (/feed/, ya publicadas en Instagram) van directo; las guardadas, con link firmado.
+          p.startsWith("/api/media/") ? signedPhotoUrl(origin, p) : `${origin}${p}`,
+        ),
+      ),
+    })),
+  );
+  const message = email(withPhotos, date);
   if (preview) return NextResponse.json({ date, preview: true, savedAt: agenda.savedAt, ...message });
 
   const to = process.env.REMINDER_TO;

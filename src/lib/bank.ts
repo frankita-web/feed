@@ -64,7 +64,7 @@ const EXTENSION: Record<string, string> = {
 };
 
 /** Sube un archivo del navegador a internet y devuelve su dirección. */
-async function pushFile(id: string) {
+export async function pushFile(id: string) {
   const blob = await readLocal(id);
   if (!blob) throw new Error(`Falta el archivo ${id}`);
   const name = `media/${crypto.randomUUID()}.${EXTENSION[blob.type] ?? "bin"}`;
