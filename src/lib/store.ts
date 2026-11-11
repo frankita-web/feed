@@ -200,6 +200,7 @@ function write(next: State) {
     alert("No se pudo guardar en este navegador. Copia tu texto antes de cerrar la página.");
   }
   listeners.forEach((l) => l());
+  import("./agenda").then(({ scheduleAgenda }) => scheduleAgenda(next));
 }
 
 let rescueStarted = false;
@@ -207,6 +208,7 @@ let rescueStarted = false;
 function subscribe(listener: () => void) {
   if (!rescueStarted) {
     rescueStarted = true;
+    import("./agenda").then(({ scheduleAgenda }) => scheduleAgenda(read()));
     import("./rescate").then(({ rescue }) => rescue()).catch(console.error);
   }
   listeners.add(listener);
