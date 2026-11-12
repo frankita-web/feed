@@ -51,6 +51,30 @@ export type Project = {
   voice?: string;
   /** Drink planeado para cada mes. Llave: YYYY-MM. */
   drinkPlan?: Record<string, DrinkPlan>;
+  /** Estadísticas de Instagram leídas de capturas. Llave: YYYY-MM. */
+  insights?: Record<string, MonthInsights>;
+};
+
+/** Números del mes que la IA lee de las capturas de estadísticas de Instagram. */
+export type MonthInsights = {
+  followers?: number | null;
+  followersGained?: number | null;
+  reach?: number | null;
+  views?: number | null;
+  interactions?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  saves?: number | null;
+  shares?: number | null;
+  profileVisits?: number | null;
+  linkClicks?: number | null;
+  /** Lo que mejor funcionó, como lo describe la IA. */
+  topPosts?: { description: string; result: string }[];
+  /** Lectura corta del mes, en simple. */
+  summary?: string;
+  /** Ideas para el próximo mes. */
+  tips?: string[];
+  updatedAt: number;
 };
 
 export type Drink = {

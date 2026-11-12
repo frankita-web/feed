@@ -15,6 +15,7 @@ import {
   weekdayOf,
 } from "./dates";
 import { readLocal } from "./images";
+import { INSIGHT_FIELDS, change, formatNumber } from "./insights";
 import { linkUrl } from "./media";
 import type { Report } from "./report";
 import { STATUSES, STATUS_LABEL, paletteOf, type Post, type Project } from "./types";
@@ -448,6 +449,60 @@ export async function reportPdf(project: Project, report: Report, year: number, 
   for (const text of report.advice.length ? report.advice : ["Todo al día: el mes cumple sus metas."]) {
     doc.text(clean(`• ${text}`), MARGIN, y);
     y += 5.5;
+  }
+
+  // Estadísticas de Instagram (de las capturas), si se subieron.
+  const key = monthKey(year, month);
+  const data = project.insights?.[key];
+  if (data) {
+    const last = new Date(year, month - 1, 1);
+    const before = project.insights?.[monthKey(last.getFullYear(), last.getMonth())];
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const room = (needed: number) => {
+      if (y + needed > pageHeight - MARGIN) {
+        doc.addPage();
+        y = MARGIN + 6;
+      }
+    };
+    y += 6;
+    room(40);
+    title("Instagram");
+    const numbers = INSIGHT_FIELDS.filter(([field]) => data[field] != null);
+    const perRow = 4;
+    numbers.forEach(([field, label], i) => {
+      if (i % perRow === 0 && i) y += 17;
+      if (i % perRow === 0) room(17);
+      const x = MARGIN + ((i % perRow) * width) / perRow;
+      doc.setFont("helvetica", "normal").setFontSize(16).setTextColor(INK);
+      doc.text(formatNumber(data[field]!), x, y + 5);
+      doc.setFontSize(8.5).setTextColor(GRAPHITE).text(clean(label), x, y + 10);
+      const diff = change(data[field], before?.[field]);
+      if (diff) doc.setFontSize(7.5).text(`${diff} vs mes anterior`, x, y + 14);
+    });
+    if (numbers.length) y += 22;
+    const paragraph = (text: string, size = 10) => {
+      doc.setFont("helvetica", "normal").setFontSize(size).setTextColor(INK);
+      for (const line of doc.splitTextToSize(clean(text), width) as string[]) {
+        room(6);
+        doc.text(line, MARGIN, y);
+        y += size * 0.5;
+      }
+    };
+    if (data.summary) {
+      paragraph(data.summary);
+      y += 4;
+    }
+    if (data.topPosts?.length) {
+      room(14);
+      title("Lo que mejor funcionó");
+      data.topPosts.forEach((p) => paragraph(`• ${p.description} · ${p.result}`));
+      y += 4;
+    }
+    if (data.tips?.length) {
+      room(14);
+      title("Ideas para el próximo mes");
+      data.tips.forEach((t) => paragraph(`• ${t}`));
+    }
   }
 
   doc.save(fileName(project, `Reporte ${monthName} ${year}`));

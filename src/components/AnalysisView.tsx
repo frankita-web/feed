@@ -5,6 +5,7 @@ import { MONTHS, parseKey, todayKey } from "@/lib/dates";
 import { reportPdf } from "@/lib/pdf";
 import { monthReport } from "@/lib/report";
 import type { Post, Project } from "@/lib/types";
+import { InsightsPanel } from "./InsightsPanel";
 import { buttonClass } from "./Modal";
 import { PdfButton } from "./PdfButton";
 
@@ -45,6 +46,8 @@ export function AnalysisView({ project, posts }: { project: Project; posts: Post
         <Stat label="Publicados" value={report.published} />
         <Stat label="Stories" value={report.stories} />
       </div>
+
+      <InsightsPanel project={project} report={report} year={y} month={m} />
 
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         {report.pillars.length > 0 && (
@@ -104,8 +107,8 @@ export function AnalysisView({ project, posts }: { project: Project; posts: Post
       </div>
 
       <p className="mt-6 text-[12px] text-graphite">
-        Este análisis usa lo que está en tu calendario. El alcance, los me gusta y los comentarios
-        aparecerán cuando se conecte Instagram.
+        Los posts y categorías salen de tu calendario. Los números de Instagram salen de las
+        capturas que subas cada mes.
       </p>
     </div>
   );
