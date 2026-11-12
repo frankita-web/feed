@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 20;
+export const SEED_VERSION = 21;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -189,6 +189,27 @@ export const CRISSIS_POSTS: Post[] = CRISSIS_FEED.map(([date, title, format, cap
 }));
 
 
+// Lo último ya publicado en Issi (captura del grid, 12 nov 2026). Lo más nuevo primero.
+const ISSI_FEED: [title: string, format: Format][] = [
+  ["Bowl con aceite verde", "Foto"],
+  ["Camarones", "Post carrusel"],
+  ["Brownie con cuchillo", "Post carrusel"],
+  ["Pintura de agaves", "Post carrusel"],
+];
+
+export const ISSI_POSTS: Post[] = ISSI_FEED.map(([title, format], i) => ({
+  id: `seed-issi-${i}`,
+  project: "issi",
+  date: null,
+  title,
+  format,
+  status: "publicado",
+  pillar: null,
+  caption: "",
+  image: `/feed/issi-${i + 1}.jpg`,
+  createdAt: 100 - i,
+}));
+
 // Julio–septiembre 2026, del PDF "Feed Parrilla Grilla Instagram Cancino". Ya publicado.
 const CANCINO_HISTORY: [date: string, title: string, format: Format, pillar: string | null][] = [
   ["2026-07-02", "Memo", "Foto", null],
@@ -300,7 +321,7 @@ export function seedState(): State {
       ...CANCINO_VIDEOS[i],
     }),
   );
-  posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS, ...CRISSIS_POSTS);
+  posts.push(CANCINO_PINNED, ...CANCINO_HISTORY_POSTS, ...CRISSIS_POSTS, ...ISSI_POSTS);
 
   const notes = Object.fromEntries(
     Object.entries(CANCINO_NOTES).map(([date, text]) => [`cancino:${date}`, text]),

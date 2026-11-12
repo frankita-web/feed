@@ -12,6 +12,7 @@ import {
   CANCINO_VIDEOS,
   CANCINO_VIDEOS_SINCE,
   CRISSIS_POSTS,
+  ISSI_POSTS,
   CRISSIS_VOICE,
   CANCINO_VOICE,
   SEED_VERSION,
@@ -89,6 +90,11 @@ function migrate(s: State): State {
   if ((s.version ?? 1) < 4) {
     const ids = new Set(posts.map((p) => p.id));
     posts = [...posts, ...CRISSIS_POSTS.filter((p) => !ids.has(p.id))];
+  }
+  // v21: lo último ya publicado en Issi.
+  if ((s.version ?? 1) < 21) {
+    const ids = new Set(posts.map((p) => p.id));
+    posts = [...posts, ...ISSI_POSTS.filter((p) => !ids.has(p.id))];
   }
   let projects = s.projects;
   // v5: categoría Postre en Cancino, con el crumble.
