@@ -99,12 +99,10 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
         </span>
       )}
       {planned && (
-        <>
-          <div className="pointer-events-none absolute inset-1.5 rounded-[3px] border-[1.5px] border-dashed border-ink/70" />
-          <span className="absolute top-2.5 left-2.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-medium whitespace-nowrap text-white">
-            {planned}
-          </span>
-        </>
+        // Solo una etiqueta chiquita, para que la foto se vea entera.
+        <span className="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-ink/60 px-1.5 py-px text-[8px] leading-[1.4] font-medium whitespace-nowrap text-white backdrop-blur-sm">
+          {planned}
+        </span>
       )}
     </div>
   );

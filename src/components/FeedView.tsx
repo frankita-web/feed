@@ -537,7 +537,7 @@ function Legend() {
         <span className="h-3 w-3 bg-[#dedede]" /> Ya subido
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="h-3 w-3 border-[1.5px] border-dashed border-ink/70 bg-white" /> Nuevo
+        <span className="rounded-full bg-ink/60 px-1.5 py-px text-[8px] font-medium text-white">Nuevo</span>
       </span>
     </div>
   );
