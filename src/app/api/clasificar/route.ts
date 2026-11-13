@@ -12,8 +12,10 @@ const schema = z.object({
     z.object({
       id: z.string(),
       kind: z
-        .enum(["drink", "plato", "ambiente", "personas", "otro"])
-        .describe("qué muestra la foto; drink = cualquier trago o bebida"),
+        .enum(["drink", "plato", "ambiente", "personas", "arte", "otro"])
+        .describe(
+          "qué muestra la foto; drink = cualquier trago o bebida; arte = pintura, ilustración, collage o texto escrito (moodboard), no comida ni el lugar",
+        ),
       light: z.enum(["dia", "noche"]).describe("si la foto se siente de día o de noche"),
     }),
   ),
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
       const { output } = await generateText({
         model,
         system:
-          "Clasifica cada publicación de Instagram de un restaurante: qué muestra (drink, plato, ambiente, personas u otro) y si la foto se siente de día o de noche. Devuelve una entrada por publicación, con su mismo id.",
+          "Clasifica cada publicación de Instagram de un restaurante: qué muestra (drink, plato, ambiente, personas, arte u otro) y si la foto se siente de día o de noche. Devuelve una entrada por publicación, con su mismo id.",
         output: Output.object({ schema }),
         messages: [
           {

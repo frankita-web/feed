@@ -59,19 +59,38 @@ export function datesFollowOrder(list: Post[]): Post[] {
   return list.map((p) => (p.date ? { ...p, date: dates[k++] } : p));
 }
 
-export type PhotoKind = "drink" | "plato" | "ambiente" | "personas" | "otro";
+export type PhotoKind = "drink" | "plato" | "ambiente" | "personas" | "arte" | "otro";
 export type PhotoLight = "dia" | "noche";
 
 /**
- * Reglas del feed: nunca dos drinks seguidos y, en lo posible, alternar foto de día y de noche.
+ * Las piezas de arte (moodboard, como en Issi) se reparten parejo entre lo demás,
+ * para que no queden juntas al principio o al final.
+ */
+function spreadArt<T extends { kind: PhotoKind }>(items: T[]) {
+  const art = items.filter((x) => x.kind === "arte");
+  if (!art.length || art.length === items.length) return items;
+  const rest = items.filter((x) => x.kind !== "arte");
+  const out = [...rest];
+  const step = items.length / art.length;
+  art.forEach((a, k) => out.splice(Math.min(out.length, Math.round(step * (k + 0.5))), 0, a));
+  return out;
+}
+
+/**
+ * Reglas del feed: nunca dos drinks ni dos piezas de arte seguidas (y el arte, en lo posible,
+ * con al menos dos fotos entre una y otra), y alternar foto de día y de noche.
  * Respeta el orden propuesto y solo cambia lo necesario. Devuelve los ids en orden de publicación.
  */
 export function feedRhythm<T extends { id: string; kind: PhotoKind; light: PhotoLight }>(items: T[]) {
-  const left = [...items];
+  const left = spreadArt(items);
   const order: T[] = [];
-  const fits = (prev: T | undefined, next: T, strict: boolean) =>
-    !prev ||
-    (!(prev.kind === "drink" && next.kind === "drink") && (!strict || prev.light !== next.light));
+  const fits = (prev: T | undefined, next: T, strict: boolean) => {
+    if (!prev) return true;
+    if (prev.kind === next.kind && (next.kind === "drink" || next.kind === "arte")) return false;
+    if (!strict) return true;
+    const artNear = next.kind === "arte" && order.slice(-2).some((x) => x.kind === "arte");
+    return !artNear && prev.light !== next.light;
+  };
   while (left.length) {
     const prev = order[order.length - 1];
     const pick =
