@@ -14,6 +14,8 @@ import {
   CRISSIS_POSTS,
   ISSI_POSTS,
   CRISSIS_VOICE,
+  ISSI_PILLARS,
+  ISSI_VOICE,
   CANCINO_VOICE,
   SEED_VERSION,
   seedState,
@@ -157,6 +159,14 @@ function migrate(s: State): State {
         ? { ...p, order: undefined }
         : p;
     });
+  }
+  // v22: tono y categorías de Issi (presentación de marca, 13 nov 2026).
+  if ((s.version ?? 1) < 22) {
+    projects = projects.map((p) =>
+      p.slug === "issi"
+        ? { ...p, voice: p.voice || ISSI_VOICE, pillars: p.pillars.length ? p.pillars : ISSI_PILLARS }
+        : p,
+    );
   }
   // v17: tono de los copys de Crissis.
   if ((s.version ?? 1) < 17) {

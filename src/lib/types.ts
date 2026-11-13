@@ -136,6 +136,8 @@ export type Post = {
   /** Resto de las imágenes del carrusel (la portada es `image`). */
   slides?: string[];
   files?: Attachment[];
+  /** Marco de las fotos (id de FRAMES); sin marco si no hay. */
+  frame?: string;
 };
 
 /** Una toma del guion. */

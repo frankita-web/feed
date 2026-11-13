@@ -3,7 +3,24 @@
 import { useRef } from "react";
 import { useImageUrl } from "@/lib/images";
 import { feedRank } from "@/lib/feed-order";
+import { frameBoxStyle, frameImageStyle, frameOf, type Frame } from "@/lib/frames";
 import type { Post } from "@/lib/types";
+
+/** La foto entera sobre el fondo del marco, con su margen. */
+export function FramedImage({ src, alt, frame }: { src: string; alt: string; frame: Frame }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center" style={frameBoxStyle(frame)}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL local */}
+      <img
+        draggable={false}
+        src={src}
+        alt={alt}
+        className="max-h-full max-w-full object-contain"
+        style={frameImageStyle(frame)}
+      />
+    </div>
+  );
+}
 
 function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
   if (format.startsWith("Reel") || format.startsWith("Video"))
@@ -38,6 +55,7 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
   const video = post.files?.find((f) => f.type.startsWith("video/"));
   const videoUrl = useImageUrl(video?.id ?? null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const frame = frameOf(post.frame);
 
   return (
     <div
@@ -51,7 +69,9 @@ export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
         }
       }}
     >
-      {url ? (
+      {url && frame ? (
+        <FramedImage src={url} alt={post.title} frame={frame} />
+      ) : url ? (
         // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
         <img draggable={false}
           src={url}

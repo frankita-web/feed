@@ -2,6 +2,8 @@
 
 import { useRef, useState, type DragEvent } from "react";
 import { takeFromBank, useBank } from "@/lib/bank";
+import { FRAMES, downloadFramed, frameOf } from "@/lib/frames";
+import { notify } from "@/lib/toast";
 import { removeImage, storeFile, storeImage, useImageUrl } from "@/lib/images";
 import { linkUrl, storeMedia } from "@/lib/media";
 import { deletePost, savePost, usedByShoots } from "@/lib/store";
@@ -15,6 +17,7 @@ import {
   type Project,
 } from "@/lib/types";
 import { Chips, Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
+import { FramedImage } from "./FeedTile";
 import { StatusDot } from "./Status";
 
 const NO_PILLAR = "Sin categoría";
@@ -275,6 +278,25 @@ export function PostDialog({
           <Field label="Formato">
             <Chips options={FORMATS} value={draft.format} onChange={(format) => set({ format })} />
           </Field>
+
+          {draft.image && (
+            <FramePicker
+              cover={draft.image}
+              value={draft.frame}
+              onChange={(frame) => set({ frame })}
+              onDownload={async () => {
+                const frame = frameOf(draft.frame);
+                if (!frame) return;
+                notify("Preparando las fotos con marco…", "loading", "frame");
+                const n = await downloadFramed(media, frame, draft.title);
+                notify(
+                  n ? `Listo: ${n} ${n === 1 ? "foto descargada" : "fotos descargadas"} con marco.` : "No se pudieron abrir las fotos.",
+                  n ? "ok" : "error",
+                  "frame",
+                );
+              }}
+            />
+          )}
 
           {project.pillars.length > 0 && (
             <Field label="Categoría">
@@ -820,6 +842,65 @@ function FileRow({ file, onRemove }: { file: Attachment; onRemove: () => void })
           ×
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Elegir el marco de las fotos: cada opción muestra la portada con ese marco. */
+function FramePicker({
+  cover,
+  value,
+  onChange,
+  onDownload,
+}: {
+  cover: string;
+  value?: string;
+  onChange: (frame: string | undefined) => void;
+  onDownload: () => void;
+}) {
+  const url = useImageUrl(cover);
+  const option = (id: string | undefined, name: string) => {
+    const frame = frameOf(id);
+    const active = (value ?? undefined) === id;
+    return (
+      <button
+        key={name}
+        type="button"
+        onClick={() => onChange(id)}
+        className="flex w-[64px] shrink-0 flex-col items-center gap-1"
+        title={name}
+      >
+        <span
+          className={`relative block aspect-[3/4] w-full overflow-hidden rounded-[4px] bg-[#dedede] ring-offset-2 ${
+            active ? "ring-2 ring-ink" : "ring-1 ring-black/10"
+          }`}
+        >
+          {url &&
+            (frame ? (
+              <FramedImage src={url} alt="" frame={frame} />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
+              <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            ))}
+        </span>
+        <span className={`text-[11px] ${active ? "font-medium" : "text-graphite"}`}>{name}</span>
+      </button>
+    );
+  };
+  return (
+    <div>
+      <span className="mb-1.5 block text-[11px] font-medium tracking-[0.08em] text-graphite uppercase">
+        Marco
+      </span>
+      <div className="flex gap-2.5 overflow-x-auto pb-1">
+        {option(undefined, "Sin marco")}
+        {FRAMES.map((f) => option(f.id, f.name))}
+      </div>
+      {value && (
+        <button type="button" onClick={onDownload} className={`${buttonClass} mt-2`}>
+          ↓ Descargar con marco
+        </button>
+      )}
     </div>
   );
 }

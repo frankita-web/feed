@@ -68,10 +68,32 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 21;
+export const SEED_VERSION = 22;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
+
+/** Tono de Issi, de la presentación de marca que mandó Franca (13 nov 2026). */
+export const ISSI_VOICE = `elegante y más formal, con voz femenina: poemas cortos e historias, nunca venta directa.
+frases calmadas, sin prisa, con pausas (puntos). mayúscula al inicio y puntuación cuidada.
+sin emojis y sin hashtags.
+si el post es de un platillo, puede cerrar con una línea aparte en minúscula con lo que lleva, separado por " · " (ej. crudo del día · yuzu · yuzukosho de habanero · manzana verde).
+de vez en cuando, una frase corta que pueda volverse viral.
+copys anteriores para inspirarse:
+- Al chayote nadie lo venía venir.
+- Pastel de frambuesas y merengue para cumplir fantasías.
+- Una cuchara que levanta todo esto es, por un momento, el centro del mundo.
+- Algunas cosas llegan mejor sin cocción. Sin prisa. Sin ruido.
+- Algunos platos no cambian. Se transforman con lo que la tierra da.
+- Lo que llega del mar no necesita más que honestidad.`;
+
+/** Categorías de Issi: el restaurante al centro, con comida, espacio, arte y una frase de vez en cuando. */
+export const ISSI_PILLARS = [
+  { name: "Comida", target: 5 },
+  { name: "Espacio", target: 3 },
+  { name: "Arte", target: 3 },
+  { name: "Frases", target: 1 },
+];
 
 /** Tono de Crissis, como lo pidió Franca (9 nov 2026). */
 export const CRISSIS_VOICE = `sin hashtags, nunca.
@@ -362,7 +384,8 @@ export function seedState(): State {
         bg: "#f8f6e6",
         ...BRAND_COLORS.issi,
         monthlyGoal: 12,
-        pillars: [],
+        pillars: ISSI_PILLARS,
+        voice: ISSI_VOICE,
       },
     ],
     posts,
