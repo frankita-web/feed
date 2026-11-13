@@ -15,7 +15,7 @@ export function FramedImage({ src, alt, frame }: { src: string; alt: string; fra
         draggable={false}
         src={src}
         alt={alt}
-        className="max-h-full max-w-full object-contain"
+        className={frame.fill ? "h-full w-full object-cover object-top" : "max-h-full max-w-full object-contain"}
         style={frameImageStyle(frame)}
       />
     </div>

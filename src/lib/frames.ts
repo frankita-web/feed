@@ -15,9 +15,14 @@ export type Frame = {
   shadow?: boolean;
   /** Línea fina alrededor de la foto. */
   line?: string;
+  /** La foto llena todo el espacio dentro del borde (se recorta un poco), como una foto impresa. */
+  fill?: boolean;
 };
 
 export const FRAMES: Frame[] = [
+  // Como los de Franca en Illustrator para Issi: la foto llena y un borde blanco fino alrededor.
+  { id: "borde", name: "Borde fino", bg: "#ffffff", pad: [0.035, 0.035, 0.035, 0.035], fill: true },
+  { id: "impresa", name: "Foto impresa", bg: "#ffffff", pad: [0.055, 0.055, 0.055, 0.055], fill: true },
   { id: "galeria", name: "Galería", bg: "#ffffff", pad: [0.09, 0.09, 0.09, 0.09] },
   { id: "paspartu", name: "Paspartú", bg: "#f3efe6", pad: [0.16, 0.16, 0.16, 0.16] },
   { id: "polaroid", name: "Polaroid", bg: "#ffffff", pad: [0.06, 0.06, 0.24, 0.06] },
@@ -62,11 +67,18 @@ export async function framedJpeg(id: string, f: Frame) {
   const [t, r, b, l] = f.pad.map((p) => p * W);
   const boxW = W - l - r;
   const boxH = H - t - b;
-  const scale = Math.min(boxW / bitmap.width, boxH / bitmap.height);
-  const w = bitmap.width * scale;
-  const h = bitmap.height * scale;
+  const scale = f.fill
+    ? Math.max(boxW / bitmap.width, boxH / bitmap.height)
+    : Math.min(boxW / bitmap.width, boxH / bitmap.height);
+  const w = f.fill ? boxW : bitmap.width * scale;
+  const h = f.fill ? boxH : bitmap.height * scale;
   const x = l + (boxW - w) / 2;
   const y = t + (boxH - h) / 2;
+  // Con fill se recorta al centro de la foto (desde arriba, como el feed).
+  const sw = w / scale;
+  const sh = h / scale;
+  const sx = (bitmap.width - sw) / 2;
+  const sy = 0;
   if (f.shadow) {
     g.save();
     g.shadowColor = "rgba(0,0,0,.18)";
@@ -76,7 +88,7 @@ export async function framedJpeg(id: string, f: Frame) {
     g.fillRect(x, y, w, h);
     g.restore();
   }
-  g.drawImage(bitmap, x, y, w, h);
+  g.drawImage(bitmap, sx, sy, sw, sh, x, y, w, h);
   if (f.line) {
     const gap = 12;
     g.strokeStyle = f.line;
