@@ -14,6 +14,7 @@ import {
 } from "@/lib/store";
 import type { Idea, Project, Shoot } from "@/lib/types";
 import { buttonClass, darkButtonClass, inputClass } from "./Modal";
+import { ShootPlan } from "./ShootPlan";
 
 const NONE = "__sin__";
 
@@ -30,6 +31,8 @@ export function IdeasView({
   const [text, setText] = useState("");
   const [over, setOver] = useState<string | null>(null);
   const [showDone, setShowDone] = useState(false);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const planned = shoots.find((s) => s.id === planId);
 
   const today = todayKey();
   const mine = ideas.filter((i) => i.project === project.slug && (showDone || !i.done));
@@ -90,6 +93,17 @@ export function IdeasView({
             onChange={(e) => saveShoot({ ...shoot, date: e.target.value || null })}
             aria-label="Día del shoot"
           />
+          <button
+            onClick={() => setPlanId(shoot.id)}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl bg-ink px-3 py-2 text-[12px] font-medium text-white"
+          >
+            📋 Plan del shoot
+            {!!(shoot.timeline?.length || shoot.slides?.length) && (
+              <span className="text-white/60">
+                · {shoot.timeline?.length ?? 0} bloques · {shoot.slides?.length ?? 0} láminas
+              </span>
+            )}
+          </button>
         </div>
       ) : (
         <div className="mb-3 px-1">
@@ -165,6 +179,9 @@ export function IdeasView({
           ),
         )}
       </div>
+      {planned && (
+        <ShootPlan project={project} shoot={planned} ideas={ideas} onClose={() => setPlanId(null)} />
+      )}
     </div>
   );
 }

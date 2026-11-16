@@ -210,6 +210,37 @@ export type Shoot = {
   notes: string;
   items: Deliverable[];
   createdAt: number;
+  /** Dónde es el shoot. */
+  place?: string;
+  /** Timeline del día: a qué hora se hace cada cosa. */
+  timeline?: TimelineBlock[];
+  /** Presentación para el fotógrafo: concepto, referencias e ideas, con fotos y links. */
+  slides?: BriefSlide[];
+};
+
+/** Un bloque del día de shoot. */
+export type TimelineBlock = {
+  id: string;
+  /** HH:MM */
+  time: string;
+  minutes: number;
+  activity: string;
+  /** Formato o indicación (ej. "video horizontal o foto"). */
+  notes: string;
+  /** Lo que se fotografía en el bloque, para ir tachando. */
+  products: { text: string; done: boolean }[];
+};
+
+/** Una lámina de la presentación del shoot. */
+export type BriefSlide = {
+  id: string;
+  /** Sección: Concepto creativo, Referencias visuales, Idea para el shoot… */
+  section: string;
+  title: string;
+  text: string;
+  link: string;
+  /** Fotos de referencia (ids de imágenes guardadas). */
+  images: string[];
 };
 
 /** Idea de contenido para un próximo shoot. */

@@ -10,6 +10,7 @@ import {
   daysInMonth,
   leadingBlanks,
   monthKey,
+  parseKey,
   shortDate,
   todayKey,
   weekdayOf,
@@ -18,7 +19,16 @@ import { readLocal } from "./images";
 import { INSIGHT_FIELDS, change, formatNumber } from "./insights";
 import { linkUrl } from "./media";
 import type { Report } from "./report";
-import { STATUSES, STATUS_LABEL, paletteOf, type Post, type Project } from "./types";
+import {
+  STATUSES,
+  STATUS_LABEL,
+  paletteOf,
+  type BriefSlide,
+  type Idea,
+  type Post,
+  type Project,
+  type Shoot,
+} from "./types";
 
 const MARGIN = 12;
 const INK = "#1d1818";
@@ -606,4 +616,184 @@ export async function calendarPdf(project: Project, allPosts: Post[], picked: Mo
     await cardPages(doc, project, pending, title, `${project.name} · por publicar`);
 
   doc.save(fileName(project, `Calendario ${title}`));
+}
+
+// ——— Shoot: timeline del día y presentación para el fotógrafo ———
+
+const longDate = (key: string | null) => {
+  if (!key) return "";
+  const { year, month, day } = parseKey(key);
+  const weekday = new Date(year, month, day).toLocaleDateString("es-MX", { weekday: "long" });
+  return `${weekday} ${day} de ${MONTHS[month]} ${year}`;
+};
+
+const endOf = (time: string, minutes: number) => {
+  const [h, m] = (time || "00:00").split(":").map(Number);
+  const t = (h * 60 + m + minutes) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+};
+
+/** 14:30 → 2:30pm, como en las agendas de producción. */
+const ampm = (time: string) => {
+  const [h, m] = (time || "00:00").split(":").map(Number);
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")}${h < 12 ? "am" : "pm"}`;
+};
+
+/**
+ * Agenda del shoot en PDF horizontal: portada con los colores de la marca, el timeline del día
+ * como tabla (hora, actividad, producto para tachar) y una hoja por lámina con texto, fotos y link.
+ */
+export async function shootPdf(project: Project, shoot: Shoot, ideas: Idea[]) {
+  const doc = await newDocument("landscape");
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const { strong, soft } = brand(project);
+  const accent = strong === INK ? "#d93b3b" : strong;
+  const onStrong = luminance(strong) > 0.6 ? INK : "#ffffff";
+  const M = 18;
+  const name = shoot.title || "Shoot";
+  const when = [longDate(shoot.date), shoot.place].filter(Boolean).join(" · ");
+
+  // Portada
+  doc.setFillColor(strong).rect(0, 0, W, H, "F");
+  doc.setTextColor(onStrong).setFont("helvetica", "bold").setFontSize(10);
+  doc.text(clean(project.name.toUpperCase()), M, M + 4);
+  doc.setFontSize(40);
+  doc.text(doc.splitTextToSize(clean(name), W - M * 2) as string[], M, H / 2 - 4);
+  doc.setFont("helvetica", "normal").setFontSize(13);
+  if (when) doc.text(clean(when), M, H / 2 + 12);
+  if (shoot.crew) doc.text(clean(shoot.crew), M, H / 2 + 19);
+  doc.setFontSize(9).text("Agenda de shooting", M, H - M);
+
+  const sectionLabel = (n: number, text: string) => {
+    doc.setTextColor(accent).setFont("helvetica", "bold").setFontSize(8);
+    doc.text(clean(`${String(n).padStart(2, "0")} / ${text.toUpperCase()}`), M, M);
+  };
+  let n = 1;
+
+  // Timeline
+  const blocks = shoot.timeline ?? [];
+  if (blocks.length) {
+    const cols = [M, M + 34, M + 34 + 128];
+    const right = W - M;
+    const newTimelinePage = (first: boolean) => {
+      doc.addPage();
+      sectionLabel(n, "Timeline del día");
+      doc.setTextColor(INK).setFont("helvetica", "bold").setFontSize(22);
+      doc.text(clean(`${project.name.toLowerCase()} - timeline del día${first ? "" : " (sigue)"}`), M, M + 12);
+      doc.setTextColor(GRAPHITE).setFont("helvetica", "italic").setFontSize(11);
+      doc.text(clean(`shoot ${longDate(shoot.date)}`), M, M + 19);
+      const y = M + 25;
+      doc.setFillColor(INK).rect(M, y, right - M, 9, "F");
+      doc.setTextColor("#ffffff").setFont("helvetica", "bold").setFontSize(9);
+      doc.text("HORA", cols[0] + 3, y + 6);
+      doc.text("ACTIVIDAD", cols[1] + 3, y + 6);
+      doc.text("PRODUCTO", cols[2] + 3, y + 6);
+      return y + 9;
+    };
+    let y = newTimelinePage(true);
+    for (const b of blocks) {
+      doc.setFont("helvetica", "normal").setFontSize(11);
+      const activity = doc.splitTextToSize(clean(b.activity || " "), cols[2] - cols[1] - 6) as string[];
+      doc.setFont("courier", "normal").setFontSize(9.5);
+      const notes = b.notes ? (doc.splitTextToSize(clean(b.notes), cols[2] - cols[1] - 6) as string[]) : [];
+      doc.setFont("helvetica", "normal").setFontSize(9.5);
+      const products = b.products.map((p) => doc.splitTextToSize(clean(p.text), right - cols[2] - 14) as string[]);
+      const productLines = products.reduce((t, l) => t + l.length, 0);
+      const height = Math.max(
+        18,
+        8 + activity.length * 5 + (notes.length ? 3 + notes.length * 4.5 : 0),
+        10 + productLines * 4.6 + products.length * 1.4,
+      );
+      if (y + height > H - M) y = newTimelinePage(false);
+      doc.setDrawColor(INK).setLineWidth(0.25);
+      doc.rect(cols[0], y, cols[1] - cols[0], height);
+      doc.rect(cols[1], y, cols[2] - cols[1], height);
+      if (b.products.length) doc.setFillColor(soft).rect(cols[2], y, right - cols[2], height, "FD");
+      else doc.rect(cols[2], y, right - cols[2], height);
+      // Hora
+      doc.setTextColor(accent).setFont("helvetica", "bold").setFontSize(11.5);
+      doc.text(ampm(b.time), cols[0] + 3, y + 7);
+      doc.setTextColor(GRAPHITE).setFont("helvetica", "normal").setFontSize(8.5);
+      doc.text(`(${b.minutes} min)`, cols[0] + 3, y + 12.5);
+      // Actividad y formato
+      doc.setTextColor(INK).setFont("helvetica", "normal").setFontSize(11);
+      doc.text(activity, cols[1] + 3, y + 7);
+      if (notes.length) {
+        doc.setTextColor(accent).setFont("courier", "normal").setFontSize(9.5);
+        doc.text(notes, cols[1] + 3, y + 7 + activity.length * 5 + 2);
+      }
+      // Productos para tachar
+      let py = y + 7;
+      doc.setFont("helvetica", "normal").setFontSize(9.5);
+      products.forEach((lines, k) => {
+        doc.setDrawColor(INK).setLineWidth(0.45).roundedRect(cols[2] + 3, py - 3.2, 3.8, 3.8, 0.6, 0.6, "S");
+        if (b.products[k].done) {
+          doc.setFont("helvetica", "bold").setTextColor(INK).text("x", cols[2] + 3.9, py - 0.1);
+          doc.setFont("helvetica", "normal");
+        }
+        doc.setTextColor(INK).text(lines, cols[2] + 9.5, py);
+        py += lines.length * 4.6 + 1.4;
+      });
+      y += height;
+    }
+    const last = blocks[blocks.length - 1];
+    if (y + 8 < H - M) {
+      doc.setTextColor(GRAPHITE).setFont("helvetica", "normal").setFontSize(9);
+      doc.text(clean(`Termina aprox. ${ampm(endOf(last.time, last.minutes))}`), M, y + 6);
+    }
+    n++;
+  }
+
+  // Láminas: las de la presentación y, si no hay, las ideas del shoot
+  const slides: BriefSlide[] = shoot.slides?.length
+    ? shoot.slides
+    : ideas.map((i) => ({ id: i.id, section: "Idea para el shoot", title: i.title, text: i.notes, link: i.link, images: [] }));
+  for (const s of slides) {
+    doc.addPage();
+    sectionLabel(n++, s.section || "Idea");
+    const hasImages = s.images.length > 0;
+    const textW = hasImages ? 92 : W - M * 2 - 60;
+    let y = M + 16;
+    if (s.title) {
+      doc.setTextColor(INK).setFont("helvetica", "bold").setFontSize(hasImages ? 20 : 26);
+      const lines = doc.splitTextToSize(clean(s.title), textW) as string[];
+      doc.text(lines, M, y);
+      y += lines.length * (hasImages ? 8 : 10) + 4;
+    }
+    if (s.text) {
+      const size = hasImages ? 11 : 14;
+      doc.setTextColor(INK).setFont("helvetica", "normal").setFontSize(size);
+      const lines = doc.splitTextToSize(clean(s.text), textW) as string[];
+      doc.text(lines, M, y, { lineHeightFactor: 1.45 });
+      y += lines.length * size * 0.51 + 6;
+    }
+    if (s.link) {
+      doc.setTextColor(accent).setFont("helvetica", "bold").setFontSize(10);
+      doc.textWithLink("Ver referencia ->", M, y, { url: s.link });
+      doc.setTextColor(GRAPHITE).setFont("helvetica", "normal").setFontSize(8);
+      doc.text(clean(s.link).slice(0, 80), M, y + 4.5);
+    }
+    if (hasImages) {
+      // Fotos en grilla a la derecha, como moodboard.
+      const x0 = M + textW + 10;
+      const areaW = W - M - x0;
+      const areaH = H - M * 2 - 6;
+      const count = Math.min(s.images.length, 9);
+      const cols = count === 1 ? 1 : count <= 4 ? 2 : 3;
+      const rows = Math.ceil(count / cols);
+      const gap = 3;
+      const cellW = (areaW - gap * (cols - 1)) / cols;
+      const cellH = Math.min((areaH - gap * (rows - 1)) / rows, cellW * 1.3);
+      for (let k = 0; k < count; k++) {
+        const data = await picture(s.images[k], Math.round(cellW * 7), Math.round(cellH * 7));
+        const x = x0 + (k % cols) * (cellW + gap);
+        const yy = M + 6 + Math.floor(k / cols) * (cellH + gap);
+        if (data) doc.addImage(data, "JPEG", x, yy, cellW, cellH);
+        else doc.setFillColor("#eeeeee").rect(x, yy, cellW, cellH, "F");
+      }
+    }
+  }
+
+  doc.save(fileName(project, `Shoot ${name}`));
 }
