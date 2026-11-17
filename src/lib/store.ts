@@ -33,11 +33,54 @@ import type {
   State,
 } from "./types";
 
-// Vive en el navegador (localStorage + IndexedDB para imágenes), salvo el banco: ver bank.ts.
+// Vive en internet (api/estado, ver sync.ts) y este navegador guarda una copia en localStorage para
+// abrir al tiro y no perder nada sin conexión. Las fotos nuevas entran primero a IndexedDB y
+// sync.ts las pasa a internet. El banco tiene su propio archivo: ver bank.ts.
 const KEY = "feed-planner:v1";
+// Versión de internet que tiene este navegador y si hay cambios sin subir.
+const META = "feed-planner:sync";
+// Archivos del navegador que ya se subieron: id local → dirección en internet.
+const MOVED = "feed-planner:movidos";
 
 let state: State | null = null;
 const listeners = new Set<() => void>();
+const notify = () => listeners.forEach((l) => l());
+
+export type SyncMeta = { rev: number | null; dirty: boolean };
+
+export function syncMeta(): SyncMeta {
+  try {
+    const raw = localStorage.getItem(META);
+    if (raw) return JSON.parse(raw) as SyncMeta;
+    // Lo guardado antes de que existiera la sincronización nunca se subió a internet.
+    return { rev: null, dirty: localStorage.getItem(KEY) !== null };
+  } catch {
+    return { rev: null, dirty: false };
+  }
+}
+
+export function setSyncMeta(meta: SyncMeta) {
+  try {
+    localStorage.setItem(META, JSON.stringify(meta));
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// En un navegador sin copia, no se muestra nada hasta traer lo de internet (y no el contenido de ejemplo).
+let waiting = (() => {
+  try {
+    return typeof window !== "undefined" && localStorage.getItem(KEY) === null;
+  } catch {
+    return false;
+  }
+})();
+
+export function firstPullDone() {
+  if (!waiting) return;
+  waiting = false;
+  notify();
+}
 
 function read(): State {
   if (state) return state;
@@ -213,7 +256,7 @@ function migrate(s: State): State {
   };
 }
 
-function write(next: State) {
+function commit(next: State) {
   state = next;
   try {
     localStorage.setItem(KEY, JSON.stringify(next));
@@ -222,17 +265,81 @@ function write(next: State) {
     console.error(error);
     alert("No se pudo guardar en este navegador. Copia tu texto antes de cerrar la página.");
   }
-  listeners.forEach((l) => l());
+  notify();
   import("./agenda").then(({ scheduleAgenda }) => scheduleAgenda(next));
 }
 
+function movedFiles(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(MOVED) ?? "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+/** Cambia los archivos que ya se subieron por su dirección en internet (aunque llegue una copia vieja). */
+function withMovedFiles(next: State): State {
+  const moved = Object.entries(movedFiles());
+  if (!moved.length) return next;
+  let json = JSON.stringify(next);
+  let changed = false;
+  for (const [id, url] of moved) {
+    if (!json.includes(`"${id}"`)) continue;
+    json = json.split(`"${id}"`).join(JSON.stringify(url));
+    changed = true;
+  }
+  return changed ? (JSON.parse(json) as State) : next;
+}
+
+/** Cambio hecho en este navegador: se guarda aquí y se sube a internet a los pocos segundos. */
+function write(next: State) {
+  commit(withMovedFiles(next));
+  setSyncMeta({ ...syncMeta(), dirty: true });
+  import("./sync").then(({ scheduleSync }) => scheduleSync());
+}
+
+/** Lo que hay en este navegador ahora. */
+export const currentState = () => read();
+
+/**
+ * Reemplaza todo por lo que llegó de internet, salvo `bank`: esa es la fila de fotos de este
+ * navegador que todavía no llegan al banco (ver bank.ts) y no se comparte.
+ * Devuelve si hubo que ponerlo al día (y entonces hay que subirlo).
+ */
+export function adoptState(next: State, rev: number) {
+  const migrated = withMovedFiles(migrate(next));
+  const changed = JSON.stringify(migrated) !== JSON.stringify(next);
+  commit({ ...migrated, bank: read().bank });
+  setSyncMeta({ rev, dirty: changed });
+  return changed;
+}
+
+/** Lo que se comparte entre computadores: todo menos la fila local del banco. */
+export const shared = (s: State): State => ({ ...s, bank: undefined });
+
+/** Un archivo del navegador ya está en internet: se usa su dirección en todas partes. */
+export function replaceFileId(id: string, url: string) {
+  try {
+    localStorage.setItem(MOVED, JSON.stringify({ ...movedFiles(), [id]: url }));
+  } catch (error) {
+    console.error(error);
+    return;
+  }
+  write(read());
+}
+
 let rescueStarted = false;
+let rescued: Promise<void> = Promise.resolve();
+
+/** Espera a que termine el rescate de archivos (para no mover lo que está revisando). */
+export const afterRescue = () => rescued;
 
 function subscribe(listener: () => void) {
   if (!rescueStarted) {
     rescueStarted = true;
     import("./agenda").then(({ scheduleAgenda }) => scheduleAgenda(read()));
-    import("./rescate").then(({ rescue }) => rescue()).catch(console.error);
+    rescued = import("./rescate").then(({ rescue }) => rescue()).catch(console.error);
+    import("./sync").then(({ startSync }) => startSync()).catch(console.error);
   }
   listeners.add(listener);
   const onStorage = (e: StorageEvent) => {
@@ -247,9 +354,9 @@ function subscribe(listener: () => void) {
   };
 }
 
-/** `null` durante el render en servidor, antes de leer localStorage. */
+/** `null` durante el render en servidor, antes de leer localStorage o mientras llega lo de internet. */
 export function useStore(): State | null {
-  return useSyncExternalStore(subscribe, read, () => null);
+  return useSyncExternalStore(subscribe, () => (waiting ? null : read()), () => null);
 }
 
 export function saveProject(project: Project, previousSlug?: string) {
