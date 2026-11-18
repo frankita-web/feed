@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 24;
+export const SEED_VERSION = 25;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -173,7 +173,7 @@ LA FOTO
 1. La pizza entera al centro, sobre un tronco o una tabla cubierta de musgo.
 2. Alrededor, hongos de verdad (los de temporada que lleva la pizza), helechos y hojas secas.
 3. Un poco de humo o neblina y lucecitas cálidas desenfocadas atrás, como un bosque de hadas.
-4. Una rebanada apenas separada, con el queso estirándose.
+4. Una rebanada apenas separada, con los hongos doraditos bien a la vista.
 
 ESTILO: solo foto, sin video. Colores de bosque (verdes, cafés, dorados) y la pizza como lo más luminoso. El texto escrito a mano en una esquina, chiquito.
 
@@ -191,6 +191,42 @@ Hongos y musgo en la mesa: https://www.pinterest.com/search/pins/?q=mushroom%20m
     createdAt: Date.UTC(2026, 10, 18, 19, 31),
   },
 ];
+
+/** «Reglas de la casa», más amigable (Franca, 18 nov 2026): reglas inventadas para pasarlo bien. */
+export const CANCINO_HOUSE_RULES = {
+  title: "Reglas de la casa (inventadas por nosotros)",
+  notes: `Reel vertical 9:16 · 15–20 s
+
+HOOK (0–1 s): el pizzero mira a cámara, sonríe y levanta un papel escrito a mano.
+Texto: «REGLAS DE LA CASA»
+
+TOMAS
+1. Gente entrando, saludando y riéndose. Texto: «REGLA 1: LLEGAR CON BUEN ÁNIMO»
+2. Alguien recorre la carta con el dedo y pide de todo. Texto: «REGLA 2: PEDIR LO QUE SE TE ANTOJE»
+3. Platos vacíos y alguien rescatando la última rebanada. Texto: «REGLA 3: NO DEJAR NADA»
+4. Llega el crumble con helado a la mesa. Texto: «REGLA 4: SIEMPRE HAY ESPACIO PARA EL POSTRE»
+5. Varias cucharas en el pastel de cacao. Texto: «REGLA 5: ALGO DULCE AL FINAL, SIEMPRE»
+6. Cierre: el pizzero guiña el ojo. Texto: «(SÍ, LAS INVENTAMOS NOSOTROS)»
+
+MÁS REGLAS INVENTADAS (para elegir o para otro video)
+1. La última rebanada se comparte.
+2. Se brinda aunque no haya nada que celebrar.
+3. Si dudas entre dos pizzas, pide las dos.
+4. Volver pronto.
+
+ESTILO: cada regla escrita a mano encima del video, con una carita o un corazón dibujado; tono juguetón, nada de regaños. El pizzero en blanco y negro y la comida a color.
+
+AUDIO: una canción alegre y la voz de alguien leyendo cada regla.
+
+COPY: Reglas de la casa: llegar con buen ánimo, pedir lo que se te antoje, no dejar nada y siempre, siempre, pedir postre. 🍕🍨 Las inventamos nosotros, pero se cumplen. Ven hoy a Cancino o pide por delivery.
+
+NECESITAMOS: un grupo de amigos o el equipo con buena onda, la mesa llena, el crumble con helado y el pastel de cacao, y luz cálida.
+
+REFERENCIAS
+Amigos comiendo pizza: https://www.pinterest.com/search/pins/?q=friends%20eating%20pizza%20candid
+Postre para compartir: https://www.pinterest.com/search/pins/?q=sharing%20dessert%20restaurant%20table
+Frases a mano sobre retrato: https://www.pinterest.com/search/pins/?q=handwritten%20quote%20over%20portrait%20photo`,
+};
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
 export const CANCINO_VIDEOS: Record<number, Partial<Post>> = {

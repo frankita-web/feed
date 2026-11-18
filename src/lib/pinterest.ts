@@ -169,7 +169,26 @@ export const PINTEREST_REFS: Record<string, string[]> = {
     "https://i.pinimg.com/736x/1f/cb/c0/1fcbc0e34ee88f9a0eaee0c57edf05e8.jpg",
     "https://i.pinimg.com/736x/d8/b6/8c/d8b68c984ef47b19c2e83c5f06cbbf92.jpg",
   ],
+  "friends eating pizza candid": [
+    "https://i.pinimg.com/736x/d1/25/8f/d1258f1d34bdaa3c13d37da07a4f96b9.jpg",
+    "https://i.pinimg.com/736x/bb/18/51/bb18519369e4b6d7e2aef4cbf3629c7d.jpg",
+    "https://i.pinimg.com/736x/2a/ac/d3/2aacd3ebdc9ba7301bbc24a93f6d120f.jpg",
+    "https://i.pinimg.com/736x/c8/cd/4e/c8cd4e256b3129804bd79c6bc367a211.jpg",
+    "https://i.pinimg.com/736x/bd/bd/64/bdbd64e505dc0610ee2e9d724126aa07.jpg",
+  ],
+  "sharing dessert restaurant table": [
+    "https://i.pinimg.com/736x/52/38/a7/5238a774fb50529e40755e5073736c6e.jpg",
+    "https://i.pinimg.com/736x/ea/4e/be/ea4ebeadb8032a0c8eedee86cedde4b4.jpg",
+    "https://i.pinimg.com/736x/ff/dd/e9/ffdde9c0e8207e6a97581755d90f0043.jpg",
+    "https://i.pinimg.com/736x/e0/22/ef/e022ef22499e69b30426079971c4cf6d.jpg",
+    "https://i.pinimg.com/736x/fb/ad/57/fbad5788cb74a8292a19501c2877317f.jpg",
+  ],
 };
+
+const ALL = new Set(Object.values(PINTEREST_REFS).flat());
+
+/** Foto que se puso sola desde Pinterest (no una que Franca subió). */
+export const isPinterestPhoto = (id: string) => ALL.has(id);
 
 const SEARCH = /pinterest\.[a-z.]+\/search\/pins\/\?q=([^\s&#]+)/gi;
 

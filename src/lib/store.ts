@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import {
   CANCINO_HISTORY_POSTS,
+  CANCINO_HOUSE_RULES,
   CANCINO_NOTES,
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
@@ -23,7 +24,7 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import { pinterestPhotos } from "./pinterest";
+import { isPinterestPhoto, pinterestPhotos } from "./pinterest";
 import type {
   BankItem,
   Deliverable,
@@ -228,6 +229,27 @@ function migrate(s: State): State {
     const ids = new Set((ideas ?? []).map((i) => i.id));
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
+  }
+  // v25: «Reglas de la casa» más amigable y la funghi sin queso (es a base de plantas), solo si
+  // siguen como se escribieron (si Franca las editó, no se tocan).
+  if ((s.version ?? 1) < 25) {
+    ideas = ideas?.map((i) => {
+      if (i.notes.includes("COMIENDO MAL LA PIZZA")) {
+        const images = i.images?.every(isPinterestPhoto)
+          ? pinterestPhotos(CANCINO_HOUSE_RULES.notes)
+          : i.images;
+        return { ...i, ...CANCINO_HOUSE_RULES, images };
+      }
+      if (i.notes.includes("con el queso estirándose"))
+        return {
+          ...i,
+          notes: i.notes.replace(
+            "con el queso estirándose",
+            "con los hongos doraditos bien a la vista",
+          ),
+        };
+      return i;
+    });
   }
   // v24: las ideas sin fotos toman 5 o 6 de las búsquedas de Pinterest de sus referencias.
   if ((s.version ?? 1) < 24) {
