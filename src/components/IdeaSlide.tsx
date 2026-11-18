@@ -343,7 +343,13 @@ function RefImage({ id }: { id: string }) {
     <div className="h-[300px] w-[280px] shrink-0 overflow-hidden bg-black/20">
       {url && (
         // eslint-disable-next-line @next/next/no-img-element -- foto local, guardada o de un link
-        <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />
+        <img
+          src={url}
+          alt=""
+          className="h-full w-full object-cover"
+          draggable={false}
+          referrerPolicy="no-referrer"
+        />
       )}
     </div>
   );

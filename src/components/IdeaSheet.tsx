@@ -227,8 +227,10 @@ function Photo({ id }: { id: string }) {
   const url = useImageUrl(id);
   return (
     <div className="aspect-square h-full w-full overflow-hidden rounded-lg bg-[#dedede]">
-      {/* eslint-disable-next-line @next/next/no-img-element -- foto local o guardada en internet */}
-      {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+      {url && (
+        // eslint-disable-next-line @next/next/no-img-element -- foto local, guardada o de Pinterest
+        <img src={url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+      )}
     </div>
   );
 }

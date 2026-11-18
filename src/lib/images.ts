@@ -59,8 +59,9 @@ function load(id: string) {
   });
 }
 
-// Las imágenes del sitio (public/) y las guardadas en internet (/api/media/…) se usan por su ruta.
-const isStatic = (id: string) => id.startsWith("/");
+// Las imágenes del sitio (public/), las guardadas en internet (/api/media/…) y las de otra página
+// (una referencia de Pinterest, por ejemplo) se usan por su dirección.
+const isStatic = (id: string) => id.startsWith("/") || /^https?:\/\//.test(id);
 const isRemote = (id: string) => id.startsWith("/api/media/");
 
 /** Archivo guardado solo en este navegador. */

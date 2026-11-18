@@ -23,6 +23,7 @@ import {
   seedState,
 } from "./seed";
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
+import { pinterestPhotos } from "./pinterest";
 import type {
   BankItem,
   Deliverable,
@@ -227,6 +228,14 @@ function migrate(s: State): State {
     const ids = new Set((ideas ?? []).map((i) => i.id));
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
+  }
+  // v24: las ideas sin fotos toman 5 o 6 de las búsquedas de Pinterest de sus referencias.
+  if ((s.version ?? 1) < 24) {
+    ideas = ideas?.map((i) => {
+      if (i.images?.length) return i;
+      const photos = pinterestPhotos(`${i.notes}\n${i.link}`);
+      return photos.length ? { ...i, images: photos } : i;
+    });
   }
   // v17: tono de los copys de Crissis.
   if ((s.version ?? 1) < 17) {
