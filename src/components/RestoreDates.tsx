@@ -13,6 +13,7 @@ const REASONS: Record<string, string> = {
   "antes-de-poner-fechas": "Antes de «Poner fechas en este orden»",
   "antes-de-ordenar-por-fecha": "Antes de «Ordenar por fecha»",
   "antes-de-ajustar-fechas": "Antes de «Ajustar fechas al orden»",
+  anterior: "Versión anterior (guardada sola)",
   reemplazado: "Versión que se reemplazó por otra",
   navegador: "Copia de un navegador",
 };

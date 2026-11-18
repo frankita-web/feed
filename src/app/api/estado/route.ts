@@ -5,6 +5,7 @@ import type { State } from "@/lib/types";
 // Todo el contenido (proyectos, publicaciones, ideas, guiones, shoots, notas) en un solo archivo
 // en internet, para que se vea igual en cualquier computador o celular. Ver lib/sync.ts.
 const FILE = "estado.json";
+const OLD_ENOUGH = 30 * 60 * 1000;
 
 export type Saved = { rev: number; savedAt: number; state: State };
 
@@ -61,6 +62,10 @@ export async function PUT(request: Request) {
     if (saved && saved.rev !== baseRev && !force)
       return NextResponse.json({ saved }, { status: 409 });
     if (saved && force && saved.rev !== baseRev) await backup(saved.state, "reemplazado");
+    // Si lo guardado tiene más de media hora, queda una copia antes de reemplazarlo: así siempre
+    // se puede volver a como estaba antes de una sesión de cambios.
+    else if (saved && Date.now() - saved.savedAt > OLD_ENOUGH && attempt === 0)
+      await backup(saved.state, "anterior");
 
     const next: Saved = { rev: (saved?.rev ?? 0) + 1, savedAt: Date.now(), state };
     try {

@@ -50,12 +50,20 @@ export async function POST(request: Request) {
   await connection();
   const { reason } = (await request.json().catch(() => ({}))) as { reason?: string };
   const tag = (reason ?? "copia").replace(/[^a-z0-9-]/gi, "").slice(0, 30) || "copia";
-  const main = await head("estado.json");
-  const stamp = new Date(main.uploadedAt).toISOString().replace(/[:.]/g, "-");
-  const result = await copy(main.url, `${PREFIX}estado-${stamp}-${tag}.json`, {
-    access: "private",
-    contentType: "application/json",
-    addRandomSuffix: true,
-  });
-  return NextResponse.json({ path: result.pathname });
+  try {
+    const main = await head("estado.json");
+    const stamp = new Date(main.uploadedAt).toISOString().replace(/[:.]/g, "-");
+    const result = await copy(main.url, `${PREFIX}estado-${stamp}-${tag}.json`, {
+      access: "private",
+      contentType: "application/json",
+      addRandomSuffix: true,
+    });
+    return NextResponse.json({ path: result.pathname });
+  } catch (error) {
+    console.error("respaldos POST", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) },
+      { status: 500 },
+    );
+  }
 }
