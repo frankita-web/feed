@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 28;
+export const SEED_VERSION = 29;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -359,6 +359,26 @@ NECESITAMOS: la pizza recién salida (con y sin huevo), miel de maple extra para
   done: false,
   createdAt: Date.UTC(2026, 10, 18, 20, 50),
 };
+
+/**
+ * Fechas de los posts de Cancino como estaban antes de apretar «Reordenar» por error (18 nov 2026,
+ * según el calendario de esa mañana), y lo que Franca confirmó que ya se publicó en Instagram.
+ */
+export const CANCINO_DATES_V29: { title: string; date: string; status?: Post["status"] }[] = [
+  { title: "Drink Tommy Marg · A esto sabe el viernes", date: "2026-10-23" },
+  { title: "Pasta Salmon", date: "2026-10-26", status: "publicado" },
+  { title: "PDM", date: "2026-11-01" },
+  { title: "Comentarios Vegan", date: "2026-11-07", status: "publicado" },
+  { title: "Non alc monday", date: "2026-11-09", status: "publicado" },
+  { title: "Post PDM fotos", date: "2026-11-12", status: "publicado" },
+  { title: "Drink Diageo", date: "2026-11-18", status: "publicado" },
+  { title: "Papas Gajo", date: "2026-11-20" },
+  { title: "Hola Atlantis", date: "2026-11-23" },
+  { title: "Pizza, siempre", date: "2026-11-29" },
+  { title: "Post año anterior, se vota con comentarios", date: "2026-12-02" },
+  { title: "Teaser Concurso 2026", date: "2026-12-03" },
+  { title: "Final Concurso PDM", date: "2026-12-06" },
+];
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
 export const CANCINO_VIDEOS: Record<number, Partial<Post>> = {

@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import {
+  CANCINO_DATES_V29,
   CANCINO_HISTORY_POSTS,
   CANCINO_HOUSE_RULES,
   CANCINO_TEAM_ORDERS,
@@ -233,6 +234,20 @@ function migrate(s: State): State {
     const ids = new Set((ideas ?? []).map((i) => i.id));
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
+  }
+  // v29: Cancino vuelve a las fechas de antes de «Reordenar» (lo publicado no se movió) y quedan
+  // como publicados los que Franca confirmó que ya subió.
+  if ((s.version ?? 1) < 29) {
+    // Sin mayúsculas, tildes ni espacios de más, por si el título cambió un poco.
+    const key = (t: string) =>
+      t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    const fixes = new Map(CANCINO_DATES_V29.map((f) => [key(f.title), f]));
+    posts = posts.map((p) => {
+      const fix = p.project === "cancino" && p.status !== "publicado" && fixes.get(key(p.title));
+      return fix
+        ? { ...p, date: fix.date, order: undefined, ...(fix.status && { status: fix.status }) }
+        : p;
+    });
   }
   // v28: idea nueva de la maple tocino para invierno, con las fotos del carrusel de Franca.
   if ((s.version ?? 1) < 28 && !ideas?.some((i) => i.id === CANCINO_MAPLE_IDEA.id))
