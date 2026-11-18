@@ -1,5 +1,5 @@
 import { CANCINO_DRINKS, CANCINO_DRINK_PLAN } from "./drinks";
-import type { Format, Pillar, Post, Project, State, Status } from "./types";
+import type { Format, Idea, Pillar, Post, Project, State, Status } from "./types";
 
 const CANCINO_PILLARS: Pillar[] = [
   { name: "PDM", target: 3 },
@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 22;
+export const SEED_VERSION = 23;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -107,6 +107,12 @@ copys anteriores para inspirarse:
 - bienvenidos al bistró de barrio.
 - alitas y cerveza. ninguna intención de irnos temprano.`;
 
+/** Menú a base de plantas de Cancino, una sola hoja (v23, 18 nov 2026). */
+export const CANCINO_PLANT_MENU = {
+  name: "A base de plantas",
+  pages: ["/menus/cancino/plantas.jpg"],
+};
+
 /** Menú Cancino Cibeles 2026 (v13). */
 export const CANCINO_MENU: Project["menu"] = {
   title: "Cancino Cibeles · 2026",
@@ -114,8 +120,77 @@ export const CANCINO_MENU: Project["menu"] = {
   booklets: [
     { name: "Comida", pages: [1, 2, 3, 4].map((n) => `/menus/cancino/p${n}.jpg`) },
     { name: "Bebidas", pages: [5, 6, 7, 8].map((n) => `/menus/cancino/p${n}.jpg`) },
+    CANCINO_PLANT_MENU,
   ],
 };
+
+/** Ideas que pidió Franca (18 nov 2026): el «made of» del betabel y la funghi en un bosque. */
+export const CANCINO_IDEAS_V23: Idea[] = [
+  {
+    id: "seed-idea-betabel-made-of",
+    project: "cancino",
+    title: "Made of: betabel horneado con jocoque de tofu",
+    notes: `Reel vertical 9:16 · 15–20 s
+
+HOOK (0–1 s): el betabel entero sale humeando del horno de leña.
+Texto: «¿DE QUÉ ESTÁ HECHO?»
+
+TOMAS
+1. Betabel crudo, entero, solo sobre la mesa. Texto: «BETABEL»
+2. Entra al horno de leña y sale asado. Texto: «ASADO A LA LEÑA»
+3. La reducción de balsámico cae en un hilo. Texto: «BALSÁMICO AÑEJO»
+4. La cuchara extiende el jocoque en el plato. Texto: «JOCOQUE DE TOFU»
+5. Zaatar, aceite de oliva y ralladura de limón amarillo encima. Texto: «ZAATAR + LIMÓN»
+6. El plato terminado, desde arriba. Texto: «100% A BASE DE PLANTAS»
+
+ESTILO: cada ingrediente aparece solo sobre un fondo limpio y al final se arma el plato. Un corte por ingrediente, al ritmo de la música.
+
+AUDIO: beat con un golpe en cada ingrediente y el sonido real del balsámico y la cuchara.
+
+COPY: Betabel asado a la leña con reducción de balsámico añejo, sobre un jocoque hecho de tofu, con zaatar y limón amarillo. 🌱 100% a base de plantas y 100% antojo. Pídelo hoy en Cancino o por delivery.
+
+NECESITAMOS: 2 o 3 betabeles enteros crudos, el plato armado, jocoque de tofu, balsámico, zaatar y limón amarillo; luz lateral suave y un fondo liso.
+
+REFERENCIAS
+Ingredientes uno por uno: https://www.pinterest.com/search/pins/?q=ingredients%20breakdown%20food%20video
+Betabel asado con yogurt: https://www.pinterest.com/search/pins/?q=roasted%20beets%20labneh%20zaatar`,
+    link: "",
+    pillar: "Vegano",
+    shootId: null,
+    done: false,
+    createdAt: Date.UTC(2026, 10, 18, 19, 30),
+  },
+  {
+    id: "seed-idea-funghi-bosque",
+    project: "cancino",
+    title: "Así suena la pizza funghi: un bosque encantado",
+    notes: `Post foto · 1 imagen
+
+HOOK: la funghi en medio de un bosque de cuento: musgo, helechos y hongos chiquitos alrededor, con luz que entra entre las hojas.
+Texto: «ASÍ SUENA LA FUNGHI»
+
+LA FOTO
+1. La pizza entera al centro, sobre un tronco o una tabla cubierta de musgo.
+2. Alrededor, hongos de verdad (los de temporada que lleva la pizza), helechos y hojas secas.
+3. Un poco de humo o neblina y lucecitas cálidas desenfocadas atrás, como un bosque de hadas.
+4. Una rebanada apenas separada, con el queso estirándose.
+
+ESTILO: solo foto, sin video. Colores de bosque (verdes, cafés, dorados) y la pizza como lo más luminoso. El texto escrito a mano en una esquina, chiquito.
+
+COPY: Así suena la Funghi: el crujido del borde y hongos de temporada bien doraditos, con flor de sal y perejil. 🍄 También a base de plantas. Pídela hoy en Cancino o por delivery.
+
+NECESITAMOS: una funghi recién salida, musgo, helechos, hongos frescos, una tabla o tronco, humo o máquina de neblina y luces cálidas.
+
+REFERENCIAS
+Bosque de hadas con comida: https://www.pinterest.com/search/pins/?q=fairy%20forest%20food%20photography
+Hongos y musgo en la mesa: https://www.pinterest.com/search/pins/?q=mushroom%20moss%20food%20styling`,
+    link: "",
+    pillar: "Pizza",
+    shootId: null,
+    done: false,
+    createdAt: Date.UTC(2026, 10, 18, 19, 31),
+  },
+];
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
 export const CANCINO_VIDEOS: Record<number, Partial<Post>> = {

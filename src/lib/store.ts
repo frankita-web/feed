@@ -7,7 +7,9 @@ import {
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
   BRAND_COLORS,
+  CANCINO_IDEAS_V23,
   CANCINO_MENU,
+  CANCINO_PLANT_MENU,
   CANCINO_PUBLISHED,
   CANCINO_VIDEOS,
   CANCINO_VIDEOS_SINCE,
@@ -211,6 +213,21 @@ function migrate(s: State): State {
         : p,
     );
   }
+  // v23: menú a base de plantas en Cancino y dos ideas nuevas (made of del betabel, funghi en el
+  // bosque), sin pisar lo que ya esté.
+  let ideas = s.ideas;
+  if ((s.version ?? 1) < 23) {
+    projects = projects.map((p) =>
+      p.slug === "cancino" &&
+      p.menu &&
+      !p.menu.booklets.some((b) => b.name === CANCINO_PLANT_MENU.name)
+        ? { ...p, menu: { ...p.menu, booklets: [...p.menu.booklets, CANCINO_PLANT_MENU] } }
+        : p,
+    );
+    const ids = new Set((ideas ?? []).map((i) => i.id));
+    const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
+    if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
+  }
   // v17: tono de los copys de Crissis.
   if ((s.version ?? 1) < 17) {
     projects = projects.map((p) =>
@@ -248,6 +265,7 @@ function migrate(s: State): State {
     version: SEED_VERSION,
     posts,
     notes,
+    ideas,
     projects: projects.map((p) => ({
       ...p,
       ...OLD_COLORS[p.bg],

@@ -8,6 +8,8 @@ type Spread = [left: string | null, right: string | null];
 
 /** Portada sola a la derecha, el interior abierto, y la contraportada sola a la izquierda. */
 function spreadsOf(pages: string[]): Spread[] {
+  // Una hoja suelta (como el menú a base de plantas) se ve sola, al centro.
+  if (pages.length === 1) return [[pages[0], null]];
   const [cover, ...rest] = pages;
   const back = rest.length % 2 ? rest.pop()! : null;
   const inside: Spread[] = [];
@@ -37,8 +39,14 @@ export function MenuView({ project }: { project: Project }) {
   }, [spreads.length, zoom]);
 
   const [left, right] = spreads[at];
-  const label =
-    at === 0 ? "Portada" : at === spreads.length - 1 && !right ? "Contraportada" : "Adentro";
+  const single = menu.booklets[booklet].pages.length === 1;
+  const label = single
+    ? "Hoja única"
+    : at === 0
+      ? "Portada"
+      : at === spreads.length - 1 && !right
+        ? "Contraportada"
+        : "Adentro";
 
   return (
     <div className="mx-auto max-w-7xl px-4 pt-8 pb-16 sm:px-8">
@@ -75,8 +83,14 @@ export function MenuView({ project }: { project: Project }) {
           key={`${booklet}-${at}`}
           className="mx-auto flex max-w-5xl animate-[menu-in_.35s_ease-out] flex-col items-center gap-4 sm:flex-row sm:items-stretch sm:justify-center sm:gap-0"
         >
-          <Page src={left} side="left" onZoom={setZoom} name={project.name} />
-          <Page src={right} side="right" onZoom={setZoom} name={project.name} />
+          {single ? (
+            <Page src={left} side="single" onZoom={setZoom} name={project.name} />
+          ) : (
+            <>
+              <Page src={left} side="left" onZoom={setZoom} name={project.name} />
+              <Page src={right} side="right" onZoom={setZoom} name={project.name} />
+            </>
+          )}
         </div>
 
         <button
@@ -137,16 +151,18 @@ function Page({
   name,
 }: {
   src: string | null;
-  side: "left" | "right";
+  side: "left" | "right" | "single";
   onZoom: (src: string) => void;
   name: string;
 }) {
   if (!src) return <div className="hidden aspect-[0.76] w-1/2 sm:block" />;
   // Sombra del pliegue hacia el centro, como un papel doblado.
   const fold =
-    side === "left"
-      ? "linear-gradient(to left, rgb(0 0 0 / 0.22), transparent 7%)"
-      : "linear-gradient(to right, rgb(0 0 0 / 0.18), transparent 6%)";
+    side === "single"
+      ? "none"
+      : side === "left"
+        ? "linear-gradient(to left, rgb(0 0 0 / 0.22), transparent 7%)"
+        : "linear-gradient(to right, rgb(0 0 0 / 0.18), transparent 6%)";
   return (
     <button
       onClick={() => onZoom(src)}
