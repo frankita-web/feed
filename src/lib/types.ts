@@ -251,6 +251,8 @@ export type Idea = {
   notes: string;
   /** Link de referencia (reel, Pinterest, TikTok…). */
   link: string;
+  /** Fotos de referencia (ids de imágenes guardadas; se suben solas a internet). */
+  images?: string[];
   pillar: string | null;
   /** Shoot donde se va a grabar; null = sin asignar. */
   shootId: string | null;

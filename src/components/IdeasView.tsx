@@ -5,13 +5,30 @@ import { shortDate, todayKey } from "@/lib/dates";
 import { parsePlan, planPreview } from "@/lib/ideaPlan";
 import { newIdea, newShoot, saveIdea, saveShoot } from "@/lib/store";
 import type { Idea, Project, Shoot } from "@/lib/types";
+import { IdeaDeck } from "./IdeaDeck";
 import { IdeaSheet } from "./IdeaSheet";
 import { buttonClass, darkButtonClass, inputClass } from "./Modal";
 import { ShootPlan } from "./ShootPlan";
 
 const NONE = "__sin__";
+const ALL = "__todas__";
+const MODE_KEY = "feed-ideas-vista";
 
-/** Ideas para próximos shoots, en columnas por shoot. Se arrastran de una a otra. */
+type Mode = "laminas" | "tablero";
+
+/** La vista elegida (láminas o tablero) se recuerda en este navegador. */
+function savedMode(): Mode {
+  try {
+    return localStorage.getItem(MODE_KEY) === "tablero" ? "tablero" : "laminas";
+  } catch {
+    return "laminas";
+  }
+}
+
+/**
+ * Ideas para próximos shoots. Se ven como presentación (una lámina vertical por idea) o como
+ * tablero, en columnas por shoot, donde se arrastran de una a otra.
+ */
 export function IdeasView({
   project,
   ideas,
@@ -28,6 +45,11 @@ export function IdeasView({
   const planned = shoots.find((s) => s.id === planId);
   const [openId, setOpenId] = useState<string | null>(null);
   const opened = ideas.find((i) => i.id === openId);
+  const [mode, setModeState] = useState<Mode>(savedMode);
+  const [group, setGroup] = useState(ALL);
+  // Lámina que se está viendo: por id, para no perderla si cambia el orden; si la idea ya no está
+  // (se borró o se marcó grabada), se queda en la misma posición.
+  const [slide, setSlide] = useState<{ id: string | null; index: number }>({ id: null, index: 0 });
 
   const today = todayKey();
   const mine = ideas.filter((i) => i.project === project.slug && (showDone || !i.done));
@@ -40,10 +62,38 @@ export function IdeasView({
     )
     .sort((a, b) => ((a.date ?? "9") < (b.date ?? "9") ? -1 : 1));
 
+  const setMode = (next: Mode) => {
+    setModeState(next);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {}
+  };
+
+  const unassigned = mine.filter((i) => !i.shootId || !shoots.some((s) => s.id === i.shootId));
+  // Mismo orden que el tablero: sueltas primero y después cada shoot por fecha.
+  const groups = [
+    { key: NONE, title: "Sin asignar", list: unassigned },
+    ...columns.map((s) => ({
+      key: s.id,
+      title: [s.title || "Shoot", s.date && shortDate(s.date)].filter(Boolean).join(" · "),
+      list: mine.filter((i) => i.shootId === s.id),
+    })),
+  ].filter((g) => g.list.length);
+  const activeGroup = groups.some((g) => g.key === group) ? group : ALL;
+  const deck = groups
+    .filter((g) => activeGroup === ALL || g.key === activeGroup)
+    .flatMap((g) => g.list);
+  const found = deck.findIndex((i) => i.id === slide.id);
+  const current = found >= 0 ? found : Math.max(0, Math.min(slide.index, deck.length - 1));
+
   const add = () => {
     if (!text.trim()) return;
-    saveIdea(newIdea(project.slug, { title: text.trim() }));
+    const idea = newIdea(project.slug, { title: text.trim() });
+    saveIdea(idea);
     setText("");
+    // En láminas, se salta a la idea nueva (queda entre las sueltas).
+    if (activeGroup !== ALL && activeGroup !== NONE) setGroup(ALL);
+    setSlide({ id: idea.id, index: 0 });
   };
 
   const planShoot = () => saveShoot(newShoot(project.slug, { title: "Próximo shoot", date: null }));
@@ -142,10 +192,54 @@ export function IdeasView({
         </button>
       </form>
 
-      <div className="mb-3 flex flex-wrap items-center gap-3 text-[13px]">
-        <button onClick={planShoot} className={buttonClass}>
-          + Planear shoot
-        </button>
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-[13px]">
+        <div className="flex rounded-full border border-black/10 bg-white/60 p-0.5" role="tablist">
+          {(
+            [
+              ["laminas", "Láminas"],
+              ["tablero", "Tablero"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={mode === key}
+              onClick={() => setMode(key)}
+              className={`rounded-full px-4 py-1.5 transition ${
+                mode === key ? "bg-ink font-medium text-white" : "text-ink hover:bg-white"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === "laminas" && groups.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {[{ key: ALL, title: "Todas", list: groups.flatMap((g) => g.list) }, ...groups].map(
+              (g) => (
+                <button
+                  key={g.key}
+                  onClick={() => {
+                    setGroup(g.key);
+                    setSlide({ id: null, index: 0 });
+                  }}
+                  className={`rounded-full border px-3 py-1 transition ${
+                    activeGroup === g.key
+                      ? "border-ink bg-ink text-white"
+                      : "border-black/10 bg-white/70 text-ink hover:bg-white"
+                  }`}
+                >
+                  {g.title} <span className="opacity-60">{g.list.length}</span>
+                </button>
+              ),
+            )}
+          </div>
+        )}
+        {mode === "tablero" && (
+          <button onClick={planShoot} className={buttonClass}>
+            + Planear shoot
+          </button>
+        )}
         <label className="flex cursor-pointer items-center gap-2 text-graphite">
           <input
             type="checkbox"
@@ -157,28 +251,46 @@ export function IdeasView({
         </label>
       </div>
 
-      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8">
-        {column(
-          NONE,
-          "Sin asignar",
-          "Ideas sueltas",
-          mine.filter((i) => !i.shootId || !shoots.some((s) => s.id === i.shootId)),
-        )}
-        {columns.map((s) =>
-          column(
-            s.id,
-            s.title || "Shoot",
-            [s.date ? shortDate(s.date) : "Sin fecha", s.crew].filter(Boolean).join(" · "),
-            mine.filter((i) => i.shootId === s.id),
-            s,
-          ),
-        )}
-      </div>
+      {mode === "laminas" ? (
+        <>
+          <IdeaDeck
+            project={project}
+            ideas={deck}
+            shoots={shoots}
+            index={current}
+            onGo={(index) => setSlide({ id: deck[index]?.id ?? null, index })}
+            onEdit={setOpenId}
+          />
+        </>
+      ) : (
+        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-4 sm:-mx-8 sm:px-8">
+          {column(NONE, "Sin asignar", "Ideas sueltas", unassigned)}
+          {columns.map((s) =>
+            column(
+              s.id,
+              s.title || "Shoot",
+              [s.date ? shortDate(s.date) : "Sin fecha", s.crew].filter(Boolean).join(" · "),
+              mine.filter((i) => i.shootId === s.id),
+              s,
+            ),
+          )}
+        </div>
+      )}
       {opened && (
-        <IdeaSheet idea={opened} project={project} shoots={shoots} onClose={() => setOpenId(null)} />
+        <IdeaSheet
+          idea={opened}
+          project={project}
+          shoots={shoots}
+          onClose={() => setOpenId(null)}
+        />
       )}
       {planned && (
-        <ShootPlan project={project} shoot={planned} ideas={ideas} onClose={() => setPlanId(null)} />
+        <ShootPlan
+          project={project}
+          shoot={planned}
+          ideas={ideas}
+          onClose={() => setPlanId(null)}
+        />
       )}
     </div>
   );
@@ -233,13 +345,14 @@ function IdeaCard({ idea, onOpen }: { idea: Idea; onOpen: () => void }) {
           </span>
         </p>
       )}
-      {(idea.pillar || plan.format || idea.link) && (
+      {(idea.pillar || plan.format || idea.link || !!idea.images?.length) && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6 text-[11px] text-graphite">
           {idea.pillar && (
             <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-ink">{idea.pillar}</span>
           )}
           {plan.format && <span>{plan.format}</span>}
           {idea.link && <span>↗ referencia</span>}
+          {!!idea.images?.length && <span>📷 {idea.images.length}</span>}
         </div>
       )}
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { shortDate } from "@/lib/dates";
-import { parsePlan, type PlanLine, type PlanSection } from "@/lib/ideaPlan";
-import { deleteIdea, newScript, saveIdea, saveScript } from "@/lib/store";
+import { linkLabel, parsePlan, type PlanLine, type PlanSection } from "@/lib/ideaPlan";
+import { isLocal, removeImage, storeImage, useImageUrl } from "@/lib/images";
+import { currentState, deleteIdea, newScript, saveIdea, saveScript } from "@/lib/store";
 import { notify } from "@/lib/toast";
 import type { Idea, Project, Shoot } from "@/lib/types";
 import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
@@ -104,9 +105,19 @@ export function IdeaSheet({
               </Field>
             )}
           </div>
+          <RefPhotos idea={idea} />
         </div>
       ) : (
-        <PlanView idea={idea} accent={project.accent} />
+        <>
+          {!!idea.images?.length && (
+            <div className="mb-6 grid grid-cols-3 gap-2">
+              {idea.images.map((id) => (
+                <Photo key={id} id={id} />
+              ))}
+            </div>
+          )}
+          <PlanView idea={idea} accent={project.accent} />
+        </>
       )}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-black/10 pt-5 text-[13px]">
@@ -133,6 +144,92 @@ export function IdeaSheet({
         </button>
       </div>
     </Modal>
+  );
+}
+
+/** Fotos de referencia de la idea: se ven en su lámina. Se suben solas a internet. */
+function RefPhotos({ idea }: { idea: Idea }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [saving, setSaving] = useState(false);
+  const images = idea.images ?? [];
+
+  async function add(files: File[]) {
+    const list = files.filter((f) => f.type.startsWith("image/"));
+    if (!list.length) return;
+    setSaving(true);
+    const ids: string[] = [];
+    for (const file of list) {
+      try {
+        ids.push(await storeImage(file));
+      } catch {
+        notify(`No se pudo guardar ${file.name}.`, "error");
+      }
+    }
+    setSaving(false);
+    const fresh = currentState().ideas?.find((x) => x.id === idea.id) ?? idea;
+    saveIdea({ ...fresh, images: [...(fresh.images ?? []), ...ids] });
+  }
+
+  return (
+    <div
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        add([...e.dataTransfer.files]);
+      }}
+    >
+      <span className="mb-1.5 block text-[11px] font-medium tracking-[0.08em] text-graphite uppercase">
+        Fotos de referencia
+      </span>
+      <div className="flex flex-wrap gap-2">
+        {images.map((id) => (
+          <div key={id} className="group relative h-20 w-20">
+            <Photo id={id} />
+            <button
+              onClick={() => {
+                if (isLocal(id)) removeImage(id);
+                saveIdea({ ...idea, images: images.filter((x) => x !== id) });
+              }}
+              className="absolute top-1 right-1 rounded-full bg-white/90 px-1.5 text-[11px] opacity-0 group-hover:opacity-100"
+              aria-label="Quitar foto"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-black/20 text-[11px] text-graphite hover:bg-white"
+        >
+          {saving ? "Guardando…" : "+ fotos"}
+        </button>
+        <input
+          ref={input}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            add([...(e.target.files ?? [])]);
+            e.target.value = "";
+          }}
+        />
+      </div>
+      <p className="mt-1.5 text-[12px] text-graphite">
+        Se ven en la lámina de la idea. También puedes arrastrarlas aquí.
+      </p>
+    </div>
+  );
+}
+
+function Photo({ id }: { id: string }) {
+  const url = useImageUrl(id);
+  return (
+    <div className="aspect-square h-full w-full overflow-hidden rounded-lg bg-[#dedede]">
+      {/* eslint-disable-next-line @next/next/no-img-element -- foto local o guardada en internet */}
+      {url && <img src={url} alt="" className="h-full w-full object-cover" />}
+    </div>
   );
 }
 
@@ -174,9 +271,7 @@ function Section({ section, accent }: { section: PlanSection; accent: string }) 
         {section.sub && <span className="tracking-normal normal-case">{section.sub}</span>}
         {copy && (
           <button
-            onClick={() =>
-              navigator.clipboard.writeText(text).then(() => notify("Copy copiado"))
-            }
+            onClick={() => navigator.clipboard.writeText(text).then(() => notify("Copy copiado"))}
             className="ml-auto rounded-full border border-black/10 px-2.5 py-0.5 tracking-normal normal-case text-ink hover:bg-white"
           >
             Copiar
@@ -237,19 +332,6 @@ function Inline({ text }: { text: string }) {
       part
     ),
   );
-}
-
-/** «Pinterest · staff meal» en vez del link largo. */
-function linkLabel(href: string) {
-  try {
-    const url = new URL(href);
-    const site = url.hostname.replace(/^www\./, "").split(".")[0];
-    const query = url.searchParams.get("q");
-    const name = site.charAt(0).toUpperCase() + site.slice(1);
-    return query ? `${name} · ${query}` : name;
-  } catch {
-    return href;
-  }
 }
 
 function Overlay({ text, big }: { text: string; big?: boolean }) {

@@ -76,3 +76,30 @@ body::after {
     animation: none;
   }
 }
+
+/* Láminas de ideas: la nueva entra desde el lado hacia donde se avanza. */
+@keyframes deck-next {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+}
+@keyframes deck-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+}
+.deck-next {
+  animation: deck-next 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.deck-prev {
+  animation: deck-prev 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deck-next,
+  .deck-prev {
+    animation: none;
+  }
+}
