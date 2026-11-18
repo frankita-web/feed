@@ -12,6 +12,7 @@ import {
   CANCINO_PLANNED_IMAGES,
   BRAND_COLORS,
   CANCINO_IDEAS_V23,
+  CANCINO_MAPLE_IDEA,
   CANCINO_MENU,
   CANCINO_PLANT_MENU,
   CANCINO_PUBLISHED,
@@ -233,6 +234,9 @@ function migrate(s: State): State {
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
   }
+  // v28: idea nueva de la maple tocino para invierno, con las fotos del carrusel de Franca.
+  if ((s.version ?? 1) < 28 && !ideas?.some((i) => i.id === CANCINO_MAPLE_IDEA.id))
+    ideas = [CANCINO_MAPLE_IDEA, ...(ideas ?? [])];
   // v27: idea nueva «Personalidades de una pizza», de la presentación de Franca.
   if ((s.version ?? 1) < 27 && !ideas?.some((i) => i.id === CANCINO_PERSONALITIES_IDEA.id))
     ideas = [

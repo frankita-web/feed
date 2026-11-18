@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 27;
+export const SEED_VERSION = 28;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -321,6 +321,43 @@ Rústica, de casa y de campo: https://www.pinterest.com/search/pins/?q=rustic%20
   shootId: null,
   done: false,
   createdAt: Date.UTC(2026, 10, 18, 20, 30),
+};
+
+/** Idea de Franca (18 nov 2026): la maple tocino para publicar en invierno, como su carrusel. */
+export const CANCINO_MAPLE_IDEA: Idea = {
+  id: "seed-idea-maple-tocino-invierno",
+  project: "cancino",
+  title: "La maple tocino sabe a invierno",
+  notes: `Post carrusel · 5 fotos
+
+HOOK: la pizza en la mano, recién salida, con la frase en rojo siguiendo la curva de la charola.
+Texto: «LA MAPLE TOCINO SABE A INVIERNO»
+
+LAS FOTOS
+1. La pizza en la mano, afuera o junto al horno. Texto: «La maple tocino sabe a invierno»
+2. De cerca: la pancetta caramelizada, el cebollín y el hilo de miel de maple cayendo. Texto: «Zoom con vapor incluido»
+3. Sobre el sillón de cuero o una mesa con luz cálida. Texto: «La regla de la temporada: se comparte o no cuenta.»
+4. La espátula poniendo el huevo estrellado encima. Texto: «¿Con huevito?»
+5. Cierre: la pizza con huevito, lista para compartir. Texto: «No hay bordes que sobrevivan a esta»
+
+OTRAS FRASES (para cambiar o sumar)
+1. Esta pizza abriga.
+2. Afuera hace frío, aquí hay maple.
+3. Huevito encima, invierno resuelto.
+4. Dulce, salada y calientita. Como debe ser.
+5. El frío se arregla con una rebanada.
+
+ESTILO: como la serie de temporada (la huitlacoche sabe a otoño): frases cortas en rojo Cancino encima de la foto, luz cálida y baja, vapor y ropa de invierno (suéter, mangas largas).
+
+COPY: La maple tocino sabe a invierno: pancetta caramelizada, cebollín y miel de maple. 🍕 Pídela con o sin huevo estrellado. Ven hoy a Cancino o pide por delivery.
+
+NECESITAMOS: la pizza recién salida (con y sin huevo), miel de maple extra para el hilo, una espátula, el sillón de cuero o una mesa con luz cálida, y alguien con suéter.`,
+  link: "",
+  images: [1, 2, 3, 4].map((n) => `/referencias/cancino-maple-${n}.jpg`),
+  pillar: "Pizza",
+  shootId: null,
+  done: false,
+  createdAt: Date.UTC(2026, 10, 18, 20, 50),
 };
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
