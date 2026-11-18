@@ -8,6 +8,7 @@ import {
   CANCINO_TSHIRT_IDEA,
   CANCINO_NOTES,
   CANCINO_PINNED,
+  CANCINO_PERSONALITIES_IDEA,
   CANCINO_PLANNED_IMAGES,
   BRAND_COLORS,
   CANCINO_IDEAS_V23,
@@ -232,6 +233,15 @@ function migrate(s: State): State {
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
   }
+  // v27: idea nueva «Personalidades de una pizza», de la presentación de Franca.
+  if ((s.version ?? 1) < 27 && !ideas?.some((i) => i.id === CANCINO_PERSONALITIES_IDEA.id))
+    ideas = [
+      {
+        ...CANCINO_PERSONALITIES_IDEA,
+        images: pinterestPhotos(CANCINO_PERSONALITIES_IDEA.notes),
+      },
+      ...(ideas ?? []),
+    ];
   // v26: se borra «Este queso no es queso», idea nueva de la playera «PIZZA SIEMPRE», y «Lo que pide
   // el equipo» como la referencia de Franca (fotos a color con su pedido encima), solo si sigue
   // como se escribió. Se quedan las fotos que Franca haya subido.

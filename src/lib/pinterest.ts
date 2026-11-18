@@ -190,6 +190,20 @@ export const PINTEREST_REFS: Record<string, string[]> = {
     "https://i.pinimg.com/736x/b6/62/8b/b6628b7811af4b9df491723ab4ccb97e.jpg",
     "https://i.pinimg.com/736x/f1/24/6d/f1246d6b9c596022330762e3bfd121f5.jpg",
   ],
+  "leopard print party flash aesthetic": [
+    "https://i.pinimg.com/736x/0d/89/62/0d89629392a1887eeb116295f30597ff.jpg",
+    "https://i.pinimg.com/736x/ff/fc/dc/fffcdcdeead9e2f241e1a084495b012a.jpg",
+    "https://i.pinimg.com/736x/d8/f3/cf/d8f3cf037d1af13da4cbe2c15e6adc50.jpg",
+    "https://i.pinimg.com/736x/09/4f/ae/094fae2bafbd5a87c7e2f5c5746da9ad.jpg",
+    "https://i.pinimg.com/736x/38/79/54/387954a2472e6db5b120c852455d03b8.jpg",
+  ],
+  "rustic bohemian apron kitchen outfit": [
+    "https://i.pinimg.com/736x/cc/93/7f/cc937f9bed866007a4633ce3628ea213.jpg",
+    "https://i.pinimg.com/736x/23/af/d3/23afd37090ffc9be322fb82d0fd02e3f.jpg",
+    "https://i.pinimg.com/736x/16/39/26/163926ba2ad69afec136b3335036fad3.jpg",
+    "https://i.pinimg.com/736x/30/1d/07/301d07c995cd8c7c95ab035db8faf93a.jpg",
+    "https://i.pinimg.com/736x/12/da/43/12da439a26570ac66beb7354aaccee80.jpg",
+  ],
 };
 
 const ALL = new Set(Object.values(PINTEREST_REFS).flat());

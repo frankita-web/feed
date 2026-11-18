@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 26;
+export const SEED_VERSION = 27;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -286,6 +286,41 @@ Playeras de restaurante con letras rojas: https://www.pinterest.com/search/pins/
   shootId: null,
   done: false,
   createdAt: Date.UTC(2026, 10, 18, 20, 10),
+};
+
+/** Idea de Franca (18 nov 2026), de su presentación: cada pizza tiene su personalidad. */
+export const CANCINO_PERSONALITIES_IDEA: Idea = {
+  id: "seed-idea-personalidades-pizza",
+  project: "cancino",
+  title: "Personalidades de una pizza",
+  notes: `Post carrusel · 5 o 6 láminas, una por pizza
+
+HOOK: la primera lámina con el título en la etiqueta amarilla, como en la presentación.
+Texto: «¿QUÉ PIZZA ERES?»
+
+LAS LÁMINAS
+1. Cada lámina partida en dos: arriba una persona que tiene la personalidad de esa pizza, abajo la pizza de cerca.
+2. Al medio, la personalidad en una etiqueta negra con letra blanca a mano.
+3. Margherita: «La todo bien». Tranquila, sin complicarse.
+4. Diávola: «Spicy». Fiesta, leopardo, rojo y flash.
+5. Rústica: «Bohemia sin pretensiones». De casa, de campo: delantal, cuadrillé y cocina.
+6. Funghi: «Todo fluye». Las manos en la masa y cero prisa.
+7. La que sigue: «Ahorita ahorita». La que siempre llega, pero a su ritmo (elegir con Cancino cuál es).
+
+ESTILO: fondo rojo Cancino y el título en la etiqueta amarilla «PERSONALIDADES DE UNA PIZZA», como en tu presentación. Arriba la persona con su ropa y su lugar contando la personalidad; abajo la pizza a color; la etiqueta negra al medio.
+
+COPY: Cada pizza tiene su personalidad. 🍕 La Margherita es la todo bien, la Diávola es spicy y la Rústica es de casa, de campo. ¿Tú cuál eres? Ven a descubrirlo a Cancino o pide por delivery.
+
+NECESITAMOS: elegir con Cancino 5 o 6 pizzas y su personalidad, una persona por personalidad (del equipo o amigos) con ropa que la cuente, y una foto de cada pizza de cerca.
+
+REFERENCIAS
+Diávola, spicy: https://www.pinterest.com/search/pins/?q=leopard%20print%20party%20flash%20aesthetic
+Rústica, de casa y de campo: https://www.pinterest.com/search/pins/?q=rustic%20bohemian%20apron%20kitchen%20outfit`,
+  link: "",
+  pillar: "Pizza",
+  shootId: null,
+  done: false,
+  createdAt: Date.UTC(2026, 10, 18, 20, 30),
 };
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */
