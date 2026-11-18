@@ -380,11 +380,61 @@ function withMovedFiles(next: State): State {
   return changed ? (JSON.parse(json) as State) : next;
 }
 
+// Deshacer y rehacer: los cambios hechos en este navegador mientras la página está abierta.
+// Si llega un cambio de otro computador, se empieza de nuevo (para no pisar lo de allá).
+const past: State[] = [];
+const future: State[] = [];
+const historyListeners = new Set<() => void>();
+let historyTick = 0;
+const historyChanged = () => {
+  historyTick += 1;
+  historyListeners.forEach((l) => l());
+};
+
 /** Cambio hecho en este navegador: se guarda aquí y se sube a internet a los pocos segundos. */
-function write(next: State) {
+function write(next: State, remember = true) {
+  const before = read();
   commit(withMovedFiles(next));
+  if (remember && before !== state) {
+    past.push(before);
+    if (past.length > 50) past.shift();
+    future.length = 0;
+    historyChanged();
+  }
   setSyncMeta({ ...syncMeta(), dirty: true });
   import("./sync").then(({ scheduleSync }) => scheduleSync());
+}
+
+/** Vuelve al estado anterior al último cambio. La fila local del banco no se toca. */
+export function undo() {
+  const previous = past.pop();
+  if (!previous) return false;
+  future.push(read());
+  write({ ...previous, bank: read().bank }, false);
+  historyChanged();
+  return true;
+}
+
+/** Rehace lo último que se deshizo. */
+export function redo() {
+  const next = future.pop();
+  if (!next) return false;
+  past.push(read());
+  write({ ...next, bank: read().bank }, false);
+  historyChanged();
+  return true;
+}
+
+export function useHistory() {
+  useSyncExternalStore(
+    (listener) => {
+      historyListeners.add(listener);
+      return () => historyListeners.delete(listener);
+    },
+    () => historyTick,
+    () => 0,
+  );
+  return { canUndo: past.length > 0, canRedo: future.length > 0 };
 }
 
 /** Lo que hay en este navegador ahora. */
@@ -396,6 +446,9 @@ export const currentState = () => read();
  * Devuelve si hubo que ponerlo al día (y entonces hay que subirlo).
  */
 export function adoptState(next: State, rev: number) {
+  past.length = 0;
+  future.length = 0;
+  historyChanged();
   const migrated = withMovedFiles(migrate(next));
   const changed = JSON.stringify(migrated) !== JSON.stringify(next);
   commit({ ...migrated, bank: read().bank });
@@ -414,7 +467,8 @@ export function replaceFileId(id: string, url: string) {
     console.error(error);
     return;
   }
-  write(read());
+  // No es un cambio de Franca: no cuenta para deshacer.
+  write(read(), false);
 }
 
 let rescueStarted = false;

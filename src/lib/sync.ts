@@ -126,6 +126,23 @@ async function push(state: State, baseRev: number | null, force = false) {
   if (changedMeanwhile) scheduleSync();
 }
 
+/**
+ * Guarda en internet una copia de todo como está ahora, antes de un cambio grande (reordenar,
+ * poner fechas). Si falla, no frena el cambio.
+ */
+export async function saveBackup(reason: string) {
+  try {
+    const response = await fetch("/api/estado", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ state: shared(currentState()), reason }),
+    });
+    if (!response.ok) throw new Error(`respaldo: ${response.status}`);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 async function backup(state: State) {
   const response = await fetch("/api/estado", {
     method: "POST",

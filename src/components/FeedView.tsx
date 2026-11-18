@@ -5,6 +5,7 @@ import { addDays, shortDate, todayKey } from "@/lib/dates";
 import { datesFollowOrder, outOfOrder, placeAt, weeklySlots } from "@/lib/feed-order";
 import { storeImage } from "@/lib/images";
 import { reorderFeed, rewriteCaptions } from "@/lib/organize";
+import { saveBackup } from "@/lib/sync";
 import { notify } from "@/lib/toast";
 import { feedPdf } from "@/lib/pdf";
 import { postFromDeliverable, storeMedia } from "@/lib/media";
@@ -26,6 +27,7 @@ import { buttonClass, darkButtonClass } from "./Modal";
 import { Logo } from "./Logo";
 import { PdfButton } from "./PdfButton";
 import { PostDialog } from "./PostDialog";
+import { RestoreDates } from "./RestoreDates";
 
 export function FeedView({
   project,
@@ -45,6 +47,7 @@ export function FeedView({
   const [target, setTarget] = useState<string | null>(null);
   const [planDrop, setPlanDrop] = useState(false);
   const [rewriting, setRewriting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const planRef = useRef<HTMLInputElement>(null);
 
   const all = feedPosts(posts, project.slug);
@@ -349,6 +352,8 @@ export function FeedView({
                       return;
                     setRewriting(true);
                     notify(`Reordenando ${targets.length} posts…`, "loading", "feed-ai");
+                    // Copia en internet de cómo estaba, para poder volver atrás.
+                    await saveBackup("antes-de-reordenar");
                     try {
                       const { moved, total } = await reorderFeed(project, targets);
                       notify(
@@ -383,6 +388,7 @@ export function FeedView({
                     )
                       return;
                     const dates = weeklySlots(addDays(todayKey(), 1), perWeek, ordered.length);
+                    void saveBackup("antes-de-poner-fechas");
                     upsertPosts(
                       ordered.map((post, i) => ({
                         ...post,
@@ -400,6 +406,13 @@ export function FeedView({
                   title="Respeta tu orden y solo pone las fechas"
                 >
                   📅 Poner fechas en este orden
+                </button>
+                <button
+                  onClick={() => setRestoring(true)}
+                  className={buttonClass}
+                  title="Volver a las fechas de una copia guardada (por ejemplo, de antes de Reordenar)"
+                >
+                  ↶ Recuperar fechas
                 </button>
                 <PdfButton make={() => feedPdf(project, posts)} />
                 <button
@@ -467,19 +480,25 @@ export function FeedView({
               </span>
               <span className="flex flex-wrap gap-3">
                 <button
-                  onClick={() =>
-                    upsertPosts(planned.map((p) => (p.date ? { ...p, order: undefined } : p)))
-                  }
+                  onClick={() => {
+                    void saveBackup("antes-de-ordenar-por-fecha");
+                    upsertPosts(planned.map((p) => (p.date ? { ...p, order: undefined } : p)));
+                  }}
                   className="font-medium underline"
                 >
                   Ordenar por fecha
                 </button>
                 <button
-                  onClick={() =>
-                    confirm(
-                      "Las fechas de los posts nuevos se van a reordenar según cómo los acomodaste. ¿Seguir?",
-                    ) && upsertPosts(datesFollowOrder(planned))
-                  }
+                  onClick={() => {
+                    if (
+                      !confirm(
+                        "Las fechas de los posts nuevos se van a reordenar según cómo los acomodaste. ¿Seguir?",
+                      )
+                    )
+                      return;
+                    void saveBackup("antes-de-ajustar-fechas");
+                    upsertPosts(datesFollowOrder(planned));
+                  }}
                   className="underline"
                 >
                   Ajustar fechas al orden
@@ -497,6 +516,9 @@ export function FeedView({
         </section>
       </div>
 
+      {restoring && (
+        <RestoreDates project={project} posts={posts} onClose={() => setRestoring(false)} />
+      )}
       {editing && (
         <PostDialog
           key={editing.id}

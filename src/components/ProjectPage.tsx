@@ -14,6 +14,7 @@ import { MenuView } from "./MenuView";
 import { ShootsView } from "./ShootsView";
 import { ProjectDialog } from "./ProjectDialog";
 import { Sidebar, TAB_ICON, TAB_LABEL, tabsFor, type Tab } from "./Sidebar";
+import { UndoButtons } from "./UndoButtons";
 
 export type { Tab };
 
@@ -57,16 +58,19 @@ export function ProjectPage({ slug, tab }: { slug: string; tab: Tab }) {
             {TAB_ICON[tab]}
             {TAB_LABEL[tab]}
           </span>
-          {project.instagram && (
-            <a
-              href={`https://www.instagram.com/${project.instagram}/`}
-              target="_blank"
-              rel="noreferrer"
-              className="ml-auto text-[13px] tracking-normal text-graphite hover:text-ink"
-            >
-              @{project.instagram} ↗
-            </a>
-          )}
+          <span className="ml-auto flex items-center gap-4">
+            <UndoButtons />
+            {project.instagram && (
+              <a
+                href={`https://www.instagram.com/${project.instagram}/`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] tracking-normal text-graphite hover:text-ink"
+              >
+                @{project.instagram} ↗
+              </a>
+            )}
+          </span>
         </header>
 
         {tab === "calendario" ? (
