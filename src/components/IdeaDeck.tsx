@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { storeImage } from "@/lib/images";
 import { currentState, saveIdea } from "@/lib/store";
 import { notify } from "@/lib/toast";
@@ -16,20 +17,28 @@ export function IdeaDeck({
   project,
   ideas,
   shoots,
+  shootOptions,
   index,
   onGo,
+  onKeep,
   onEdit,
 }: {
   project: Project;
   ideas: Idea[];
   shoots: Shoot[];
+  /** Shoots que se pueden elegir para una idea (los que vienen). */
+  shootOptions: Shoot[];
   index: number;
   onGo: (index: number) => void;
+  /** Después de editar una idea en la lámina: seguir mostrando esa idea aunque cambie de lugar. */
+  onKeep: (id: string) => void;
   onEdit: (id: string) => void;
 }) {
   const [full, setFull] = useState(false);
   const [dir, setDir] = useState<1 | -1>(1);
   const [adding, setAdding] = useState(false);
+  const [printing, setPrinting] = useState(false);
+  const stopPrinting = useCallback(() => setPrinting(false), []);
   const fileInput = useRef<HTMLInputElement>(null);
   const total = ideas.length;
   const idea = ideas[index];
@@ -144,35 +153,53 @@ export function IdeaDeck({
 
   const shoot = shoots.find((s) => s.id === idea.shootId);
 
+  const strip = (vertical: boolean) => (
+    <Filmstrip
+      vertical={vertical}
+      ideas={ideas}
+      shoots={shoots}
+      project={project}
+      index={index}
+      onGo={go}
+    />
+  );
+
   const deck = (
     <>
-      <Stage
-        full={full}
-        onPrev={index > 0 ? () => go(index - 1) : undefined}
-        onNext={index < total - 1 ? () => go(index + 1) : undefined}
-        onDropFiles={addImages}
-      >
-        {(minFit) => (
-          <div key={idea.id} className={dir > 0 ? "deck-next" : "deck-prev"}>
-            <IdeaSlide
-              idea={idea}
-              project={project}
-              shoot={shoot}
-              index={index}
-              total={total}
-              minFit={minFit}
-              onChange={(fields) => {
-                const fresh = currentState().ideas?.find((x) => x.id === idea.id) ?? idea;
-                saveIdea({ ...fresh, ...fields });
-              }}
-            />
-          </div>
-        )}
-      </Stage>
+      <div className={full ? "flex min-h-0 flex-1 gap-4" : "md:flex md:gap-4"}>
+        {/* Al lado, en el computador: todas las ideas hacia abajo, como en PowerPoint. */}
+        <div className="relative hidden w-[192px] shrink-0 md:block">{strip(true)}</div>
+        <Stage
+          full={full}
+          onPrev={index > 0 ? () => go(index - 1) : undefined}
+          onNext={index < total - 1 ? () => go(index + 1) : undefined}
+          onDropFiles={addImages}
+        >
+          {(minFit) => (
+            <div key={idea.id} className={dir > 0 ? "deck-next" : "deck-prev"}>
+              <IdeaSlide
+                idea={idea}
+                project={project}
+                shoot={shoot}
+                index={index}
+                total={total}
+                minFit={minFit}
+                shootOptions={shootOptions}
+                onChange={(fields) => {
+                  const fresh = currentState().ideas?.find((x) => x.id === idea.id) ?? idea;
+                  saveIdea({ ...fresh, ...fields });
+                  onKeep(idea.id);
+                }}
+              />
+            </div>
+          )}
+        </Stage>
+      </div>
 
-      <Filmstrip ideas={ideas} shoots={shoots} project={project} index={index} onGo={go} />
+      {/* En el celular, la tira va abajo. */}
+      <div className="md:hidden">{strip(false)}</div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-[13px]">
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-[13px]">
         <div className="flex items-center gap-1">
           <RoundButton label="Lámina anterior" disabled={!index} onClick={() => go(index - 1)}>
             ‹
@@ -198,6 +225,14 @@ export function IdeaDeck({
         >
           {adding ? "Guardando…" : "+ Foto de referencia"}
         </button>
+        <button
+          onClick={() => setPrinting(true)}
+          className={buttonClass}
+          disabled={printing}
+          title="Todas las láminas en un PDF, una por página"
+        >
+          {printing ? "Preparando PDF…" : "⬇ Descargar PDF"}
+        </button>
         {full ? (
           <button onClick={closeFull} className={buttonClass}>
             Salir ✕
@@ -219,6 +254,9 @@ export function IdeaDeck({
           }}
         />
       </div>
+      {printing && (
+        <PrintDeck ideas={ideas} shoots={shoots} project={project} onDone={stopPrinting} />
+      )}
     </>
   );
 
@@ -264,7 +302,7 @@ function Stage({
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
-  // En el computador, el alto que queda en la pantalla debajo de la lámina para la tira y los botones.
+  // En el computador, el alto que queda en la pantalla para la lámina (deja ver los botones).
   const [height, setHeight] = useState<number | null>(null);
   const [over, setOver] = useState(false);
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -275,15 +313,15 @@ function Stage({
     const measure = () => {
       const wide = window.matchMedia("(min-width: 768px)").matches;
       const rect = el.getBoundingClientRect();
-      // Sin pantalla completa, la lámina cabe en lo que queda de pantalla y deja ver la tira de
-      // láminas y los botones de abajo (Editar, Foto…).
+      // Sin pantalla completa, la lámina cabe en lo que queda de pantalla y deja ver los botones
+      // de abajo (Editar, Foto, PDF…).
       const room =
         !full && wide
           ? Math.max(320, window.innerHeight - (rect.top + window.scrollY) - BELOW)
           : null;
       setHeight(room);
-      // En pantallas grandes quedan 2 flechas a los lados.
-      const w = rect.width - (wide ? 2 * (48 + 24) : 0);
+      // En pantalla completa quedan 2 flechas a los lados.
+      const w = rect.width - (wide && full ? 2 * (48 + 24) : 0);
       const h = room ?? rect.height;
       setScale(Math.max(0.1, Math.min(w / SLIDE_W, h / SLIDE_H)));
     };
@@ -306,8 +344,8 @@ function Stage({
       ref={box}
       className={
         full
-          ? "relative flex min-h-0 flex-1 items-center justify-center"
-          : "relative flex aspect-video w-full items-center justify-center md:aspect-auto"
+          ? "relative flex min-h-0 min-w-0 flex-1 items-center justify-center"
+          : "relative flex aspect-video w-full items-center justify-center md:aspect-auto md:min-w-0 md:flex-1"
       }
       style={height ? { height } : undefined}
       onTouchStart={(e) => {
@@ -338,13 +376,13 @@ function Stage({
         onDropFiles([...e.dataTransfer.files]);
       }}
     >
-      <div className="hidden md:block">
+      <div className={full ? "hidden md:block" : "hidden"}>
         <RoundButton label="Lámina anterior" disabled={!onPrev} onClick={onPrev} big>
           ‹
         </RoundButton>
       </div>
       {scale > 0 && (
-        <div className="md:mx-6" style={{ width: SLIDE_W * scale }}>
+        <div className={full ? "md:mx-6" : ""} style={{ width: SLIDE_W * scale }}>
           <div
             className={`relative rounded-[calc(56px*var(--s))] transition ${
               over ? "ring-4 ring-ink" : ""
@@ -362,7 +400,7 @@ function Stage({
           </div>
         </div>
       )}
-      <div className="hidden md:block">
+      <div className={full ? "hidden md:block" : "hidden"}>
         <RoundButton label="Lámina siguiente" disabled={!onNext} onClick={onNext} big>
           ›
         </RoundButton>
@@ -371,21 +409,22 @@ function Stage({
   );
 }
 
-/** Lo que queda debajo de la lámina en el computador: la tira de láminas y los botones. */
-const BELOW = 200;
-const THUMB_W = 150;
+/** Lo que queda debajo de la lámina en el computador: los botones y la ayuda. */
+const BELOW = 110;
 
 /**
- * Las láminas en chiquito abajo, como en PowerPoint o Canva: se ve en cuál vas y se salta a
- * cualquiera tocándola.
+ * Las láminas en chiquito, como en PowerPoint o Canva: al lado y hacia abajo en el computador,
+ * abajo en el celular. Se ve en cuál vas y se salta a cualquiera tocándola.
  */
 function Filmstrip({
+  vertical,
   ideas,
   shoots,
   project,
   index,
   onGo,
 }: {
+  vertical: boolean;
   ideas: Idea[];
   shoots: Shoot[];
   project: Project;
@@ -393,21 +432,33 @@ function Filmstrip({
   onGo: (i: number) => void;
 }) {
   const strip = useRef<HTMLDivElement>(null);
-  const s = THUMB_W / SLIDE_W;
+  const width = vertical ? 164 : 150;
+  const s = width / SLIDE_W;
 
-  // La lámina actual siempre a la vista, al centro de la tira.
+  // La lámina actual siempre a la vista: si quedó fuera de la tira, se desliza lo justo.
   useEffect(() => {
     const el = strip.current;
     const thumb = el?.children[index] as HTMLElement | undefined;
-    if (el && thumb)
-      el.scrollTo({
-        left: thumb.offsetLeft - (el.clientWidth - thumb.clientWidth) / 2,
-        behavior: "smooth",
-      });
-  }, [index]);
+    if (!el || !thumb) return;
+    const [start, size, view, scroll] = vertical
+      ? [thumb.offsetTop, thumb.offsetHeight, el.clientHeight, el.scrollTop]
+      : [thumb.offsetLeft, thumb.offsetWidth, el.clientWidth, el.scrollLeft];
+    let to: number | null = null;
+    if (start - 12 < scroll) to = start - 12;
+    else if (start + size + 12 > scroll + view) to = start + size + 12 - view;
+    if (to !== null)
+      el.scrollTo({ [vertical ? "top" : "left"]: Math.max(0, to), behavior: "smooth" });
+  }, [index, vertical]);
 
   return (
-    <div ref={strip} className="relative flex gap-3 overflow-x-auto px-2 pt-3 pb-2">
+    <div
+      ref={strip}
+      className={
+        vertical
+          ? "absolute inset-0 flex flex-col gap-3 overflow-y-auto overscroll-contain py-2 pr-2 pl-6"
+          : "relative flex gap-3 overflow-x-auto px-2 pt-3 pb-2"
+      }
+    >
       {ideas.map((idea, i) => (
         <div
           key={idea.id}
@@ -418,29 +469,108 @@ function Filmstrip({
           title={idea.title}
           onClick={() => onGo(i)}
           onKeyDown={(e) => e.key === "Enter" && onGo(i)}
-          className={`relative shrink-0 cursor-pointer overflow-hidden rounded-[8px] transition ${
+          className={`relative shrink-0 cursor-pointer rounded-[8px] transition ${
             i === index
               ? "ring-[3px] ring-ink ring-offset-2 ring-offset-paper"
               : "opacity-70 hover:opacity-100"
           }`}
-          style={{ width: THUMB_W, height: SLIDE_H * s }}
+          style={{ width, height: SLIDE_H * s }}
         >
-          <div inert style={{ transform: `scale(${s})`, transformOrigin: "0 0" }}>
-            <IdeaSlide
-              idea={idea}
-              project={project}
-              shoot={shoots.find((x) => x.id === idea.shootId)}
-              index={i}
-              total={ideas.length}
-              minFit={0.45}
-            />
+          <div className="h-full w-full overflow-hidden rounded-[8px]">
+            <div inert style={{ transform: `scale(${s})`, transformOrigin: "0 0" }}>
+              <IdeaSlide
+                idea={idea}
+                project={project}
+                shoot={shoots.find((x) => x.id === idea.shootId)}
+                index={i}
+                total={ideas.length}
+                minFit={0.45}
+              />
+            </div>
           </div>
-          <span className="absolute bottom-1 left-1.5 rounded-[5px] bg-black/60 px-1.5 text-[11px] font-medium text-white tabular-nums">
+          {/* El número: al lado en la columna (como PowerPoint), encima en la tira de abajo. */}
+          <span
+            className={
+              vertical
+                ? "absolute top-0 -left-5 text-[11px] text-graphite tabular-nums"
+                : "absolute bottom-1 left-1.5 rounded-[5px] bg-black/60 px-1.5 text-[11px] font-medium text-white tabular-nums"
+            }
+          >
             {i + 1}
           </span>
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * Descargar en PDF: arma todas las láminas en tamaño real (una por página de 1920×1080) y abre la
+ * ventana de imprimir, donde se elige «Guardar como PDF».
+ */
+function PrintDeck({
+  ideas,
+  shoots,
+  project,
+  onDone,
+}: {
+  ideas: Idea[];
+  shoots: Shoot[];
+  project: Project;
+  onDone: () => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const title = document.title;
+    const finish = () => {
+      document.title = title;
+      window.removeEventListener("afterprint", finish);
+      onDone();
+    };
+    (async () => {
+      // Espera a que carguen las fotos (máximo unos segundos) para que salgan en el PDF.
+      const images = [...(box.current?.querySelectorAll("img") ?? [])];
+      await Promise.race([
+        Promise.all(
+          images.map((img) =>
+            img.complete
+              ? null
+              : new Promise((r) => img.addEventListener("load", r, { once: true })),
+          ),
+        ),
+        new Promise((r) => setTimeout(r, 6000)),
+      ]);
+      await new Promise((r) => setTimeout(r, 300));
+      if (cancelled) return;
+      document.title = `${project.name} · Ideas`;
+      window.addEventListener("afterprint", finish);
+      window.print();
+    })();
+    return () => {
+      cancelled = true;
+      document.title = title;
+      window.removeEventListener("afterprint", finish);
+    };
+  }, [onDone, project.name]);
+
+  return createPortal(
+    <div ref={box} className="print-deck" aria-hidden>
+      {ideas.map((idea, i) => (
+        <div key={idea.id} className="print-slide">
+          <IdeaSlide
+            idea={idea}
+            project={project}
+            shoot={shoots.find((x) => x.id === idea.shootId)}
+            index={i}
+            total={ideas.length}
+            minFit={0.4}
+          />
+        </div>
+      ))}
+    </div>,
+    document.body,
   );
 }
 

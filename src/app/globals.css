@@ -103,3 +103,42 @@ body::after {
     animation: none;
   }
 }
+
+/* Descargar las láminas en PDF: cada idea en una página de 1920×1080. En pantalla se arman fuera
+   de la vista (para que se midan bien) y al imprimir se ve solo eso. */
+.print-deck {
+  position: fixed;
+  top: 0;
+  left: -400vw;
+  pointer-events: none;
+}
+
+@media print {
+  @page {
+    size: 1920px 1080px;
+    margin: 0;
+  }
+  body {
+    background: none;
+  }
+  body::after {
+    display: none;
+  }
+  body > *:not(.print-deck) {
+    display: none !important;
+  }
+  .print-deck {
+    position: static;
+  }
+  .print-slide {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    break-after: page;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-slide > div {
+    border-radius: 0 !important;
+  }
+}

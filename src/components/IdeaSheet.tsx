@@ -78,6 +78,22 @@ export function IdeaSheet({
               onChange={(f) => set({ format: f })}
             />
           </Field>
+          <Field label="Shoot">
+            <select
+              className={inputClass}
+              value={idea.shootId ?? ""}
+              onChange={(e) => set({ shootId: e.target.value || null })}
+            >
+              <option value="">Idea suelta (sin shoot)</option>
+              {shoots
+                .filter((s) => s.project === project.slug)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {[s.title || "Shoot", s.date && shortDate(s.date)].filter(Boolean).join(" · ")}
+                  </option>
+                ))}
+            </select>
+          </Field>
           <Field label="Cómo sería">
             <textarea
               rows={16}

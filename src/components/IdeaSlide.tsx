@@ -66,6 +66,7 @@ export function IdeaSlide({
   total,
   minFit = 0.6,
   onChange,
+  shootOptions = [],
 }: {
   idea: Idea;
   project: Project;
@@ -75,6 +76,8 @@ export function IdeaSlide({
   minFit?: number;
   /** Si viene, la lámina se edita ahí mismo: el título se escribe encima y el texto de abajo se abre al tocarlo. */
   onChange?: (fields: Partial<Idea>) => void;
+  /** Shoots que se pueden elegir para la idea al editar. */
+  shootOptions?: Shoot[];
 }) {
   const [writing, setWriting] = useState(false);
   const refs = splitReferences(parsePlan(idea.notes), idea.link);
@@ -124,34 +127,46 @@ export function IdeaSlide({
 
         {/* Al medio: el formato y la idea en grande. */}
         <div className="flex flex-1 flex-col items-center justify-center py-[44px] text-center">
-          {/* Qué contenido es: se ve como una etiqueta y, al editar, se elige ahí mismo. */}
+          {/* Qué contenido es y en qué shoot va: etiquetas que, al editar, se eligen ahí mismo. */}
           {onChange ? (
-            <label className="relative inline-flex cursor-pointer items-center rounded-full border-[3px] border-current px-[34px] py-[8px] text-[30px] font-medium tracking-[0.08em] uppercase hover:bg-black/10">
-              {format ?? "Elige el formato"}
-              <span className="ml-[14px] text-[22px] opacity-70">▾</span>
-              <select
-                aria-label="Formato del contenido"
+            <div className="flex flex-wrap items-center justify-center gap-[16px]">
+              <Pick
+                label="Formato del contenido"
+                text={format ?? "Elige el formato"}
                 value={format ?? ""}
-                onChange={(e) => {
-                  onChange({ format: (e.target.value || null) as Format | null });
-                  // Para que las flechas vuelvan a cambiar de lámina.
-                  e.currentTarget.blur();
-                }}
-                className="absolute inset-0 cursor-pointer opacity-0"
-              >
-                <option value="">Sin formato</option>
-                {FORMATS.map((f) => (
-                  <option key={f}>{f}</option>
-                ))}
-              </select>
-            </label>
+                options={[["", "Sin formato"], ...FORMATS.map((f) => [f, f] as [string, string])]}
+                onPick={(v) => onChange({ format: (v || null) as Format | null })}
+                strong
+              />
+              <Pick
+                label="Shoot de la idea"
+                text={`📅 ${where}`}
+                value={idea.shootId ?? ""}
+                options={[
+                  ["", "Idea suelta (sin shoot)"],
+                  ...[
+                    ...shootOptions,
+                    ...(shoot && !shootOptions.includes(shoot) ? [shoot] : []),
+                  ].map(
+                    (s) =>
+                      [s.id, `${s.title || "Shoot"}${s.date ? ` · ${shortDate(s.date)}` : ""}`] as [
+                        string,
+                        string,
+                      ],
+                  ),
+                ]}
+                onPick={(v) => onChange({ shootId: v || null })}
+              />
+            </div>
           ) : (
             <span className="inline-flex rounded-full border-[3px] border-current px-[34px] py-[8px] text-[30px] font-medium tracking-[0.08em] uppercase">
               {format ?? "Idea"}
             </span>
           )}
           <p className="mt-[18px] text-[24px] leading-[1.25] tracking-[0.06em] uppercase opacity-75">
-            {[details, idea.pillar, where, idea.done && "✓ ya grabada"].filter(Boolean).join(" · ")}
+            {[details, idea.pillar, !onChange && where, idea.done && "✓ ya grabada"]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
           {onChange ? (
             <h2
@@ -259,6 +274,52 @@ export function IdeaSlide({
         </p>
       </Fit>
     </div>
+  );
+}
+
+/** Etiqueta de la lámina que, al tocarla, deja elegir otra opción (formato, shoot). */
+function Pick({
+  label,
+  text,
+  value,
+  options,
+  onPick,
+  strong,
+}: {
+  label: string;
+  text: string;
+  value: string;
+  options: [value: string, text: string][];
+  onPick: (value: string) => void;
+  strong?: boolean;
+}) {
+  return (
+    <label
+      className={`relative inline-flex cursor-pointer items-center rounded-full border-current uppercase hover:bg-black/10 ${
+        strong
+          ? "border-[3px] px-[34px] py-[8px] text-[30px] font-medium tracking-[0.08em]"
+          : "border-[2px] border-dashed px-[26px] py-[8px] text-[24px] tracking-[0.06em] opacity-85"
+      }`}
+    >
+      {text}
+      <span className="ml-[14px] text-[22px] opacity-70">▾</span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => {
+          onPick(e.target.value);
+          // Para que las flechas vuelvan a cambiar de lámina.
+          e.currentTarget.blur();
+        }}
+        className="absolute inset-0 cursor-pointer opacity-0"
+      >
+        {options.map(([v, t]) => (
+          <option key={v} value={v}>
+            {t}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
