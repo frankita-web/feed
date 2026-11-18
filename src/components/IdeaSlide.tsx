@@ -15,9 +15,10 @@ import {
 import type { Idea, Project, Shoot } from "@/lib/types";
 import { Logo } from "./Logo";
 
-/** Tamaño real de la lámina (historia / reel vertical). Se achica entera para caber en la pantalla. */
-export const SLIDE_W = 1080;
-export const SLIDE_H = 1920;
+/** Tamaño real de la lámina (presentación horizontal, como Canva o PowerPoint). Se achica entera
+ * para caber en la pantalla. */
+export const SLIDE_W = 1920;
+export const SLIDE_H = 1080;
 
 /** Fotos de referencia de una idea: las suyas + las de su lámina en el plan del shoot. */
 export function ideaImages(idea: Idea, shoot?: Shoot) {
@@ -28,8 +29,10 @@ export function ideaImages(idea: Idea, shoot?: Shoot) {
 }
 
 /**
- * Una idea en una lámina de 1080×1920: título, hook, referencias (fotos y links) y el plan completo.
- * Si el texto no cabe, todo se achica un poco (hasta `minFit`); si aun así no cabe, se desliza.
+ * Una idea en una lámina de 1920×1080, en dos columnas: a la izquierda el título, el hook y las
+ * tomas; a la derecha las referencias (fotos y links) y el resto del plan (audio, copy, qué se
+ * necesita). Si el texto no cabe, todo se achica parejo (hasta `minFit`); si aun así no cabe, se
+ * desliza.
  */
 export function IdeaSlide({
   idea,
@@ -51,21 +54,26 @@ export function IdeaSlide({
   const images = [...ideaImages(idea, shoot), ...refs.images];
   const hook = plan.sections.find((s) => /^hook/i.test(s.title));
   const rest = plan.sections.filter((s) => s !== hook);
+  // Las tomas (la primera sección con pasos numerados) van con el hook; lo demás, a la derecha.
+  const steps = rest.find((s) => s.lines.some((l) => l.kind === "step"));
+  const side = rest.filter((s) => s !== steps);
+  const hasRefs = images.length > 0 || links.length > 0 || refs.notes.length > 0;
+  const twoColumns = hasRefs || side.length > 0;
   const empty = !plan.intro.length && !plan.sections.length;
   const pad = (n: number) => String(n).padStart(2, "0");
 
   return (
     <div
-      className="silver relative overflow-hidden rounded-[56px] text-ink"
+      className="silver relative overflow-hidden rounded-[48px] text-ink"
       style={{ width: SLIDE_W, height: SLIDE_H }}
     >
       <Fit
         minFit={minFit}
         watch={`${idea.title}|${idea.notes}|${idea.link}|${images.join()}|${idea.done}`}
       >
-        <header className="flex items-center justify-between gap-6 text-[26px] text-graphite">
-          <span className="flex items-center gap-5">
-            <Logo project={project} className="h-[72px] w-[72px]" />
+        <header className="flex items-center justify-between gap-6 text-[24px] text-graphite">
+          <span className="flex items-center gap-4">
+            <Logo project={project} className="h-[60px] w-[60px]" />
             <span>
               <span className="font-semibold text-ink">{project.name}</span> · Ideas
             </span>
@@ -75,64 +83,75 @@ export function IdeaSlide({
           </span>
         </header>
 
-        <p className="mt-[72px] text-[24px] font-medium tracking-[0.1em] text-graphite uppercase">
-          {shoot
-            ? `${shoot.title || "Shoot"}${shoot.date ? ` · ${shortDate(shoot.date)}` : ""}`
-            : "Idea suelta · sin shoot"}
-        </p>
-        <h2
-          className={`mt-[18px] text-[96px] leading-[1.02] font-semibold tracking-[-0.035em] ${
-            idea.done ? "text-ink/45 line-through decoration-[6px]" : ""
+        <div
+          className={`mt-[48px] grid gap-x-[88px] ${
+            twoColumns ? "grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-1"
           }`}
         >
-          {idea.title || "Idea sin título"}
-        </h2>
+          <div>
+            <p className="text-[22px] font-medium tracking-[0.1em] text-graphite uppercase">
+              {shoot
+                ? `${shoot.title || "Shoot"}${shoot.date ? ` · ${shortDate(shoot.date)}` : ""}`
+                : "Idea suelta · sin shoot"}
+            </p>
+            <h2
+              className={`mt-[14px] leading-[1.02] font-semibold tracking-[-0.035em] ${
+                twoColumns || !empty ? "text-[80px]" : "max-w-[1500px] text-[112px]"
+              } ${idea.done ? "text-ink/45 line-through decoration-[6px]" : ""}`}
+            >
+              {idea.title || "Idea sin título"}
+            </h2>
 
-        {(plan.format || idea.pillar || idea.done) && (
-          <div className="mt-[36px] flex flex-wrap gap-[14px] text-[28px]">
-            {plan.format && <Chip>🎬 {plan.format}</Chip>}
-            {idea.pillar && <Chip>{idea.pillar}</Chip>}
-            {idea.done && <Chip dark>✓ Ya grabada</Chip>}
-          </div>
-        )}
-
-        {images.length > 0 && <Images ids={images} roomy={empty} />}
-
-        {plan.intro.length > 0 && (
-          <div className="mt-[48px]">
-            <Lines lines={plan.intro} />
-          </div>
-        )}
-
-        {hook && <Hook section={hook} accent={project.accent} />}
-
-        {(links.length > 0 || refs.notes.length > 0) && (
-          <section className="mt-[56px]">
-            <Label>Referencias</Label>
-            {refs.notes.length > 0 && (
-              <div className="mb-[24px]">
-                <Lines lines={refs.notes.map((text) => ({ kind: "text", text }))} />
+            {(plan.format || idea.pillar || idea.done) && (
+              <div className="mt-[28px] flex flex-wrap gap-[12px] text-[24px]">
+                {plan.format && <Chip>🎬 {plan.format}</Chip>}
+                {idea.pillar && <Chip>{idea.pillar}</Chip>}
+                {idea.done && <Chip dark>✓ Ya grabada</Chip>}
               </div>
             )}
-            <div className="space-y-[18px]">
-              {links.map((l) => (
-                <LinkCard key={l.href} link={l} />
+
+            {plan.intro.length > 0 && (
+              <div className="mt-[36px]">
+                <Lines lines={plan.intro} />
+              </div>
+            )}
+
+            {hook && <Hook section={hook} accent={project.accent} />}
+            {steps && <Section section={steps} />}
+
+            {empty && (
+              <p className="mt-[56px] max-w-[760px] rounded-[36px] border-[3px] border-dashed border-black/15 p-[44px] text-[30px] text-graphite">
+                Todavía no está escrito cómo sería. Toca «Editar» para contarlo.
+              </p>
+            )}
+          </div>
+
+          {twoColumns && (
+            <div>
+              {hasRefs && (
+                <section>
+                  <Label>Referencias</Label>
+                  {images.length > 0 && <Images ids={images} roomy={!side.length} />}
+                  {refs.notes.length > 0 && (
+                    <div className="mt-[20px]">
+                      <Lines lines={refs.notes.map((text) => ({ kind: "text", text }))} />
+                    </div>
+                  )}
+                  {links.length > 0 && (
+                    <div className="mt-[20px] space-y-[14px]">
+                      {links.map((l) => (
+                        <LinkCard key={l.href} link={l} />
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
+              {side.map((section, i) => (
+                <Section key={i} section={section} first={!hasRefs && i === 0} />
               ))}
             </div>
-          </section>
-        )}
-
-        {rest.map((section, i) => (
-          <Section key={i} section={section} />
-        ))}
-
-        {empty && !images.length && !links.length && (
-          <p className="mt-[72px] rounded-[40px] border-[3px] border-dashed border-black/15 p-[56px] text-center text-[34px] text-graphite">
-            Todavía no está escrito cómo sería.
-            <br />
-            Toca «Editar» para contarlo.
-          </p>
-        )}
+          )}
+        </div>
       </Fit>
     </div>
   );
@@ -198,7 +217,7 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
         <div ref={sizer} className="overflow-hidden">
           <div
             ref={inner}
-            className="flex flex-col px-[88px] pt-[80px] pb-[96px] text-[38px] leading-[1.38]"
+            className="flex flex-col px-[96px] pt-[64px] pb-[80px] text-[32px] leading-[1.38]"
             style={{ transform: `scale(${k})`, transformOrigin: "0 0" }}
           >
             {children}
@@ -206,8 +225,8 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
         </div>
       </div>
       {more && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[260px] items-end justify-center bg-linear-to-b from-transparent to-[#e2e2e2] pb-[44px]">
-          <span className="rounded-full bg-ink px-[30px] py-[12px] text-[26px] font-medium text-white">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[190px] items-end justify-center bg-linear-to-b from-transparent to-[#e2e2e2] pb-[32px]">
+          <span className="rounded-full bg-ink px-[28px] py-[10px] text-[24px] font-medium text-white">
             Hay más abajo ↓
           </span>
         </div>
@@ -219,7 +238,7 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
 function Chip({ children, dark }: { children: ReactNode; dark?: boolean }) {
   return (
     <span
-      className={`rounded-full px-[26px] py-[8px] ${dark ? "bg-ink text-white" : "bg-black/[0.06] text-ink"}`}
+      className={`rounded-full px-[22px] py-[6px] ${dark ? "bg-ink text-white" : "bg-black/[0.06] text-ink"}`}
     >
       {children}
     </span>
@@ -228,7 +247,7 @@ function Chip({ children, dark }: { children: ReactNode; dark?: boolean }) {
 
 function Label({ children }: { children: ReactNode }) {
   return (
-    <h3 className="mb-[18px] flex flex-wrap items-baseline gap-x-[14px] text-[24px] font-medium tracking-[0.1em] text-graphite uppercase">
+    <h3 className="mb-[14px] flex flex-wrap items-baseline gap-x-[12px] text-[22px] font-medium tracking-[0.1em] text-graphite uppercase">
       {children}
     </h3>
   );
@@ -237,29 +256,29 @@ function Label({ children }: { children: ReactNode }) {
 function Hook({ section, accent }: { section: PlanSection; accent: string }) {
   return (
     <section
-      className="mt-[56px] rounded-[40px] border-l-[12px] bg-white p-[48px] shadow-[0_10px_40px_-20px_rgb(0_0_0/0.25)]"
+      className="mt-[40px] rounded-[36px] border-l-[10px] bg-white px-[44px] py-[36px] shadow-[0_10px_40px_-20px_rgb(0_0_0/0.25)]"
       style={{ borderColor: accent }}
     >
       <Label>
         <span className="font-semibold text-ink">{section.title}</span>
         {section.sub && <span className="tracking-normal normal-case">{section.sub}</span>}
       </Label>
-      <div className="text-[44px] leading-[1.25] font-medium">
+      <div className="text-[38px] leading-[1.25] font-medium">
         <Lines lines={section.lines} />
       </div>
     </section>
   );
 }
 
-function Section({ section }: { section: PlanSection }) {
+function Section({ section, first }: { section: PlanSection; first?: boolean }) {
   const copy = /^copy/i.test(section.title);
   return (
-    <section className="mt-[56px]">
+    <section className={first ? "" : "mt-[40px]"}>
       <Label>
         <span>{section.title}</span>
         {section.sub && <span className="tracking-normal normal-case">{section.sub}</span>}
       </Label>
-      <div className={copy ? "rounded-[32px] bg-white/75 p-[36px]" : ""}>
+      <div className={copy ? "rounded-[28px] bg-white/75 px-[32px] py-[26px]" : ""}>
         <Lines lines={section.lines} />
       </div>
     </section>
@@ -268,11 +287,11 @@ function Section({ section }: { section: PlanSection }) {
 
 function Lines({ lines }: { lines: PlanLine[] }) {
   return (
-    <div className="space-y-[16px]">
+    <div className="space-y-[12px]">
       {lines.map((l, i) =>
         l.kind === "step" ? (
-          <div key={i} className="flex gap-[24px]">
-            <span className="mt-[2px] flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-ink text-[26px] font-semibold text-white">
+          <div key={i} className="flex gap-[20px]">
+            <span className="mt-[1px] flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-ink text-[22px] font-semibold text-white">
               {l.n}
             </span>
             <p>
@@ -281,7 +300,7 @@ function Lines({ lines }: { lines: PlanLine[] }) {
           </div>
         ) : l.kind === "overlay" ? (
           <div key={i} className="flex flex-wrap items-center gap-[16px] pt-[6px]">
-            <span className="text-[26px] font-normal text-graphite">{l.label} en pantalla</span>
+            <span className="text-[22px] font-normal text-graphite">{l.label} en pantalla</span>
             <Overlay text={l.text} />
           </div>
         ) : (
@@ -328,10 +347,20 @@ function Images({ ids, roomy }: { ids: string[]; roomy: boolean }) {
   const n = ids.length;
   const cols = n === 1 ? 1 : n === 2 || n === 4 ? 2 : 3;
   const aspect =
-    n === 1 ? (roomy ? "4 / 5" : "4 / 3") : n === 2 ? "4 / 5" : n === 4 ? "4 / 3" : "1 / 1";
+    n === 1
+      ? roomy
+        ? "4 / 3"
+        : "16 / 10"
+      : n === 2
+        ? "4 / 5"
+        : n === 3
+          ? "3 / 4"
+          : n === 4
+            ? "4 / 3"
+            : "1 / 1";
   return (
     <div
-      className="mt-[48px] grid gap-[16px]"
+      className="grid gap-[14px]"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
       {ids.map((id) => (
@@ -346,7 +375,7 @@ function RefImage({ id, aspect }: { id: string; aspect: string }) {
   const local = useImageUrl(external ? null : id);
   const url = external ? id : local;
   return (
-    <div className="overflow-hidden rounded-[32px] bg-[#dedede]" style={{ aspectRatio: aspect }}>
+    <div className="overflow-hidden rounded-[28px] bg-[#dedede]" style={{ aspectRatio: aspect }}>
       {url && (
         // eslint-disable-next-line @next/next/no-img-element -- foto local, guardada o de un link
         <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />
@@ -372,20 +401,20 @@ function LinkCard({ link }: { link: RefLink }) {
       href={link.href}
       target="_blank"
       rel="noreferrer"
-      className="flex items-center gap-[28px] rounded-[32px] bg-white px-[32px] py-[26px] shadow-[0_10px_40px_-24px_rgb(0_0_0/0.35)] ring-1 ring-black/5"
+      className="flex items-center gap-[24px] rounded-[28px] bg-white px-[28px] py-[20px] shadow-[0_10px_40px_-24px_rgb(0_0_0/0.35)] ring-1 ring-black/5"
     >
-      <span className="flex h-[80px] w-[80px] shrink-0 items-center justify-center rounded-[22px] bg-ink text-[32px] font-bold text-white">
+      <span className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[18px] bg-ink text-[26px] font-bold text-white">
         {MARKS[site] ?? site.charAt(0)}
       </span>
       <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate text-[34px] font-medium">
+        <span className="block truncate text-[28px] font-medium">
           {link.label || linkLabel(link.href)}
         </span>
-        <span className="mt-[6px] block truncate text-[26px] text-graphite">
+        <span className="mt-[4px] block truncate text-[22px] text-graphite">
           {link.label ? linkLabel(link.href) : link.href.replace(/^https?:\/\/(www\.)?/, "")}
         </span>
       </span>
-      <span className="text-[44px] text-graphite">↗</span>
+      <span className="text-[36px] text-graphite">↗</span>
     </a>
   );
 }

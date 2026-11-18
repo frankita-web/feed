@@ -26,7 +26,7 @@ function savedMode(): Mode {
 }
 
 /**
- * Ideas para próximos shoots. Se ven como presentación (una lámina vertical por idea) o como
+ * Ideas para próximos shoots. Se ven como presentación (una lámina horizontal por idea) o como
  * tablero, en columnas por shoot, donde se arrastran de una a otra.
  */
 export function IdeasView({

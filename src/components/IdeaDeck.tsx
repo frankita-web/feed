@@ -9,8 +9,8 @@ import { IdeaSlide, SLIDE_H, SLIDE_W } from "./IdeaSlide";
 import { buttonClass, darkButtonClass } from "./Modal";
 
 /**
- * Las ideas como presentación vertical (1080×1920): una por lámina, con flechas, teclado
- * (← →, espacio, F para pantalla completa) y deslizando el dedo en el celular.
+ * Las ideas como presentación (láminas horizontales de 1920×1080, como en Canva): una por lámina,
+ * con flechas, teclado (← →, espacio, F para pantalla completa) y deslizando el dedo en el celular.
  */
 export function IdeaDeck({
   project,
@@ -232,6 +232,10 @@ export function IdeaDeck({
         ← → para cambiar de lámina · F pantalla completa · arrastra o pega (⌘V) una foto para
         sumarla como referencia
       </p>
+      <p className="mt-3 text-center text-[12px] text-graphite md:hidden">
+        Desliza para cambiar de lámina · gira el celular y toca «Pantalla completa» para verla
+        grande
+      </p>
     </div>
   );
 }
@@ -277,8 +281,9 @@ function Stage({
     return () => observer.disconnect();
   }, [full]);
 
-  // Que la letra nunca quede demasiado chica: en pantallas chicas se achica menos y se desliza.
-  const minFit = scale ? Math.min(1, Math.max(0.55, 10 / (38 * scale))) : 0.6;
+  // Que la letra no quede demasiado chica: si se ve chica, se achica menos y se desliza. En el
+  // celular parado la lámina es una vista previa: cabe entera y se ve grande en pantalla completa.
+  const minFit = !scale ? 0.6 : scale < 0.3 ? 0.5 : Math.min(1, Math.max(0.55, 10 / (32 * scale)));
 
   return (
     <div
@@ -286,7 +291,7 @@ function Stage({
       className={
         full
           ? "relative flex min-h-0 flex-1 items-center justify-center"
-          : "relative mx-auto flex aspect-[9/16] w-full max-w-[460px] items-center justify-center md:aspect-auto md:h-[calc(100dvh-300px)] md:min-h-[480px] md:max-w-none"
+          : "relative flex aspect-video w-full items-center justify-center md:aspect-auto md:h-[calc(100dvh-300px)] md:min-h-[420px]"
       }
       onTouchStart={(e) => {
         const t = e.touches[0];
