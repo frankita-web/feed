@@ -68,7 +68,7 @@ export const CANCINO_PINNED: Post = {
   createdAt: 0,
 };
 
-export const SEED_VERSION = 25;
+export const SEED_VERSION = 26;
 
 /** Tono de Cancino, como lo pidió Franca (9 nov 2026). */
 export const CANCINO_VOICE = "pizzería grande y conocida: cada copy empuja a comprar.\nsiempre termina con un llamado a la acción claro: pide, ven, reserva, ordena por delivery, búscanos.\ndi qué es y por qué se antoja (la pizza, el plato o el drink de la foto), sin rodeos.\nque la gente sepa dónde encontrarnos: menciona la sucursal, la dirección o cómo pedir solo si aparecen aquí o en el copy actual; si no, invita a escribir por mensaje o a ver el link del perfil.\nsin hashtags.";
@@ -226,6 +226,66 @@ REFERENCIAS
 Amigos comiendo pizza: https://www.pinterest.com/search/pins/?q=friends%20eating%20pizza%20candid
 Postre para compartir: https://www.pinterest.com/search/pins/?q=sharing%20dessert%20restaurant%20table
 Frases a mano sobre retrato: https://www.pinterest.com/search/pins/?q=handwritten%20quote%20over%20portrait%20photo`,
+};
+
+/**
+ * «Lo que pide el equipo» como la referencia de Franca (18 nov 2026): cada persona del equipo, a
+ * color, con su rebanada favorita y su pedido escrito encima.
+ */
+export const CANCINO_TEAM_ORDERS = {
+  notes: `Post carrusel · 4 a 6 fotos, una por persona
+
+HOOK: en la primera foto, alguien del equipo muerde su pizza favorita y mira a cámara.
+Texto: «¿QUÉ PIDE EL EQUIPO?»
+
+LAS FOTOS
+1. Cada persona del equipo (cocina, barra y salón) con su rebanada favorita en la mano, a color, en su lugar: la cocina, una mesa o la barra.
+2. Encima, su nombre y su pedido en letra blanca simple y en minúscula, por ejemplo «gus prefiere la pepperoni».
+3. Que la marca se vea sola: el delantal, la playera o el plato de Cancino.
+4. Algún detalle personal en el texto, como «maría ángeles no cambia la margherita… ni su felix».
+5. Última foto: el equipo junto, con el texto «¿y tú qué pides?».
+
+ESTILO: fotos a color con la luz cálida del local, verticales, gente real y cómoda. El texto blanco, simple y en minúscula, sobre la foto, como en la referencia.
+
+COPY: Le preguntamos al equipo qué pide cuando le toca ser cliente. 🍕 Gus no suelta la pepperoni, María Ángeles no cambia la margherita y Mary va por la prosciutto. ¿Y tú cuál pides? Ven hoy a Cancino o pide por delivery.
+
+NECESITAMOS: 4 a 6 personas del equipo que se animen, su pizza favorita recién salida y saber qué pide cada uno antes del shoot.
+
+REFERENCIAS
+Retratos del equipo: https://www.pinterest.com/search/pins/?q=restaurant%20staff%20portrait%20candid`,
+  images: [1, 2, 3].map((n) => `/referencias/cancino-equipo-${n}.jpg`),
+};
+
+/** Idea de Franca (18 nov 2026): la playera blanca «PIZZA SIEMPRE» del rebranding. */
+export const CANCINO_TSHIRT_IDEA: Idea = {
+  id: "seed-idea-playera-pizza-siempre",
+  project: "cancino",
+  title: "Playera blanca «PIZZA SIEMPRE»",
+  notes: `Post carrusel · 4 a 5 fotos
+
+HOOK: alguien con la playera blanca “PIZZA SIEMPRE” en letras rojas, apoyado en una pared clara, mirando de lado.
+Texto: «HAY COSAS QUE CAMBIAN, PIZZA SIEMPRE.»
+
+LAS FOTOS
+1. Retrato con la playera, de cerca, como en la presentación del rebranding (pared rosa clara o una pared del local).
+2. El equipo con la playera puesta en la cocina, la barra y el salón (se puede hacer en el shoot de “Lo que pide el equipo”).
+3. Alguien comiendo una rebanada con la playera, sin miedo a la salsa.
+4. La playera doblada sobre la mesa junto a una pizza, vista desde arriba.
+5. Cierre con la frase completa: «plan de siempre. los de siempre. donde siempre. pizza siempre.»
+
+ESTILO: fotos a color con luz natural y gente real. La playera blanca con “PIZZA SIEMPRE” en rojo Cancino, letra gruesa en dos líneas.
+
+COPY: Hay cosas que cambian, pizza siempre. 🍕 Plan de siempre, los de siempre, donde siempre. Te esperamos en Cancino o pide por delivery.
+
+NECESITAMOS: mandar a hacer las playeras (blancas, “PIZZA SIEMPRE” en rojo al frente), 3 o 4 personas que las usen, una pared clara y pizzas recién salidas. Confirmar con Cancino si la playera se va a vender o es solo para el equipo.
+
+REFERENCIAS
+Playeras de restaurante con letras rojas: https://www.pinterest.com/search/pins/?q=restaurant%20merch%20white%20t%20shirt%20red%20letters`,
+  link: "",
+  pillar: null,
+  shootId: null,
+  done: false,
+  createdAt: Date.UTC(2026, 10, 18, 20, 10),
 };
 
 /** Videos de reels de Cancino (v9), por índice de CANCINO_POSTS. */

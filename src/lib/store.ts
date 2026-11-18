@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 import {
   CANCINO_HISTORY_POSTS,
   CANCINO_HOUSE_RULES,
+  CANCINO_TEAM_ORDERS,
+  CANCINO_TSHIRT_IDEA,
   CANCINO_NOTES,
   CANCINO_PINNED,
   CANCINO_PLANNED_IMAGES,
@@ -229,6 +231,30 @@ function migrate(s: State): State {
     const ids = new Set((ideas ?? []).map((i) => i.id));
     const fresh = CANCINO_IDEAS_V23.filter((i) => !ids.has(i.id));
     if (fresh.length) ideas = [...fresh, ...(ideas ?? [])];
+  }
+  // v26: se borra «Este queso no es queso», idea nueva de la playera «PIZZA SIEMPRE», y «Lo que pide
+  // el equipo» como la referencia de Franca (fotos a color con su pedido encima), solo si sigue
+  // como se escribió. Se quedan las fotos que Franca haya subido.
+  if ((s.version ?? 1) < 26) {
+    // Franca pidió borrar «Este queso no es queso»: en su lugar va el «made of» del betabel.
+    ideas = ideas?.filter((i) => i.title.trim().toLowerCase() !== "este queso no es queso");
+    if (!ideas?.some((i) => i.id === CANCINO_TSHIRT_IDEA.id))
+      ideas = [
+        { ...CANCINO_TSHIRT_IDEA, images: pinterestPhotos(CANCINO_TSHIRT_IDEA.notes) },
+        ...(ideas ?? []),
+      ];
+    ideas = ideas.map((i) =>
+      i.notes.includes("CUANDO NO ESTÁ TRABAJANDO")
+        ? {
+            ...i,
+            notes: CANCINO_TEAM_ORDERS.notes,
+            images: [
+              ...CANCINO_TEAM_ORDERS.images,
+              ...(i.images ?? []).filter((id) => !isPinterestPhoto(id)),
+            ],
+          }
+        : i,
+    );
   }
   // v25: «Reglas de la casa» más amigable y la funghi sin queso (es a base de plantas), solo si
   // siguen como se escribieron (si Franca las editó, no se tocan).

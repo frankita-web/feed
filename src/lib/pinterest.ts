@@ -183,6 +183,13 @@ export const PINTEREST_REFS: Record<string, string[]> = {
     "https://i.pinimg.com/736x/e0/22/ef/e022ef22499e69b30426079971c4cf6d.jpg",
     "https://i.pinimg.com/736x/fb/ad/57/fbad5788cb74a8292a19501c2877317f.jpg",
   ],
+  "restaurant merch white t shirt red letters": [
+    "https://i.pinimg.com/736x/d4/e4/ee/d4e4eeaac39a2c48e1ed8e2514fa771a.jpg",
+    "https://i.pinimg.com/736x/81/a6/5a/81a65ac610d3f94219ddf619a1089098.jpg",
+    "https://i.pinimg.com/736x/03/d1/aa/03d1aa118c763ff7f13ca1a916d92d3c.jpg",
+    "https://i.pinimg.com/736x/b6/62/8b/b6628b7811af4b9df491723ab4ccb97e.jpg",
+    "https://i.pinimg.com/736x/f1/24/6d/f1246d6b9c596022330762e3bfd121f5.jpg",
+  ],
 };
 
 const ALL = new Set(Object.values(PINTEREST_REFS).flat());
