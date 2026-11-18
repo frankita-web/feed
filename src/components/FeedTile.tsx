@@ -1,0 +1,140 @@
+"use client";
+
+import { useRef } from "react";
+import { useImageUrl } from "@/lib/images";
+import { feedRank } from "@/lib/feed-order";
+import { frameBoxStyle, frameImageStyle, frameOf, type Frame } from "@/lib/frames";
+import type { Post } from "@/lib/types";
+
+/** La foto entera sobre el fondo del marco, con su margen. */
+export function FramedImage({ src, alt, frame }: { src: string; alt: string; frame: Frame }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center" style={frameBoxStyle(frame)}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL local */}
+      <img
+        draggable={false}
+        src={src}
+        alt={alt}
+        className={frame.fill ? "h-full w-full object-cover object-top" : "max-h-full max-w-full object-contain"}
+        style={frameImageStyle(frame)}
+      />
+    </div>
+  );
+}
+
+function FormatIcon({ format, color }: { format: Post["format"]; color: string }) {
+  if (format.startsWith("Reel") || format.startsWith("Video"))
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill={color} aria-label="Reel">
+        <path d="M8 5.5v13l11-6.5z" />
+      </svg>
+    );
+  if (format === "Post carrusel")
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        aria-label="Carrusel"
+      >
+        <rect x="7" y="7" width="13" height="13" rx="2" />
+        <path d="M4 16V6a2 2 0 0 1 2-2h10" />
+      </svg>
+    );
+  return null;
+}
+
+/**
+ * Un cuadro del grid. `planned` (etiqueta, ej. "Nuevo · 29 oct") lo marca como espacio para un post nuevo:
+ * borde punteado y etiqueta negra, para distinguirlo de lo ya subido.
+ */
+export function FeedTile({ post, planned }: { post: Post; planned?: string }) {
+  const url = useImageUrl(post.image);
+  const video = post.files?.find((f) => f.type.startsWith("video/"));
+  const videoUrl = useImageUrl(video?.id ?? null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const frame = frameOf(post.frame);
+
+  return (
+    <div
+      className={`relative aspect-[3/4] w-full overflow-hidden ${planned && !url ? "bg-white/70" : "bg-[#dedede]"}`}
+      onMouseEnter={() => videoRef.current?.play().catch(() => {})}
+      onMouseLeave={() => {
+        const v = videoRef.current;
+        if (v) {
+          v.pause();
+          v.currentTime = 0;
+        }
+      }}
+    >
+      {url && frame ? (
+        <FramedImage src={url} alt={post.title} frame={frame} />
+      ) : url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- blob: URL local
+        <img draggable={false}
+          src={url}
+          alt={post.title}
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      ) : (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center">
+          <span className="text-[15px] leading-tight font-semibold tracking-[-0.02em]">
+            {post.title || "sin título"}
+          </span>
+          {planned && <span className="text-[11px] text-graphite">{post.format}</span>}
+        </div>
+      )}
+      {videoUrl && (
+        <video draggable={false}
+          ref={videoRef}
+          src={url ? videoUrl : `${videoUrl}#t=0.1`}
+          poster={url ?? undefined}
+          muted
+          loop
+          playsInline
+          preload={url ? "none" : "metadata"}
+          // Sin portada, el mismo video hace de portada.
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+            url ? "opacity-0 [&:not([data-paused])]:opacity-100" : ""
+          }`}
+          data-paused=""
+          onPlay={(e) => e.currentTarget.removeAttribute("data-paused")}
+          onPause={(e) => e.currentTarget.setAttribute("data-paused", "")}
+        />
+      )}
+      {/* Las fotos traídas de Instagram ya traen su ícono */}
+      {(planned || !url) && !post.pinned && (
+        <div className="absolute top-2.5 right-2.5 drop-shadow">
+          <FormatIcon format={post.format} color={url ? "white" : "#1d1818"} />
+        </div>
+      )}
+      {post.pinned && (
+        <span
+          className="absolute top-2.5 right-2.5 rounded-full bg-ink px-2 py-0.5 text-[10px] font-medium text-white"
+          title="Fijada en el perfil"
+        >
+          Fijada
+        </span>
+      )}
+      {planned && (
+        // Solo una etiqueta chiquita, para que la foto se vea entera.
+        <span className="pointer-events-none absolute top-1.5 left-1.5 rounded-full bg-ink/60 px-1.5 py-px text-[8px] leading-[1.4] font-medium whitespace-nowrap text-white backdrop-blur-sm">
+          {planned}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Orden del grid de Instagram: fijados primero, luego lo más nuevo; lo publicado sin fecha va al final. */
+export function feedPosts(posts: Post[], slug: string) {
+  return posts
+    .filter((p) => p.project === slug && p.format !== "Stories")
+    .sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      const diff = feedRank(b) - feedRank(a);
+      return diff || b.createdAt - a.createdAt;
+    });
+}
