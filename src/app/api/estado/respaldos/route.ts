@@ -1,4 +1,4 @@
-import { get, list } from "@vercel/blob";
+import { get, head, list } from "@vercel/blob";
 import { NextResponse, connection } from "next/server";
 
 // Copias guardadas del contenido (ver api/estado): antes de reemplazar una versión por otra y
@@ -34,5 +34,10 @@ export async function GET(request: Request) {
     cursor = result.cursor;
   }
   backups.sort((a, b) => b.at.localeCompare(a.at));
-  return NextResponse.json({ backups: backups.slice(0, 40) });
+  // Tamaño del archivo principal, para revisar si algo anda mal.
+  const main = await head("estado.json").catch(() => null);
+  return NextResponse.json({
+    backups: backups.slice(0, 40),
+    estado: main ? { size: main.size, at: new Date(main.uploadedAt).toISOString() } : null,
+  });
 }

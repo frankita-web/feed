@@ -31,8 +31,17 @@ const valid = (state: State | undefined): state is State =>
 
 export async function GET() {
   await connection();
-  const { saved } = await readSaved();
-  return NextResponse.json({ saved });
+  try {
+    const { saved } = await readSaved();
+    return NextResponse.json({ saved });
+  } catch (error) {
+    // Que se sepa qué pasó en vez de un error en blanco.
+    console.error("estado GET", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) },
+      { status: 500 },
+    );
+  }
 }
 
 /**
