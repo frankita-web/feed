@@ -218,11 +218,38 @@ function Lines({ lines, big }: { lines: PlanLine[]; big?: boolean }) {
   );
 }
 
-/** Texto con «frases en pantalla» marcadas como en el video. */
+/** Texto con «frases en pantalla» marcadas como en el video, y links que se abren. */
 function Inline({ text }: { text: string }) {
-  return text.split(/(«[^»]+»)/).map((part, i) =>
-    part.startsWith("«") ? <Overlay key={i} text={part.slice(1, -1)} /> : part,
+  return text.split(/(«[^»]+»|https?:\/\/\S+)/).map((part, i) =>
+    part.startsWith("«") ? (
+      <Overlay key={i} text={part.slice(1, -1)} />
+    ) : /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noreferrer"
+        className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 align-middle text-[13px] font-medium text-ink underline-offset-2 shadow-sm hover:underline"
+      >
+        {linkLabel(part)} ↗
+      </a>
+    ) : (
+      part
+    ),
   );
+}
+
+/** «Pinterest · staff meal» en vez del link largo. */
+function linkLabel(href: string) {
+  try {
+    const url = new URL(href);
+    const site = url.hostname.replace(/^www\./, "").split(".")[0];
+    const query = url.searchParams.get("q");
+    const name = site.charAt(0).toUpperCase() + site.slice(1);
+    return query ? `${name} · ${query}` : name;
+  } catch {
+    return href;
+  }
 }
 
 function Overlay({ text, big }: { text: string; big?: boolean }) {
