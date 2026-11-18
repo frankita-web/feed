@@ -1,4 +1,4 @@
-import { get, head, list } from "@vercel/blob";
+import { copy, get, head, list } from "@vercel/blob";
 import { NextResponse, connection } from "next/server";
 
 // Copias guardadas del contenido (ver api/estado): antes de reemplazar una versión por otra y
@@ -40,4 +40,22 @@ export async function GET(request: Request) {
     backups: backups.slice(0, 40),
     estado: main ? { size: main.size, at: new Date(main.uploadedAt).toISOString() } : null,
   });
+}
+
+/**
+ * Guarda una copia del archivo principal tal como está en internet ahora, sin bajarlo (se copia
+ * dentro del almacenamiento). Sirve para no perder una versión antes de que se reemplace.
+ */
+export async function POST(request: Request) {
+  await connection();
+  const { reason } = (await request.json().catch(() => ({}))) as { reason?: string };
+  const tag = (reason ?? "copia").replace(/[^a-z0-9-]/gi, "").slice(0, 30) || "copia";
+  const main = await head("estado.json");
+  const stamp = new Date(main.uploadedAt).toISOString().replace(/[:.]/g, "-");
+  const result = await copy(main.url, `${PREFIX}estado-${stamp}-${tag}.json`, {
+    access: "private",
+    contentType: "application/json",
+    addRandomSuffix: true,
+  });
+  return NextResponse.json({ path: result.pathname });
 }
