@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode }
 import { shortDate } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
 import {
+  ideaFormat,
   linkLabel,
   parsePlan,
   siteName,
@@ -12,7 +13,7 @@ import {
   type PlanSection,
   type RefLink,
 } from "@/lib/ideaPlan";
-import { paletteOf, type Idea, type Project, type Shoot } from "@/lib/types";
+import { FORMATS, paletteOf, type Format, type Idea, type Project, type Shoot } from "@/lib/types";
 
 /**
  * Tamaño real de la lámina (presentación horizontal, como Canva o PowerPoint). Se achica entera
@@ -28,6 +29,9 @@ export function ideaImages(idea: Idea, shoot?: Shoot) {
     [];
   return [...new Set([...(idea.images ?? []), ...fromShoot])];
 }
+
+const TITLE =
+  "mt-[30px] max-w-[1640px] text-[104px] leading-[0.98] font-medium tracking-[-0.02em] uppercase";
 
 /** Qué tan claro es un color (0 = negro, 1 = blanco). */
 function lightness(hex: string) {
@@ -61,6 +65,7 @@ export function IdeaSlide({
   index,
   total,
   minFit = 0.6,
+  onChange,
 }: {
   idea: Idea;
   project: Project;
@@ -68,9 +73,13 @@ export function IdeaSlide({
   index: number;
   total: number;
   minFit?: number;
+  /** Si viene, la lámina se edita ahí mismo: el título se escribe encima y el texto de abajo se abre al tocarlo. */
+  onChange?: (fields: Partial<Idea>) => void;
 }) {
+  const [writing, setWriting] = useState(false);
   const refs = splitReferences(parsePlan(idea.notes), idea.link);
   const { plan, links } = refs;
+  const { format, details } = ideaFormat(idea, plan);
   const images = [...ideaImages(idea, shoot), ...refs.images];
   const hook = plan.sections.find((s) => /^hook/i.test(s.title));
   const rest = plan.sections.filter((s) => s !== hook);
@@ -94,11 +103,11 @@ export function IdeaSlide({
       <Fit
         minFit={minFit}
         bg={bg}
-        watch={`${idea.title}|${idea.notes}|${idea.link}|${images.join()}|${idea.done}`}
+        watch={`${idea.title}|${idea.notes}|${idea.link}|${images.join()}|${idea.done}|${idea.format}|${writing}`}
       >
-        {/* Arriba: las referencias. */}
-        {images.length > 0 && <Images ids={images} />}
-        {links.length > 0 && (
+        {/* Arriba: las referencias (mientras se escribe se esconden, para dar espacio). */}
+        {!writing && images.length > 0 && <Images ids={images} />}
+        {!writing && links.length > 0 && (
           <div
             className={`flex flex-wrap justify-center gap-x-[40px] gap-y-[10px] text-[22px] tracking-[0.04em] uppercase ${
               images.length ? "mt-[22px]" : ""
@@ -109,38 +118,120 @@ export function IdeaSlide({
             ))}
           </div>
         )}
-        {refs.notes.length > 0 && (
+        {!writing && refs.notes.length > 0 && (
           <p className="mt-[12px] text-center text-[22px] opacity-75">{refs.notes.join(" · ")}</p>
         )}
 
         {/* Al medio: el formato y la idea en grande. */}
         <div className="flex flex-1 flex-col items-center justify-center py-[44px] text-center">
-          <p className="text-[26px] leading-[1.2] tracking-[0.06em] uppercase">
-            {[plan.format || "Idea", idea.pillar].filter(Boolean).join(" · ")}
-            <br />
-            <span className="opacity-70">
-              {where}
-              {idea.done ? " · ✓ ya grabada" : ""}
+          {/* Qué contenido es: se ve como una etiqueta y, al editar, se elige ahí mismo. */}
+          {onChange ? (
+            <label className="relative inline-flex cursor-pointer items-center rounded-full border-[3px] border-current px-[34px] py-[8px] text-[30px] font-medium tracking-[0.08em] uppercase hover:bg-black/10">
+              {format ?? "Elige el formato"}
+              <span className="ml-[14px] text-[22px] opacity-70">▾</span>
+              <select
+                aria-label="Formato del contenido"
+                value={format ?? ""}
+                onChange={(e) => {
+                  onChange({ format: (e.target.value || null) as Format | null });
+                  // Para que las flechas vuelvan a cambiar de lámina.
+                  e.currentTarget.blur();
+                }}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              >
+                <option value="">Sin formato</option>
+                {FORMATS.map((f) => (
+                  <option key={f}>{f}</option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <span className="inline-flex rounded-full border-[3px] border-current px-[34px] py-[8px] text-[30px] font-medium tracking-[0.08em] uppercase">
+              {format ?? "Idea"}
             </span>
+          )}
+          <p className="mt-[18px] text-[24px] leading-[1.25] tracking-[0.06em] uppercase opacity-75">
+            {[details, idea.pillar, where, idea.done && "✓ ya grabada"].filter(Boolean).join(" · ")}
           </p>
-          <h2
-            className={`mt-[36px] max-w-[1640px] text-[104px] leading-[0.98] font-medium tracking-[-0.02em] uppercase ${
-              idea.done ? "line-through decoration-[6px]" : ""
-            }`}
-          >
-            {idea.title || "Idea sin título"}
-          </h2>
-          {empty && (
+          {onChange ? (
+            <h2
+              key={`${idea.id}|${idea.title}`}
+              contentEditable="plaintext-only"
+              suppressContentEditableWarning
+              spellCheck={false}
+              data-placeholder="Escribe la idea"
+              title="Toca para escribir"
+              onBlur={(e) => {
+                const title = (e.currentTarget.textContent ?? "").replace(/\s+/g, " ").trim();
+                if (title !== idea.title) onChange({ title });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+                if (e.key === "Escape") {
+                  e.currentTarget.textContent = idea.title;
+                  e.currentTarget.blur();
+                }
+              }}
+              className={`${TITLE} cursor-text rounded-[20px] outline-offset-[14px] outline-current/40 hover:outline-[3px] hover:outline-dashed focus:outline-[3px] focus:outline-solid empty:before:opacity-50 empty:before:content-[attr(data-placeholder)] ${
+                idea.done ? "line-through decoration-[6px]" : ""
+              }`}
+            >
+              {idea.title}
+            </h2>
+          ) : (
+            <h2 className={`${TITLE} ${idea.done ? "line-through decoration-[6px]" : ""}`}>
+              {idea.title || "Idea sin título"}
+            </h2>
+          )}
+          {empty && !onChange && (
             <p className="mt-[40px] text-[26px] tracking-[0.06em] uppercase opacity-70">
               Falta escribir cómo sería · toca «Editar»
             </p>
           )}
         </div>
 
-        {/* Abajo: el resto del plan, en columnas. */}
-        {blocks.length > 0 && (
+        {/* Abajo: el resto del plan, en columnas. Al tocarlo se abre para escribir. */}
+        {writing && onChange ? (
           <div
-            className="border-t-[2px] pt-[36px] text-[24px] leading-[1.4]"
+            className="border-t-[2px] pt-[28px]"
+            style={{ borderColor: `color-mix(in srgb, ${fg} 35%, transparent)` }}
+          >
+            <textarea
+              autoFocus
+              defaultValue={idea.notes}
+              spellCheck={false}
+              placeholder={
+                "Reel vertical 9:16 · 15 s\n\nHOOK: qué pasa en el primer segundo.\nTexto: «LO QUE DICE EN PANTALLA»\n\nTOMAS\n1. …\n\nCOPY: …"
+              }
+              onBlur={(e) => {
+                setWriting(false);
+                if (e.target.value !== idea.notes) onChange({ notes: e.target.value });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.currentTarget.value = idea.notes;
+                  e.currentTarget.blur();
+                }
+              }}
+              className="h-[560px] w-full resize-none rounded-[20px] bg-black/20 p-[28px] text-[26px] leading-[1.45] outline-none placeholder:text-current/40"
+              style={{ color: fg }}
+            />
+            <p className="mt-[10px] text-[18px] tracking-[0.08em] uppercase opacity-70">
+              Se guarda solo al tocar afuera · Esc para no guardar
+            </p>
+          </div>
+        ) : blocks.length > 0 ? (
+          <div
+            onClick={(e) => {
+              if (onChange && !(e.target as HTMLElement).closest("a")) setWriting(true);
+            }}
+            title={onChange ? "Toca para escribir" : undefined}
+            className={`border-t-[2px] pt-[36px] text-[24px] leading-[1.4] ${
+              onChange ? "cursor-text rounded-[12px] hover:bg-black/10" : ""
+            }`}
             style={{
               borderColor: `color-mix(in srgb, ${fg} 35%, transparent)`,
               // Columnas parejas: cada parte va entera y se reparten para quedar del mismo alto.
@@ -152,6 +243,15 @@ export function IdeaSlide({
               <Block key={i} section={section} fg={fg} bg={bg} />
             ))}
           </div>
+        ) : (
+          onChange && (
+            <button
+              onClick={() => setWriting(true)}
+              className="mx-auto mb-[40px] rounded-[20px] border-[3px] border-dashed border-current/40 px-[48px] py-[28px] text-[26px] tracking-[0.06em] uppercase opacity-80 hover:opacity-100"
+            >
+              + Toca aquí para escribir cómo sería
+            </button>
+          )
         )}
 
         <p className="mt-[6px] text-center text-[20px] tracking-[0.08em] uppercase opacity-60">

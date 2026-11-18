@@ -3,12 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, type ReactNode } from "react";
 import { shortDate } from "@/lib/dates";
-import { linkLabel, parsePlan, type PlanLine, type PlanSection } from "@/lib/ideaPlan";
+import { ideaFormat, linkLabel, parsePlan, type PlanLine, type PlanSection } from "@/lib/ideaPlan";
 import { isLocal, removeImage, storeImage, useImageUrl } from "@/lib/images";
 import { currentState, deleteIdea, newScript, saveIdea, saveScript } from "@/lib/store";
 import { notify } from "@/lib/toast";
-import type { Idea, Project, Shoot } from "@/lib/types";
-import { Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
+import { FORMATS, type Idea, type Project, type Shoot } from "@/lib/types";
+import { Chips, Field, Modal, buttonClass, darkButtonClass, inputClass } from "./Modal";
 
 /** Una idea abierta para leerla con calma: hook, tomas, audio, copy… y editarla si hace falta. */
 export function IdeaSheet({
@@ -26,6 +26,7 @@ export function IdeaSheet({
   const [editing, setEditing] = useState(!idea.notes.trim());
   const set = (fields: Partial<Idea>) => saveIdea({ ...idea, ...fields });
   const plan = parsePlan(idea.notes);
+  const { format, details } = ideaFormat(idea, plan);
   const shoot = shoots.find((s) => s.id === idea.shootId);
 
   const toScript = () => {
@@ -40,7 +41,7 @@ export function IdeaSheet({
   return (
     <Modal title={idea.title || "Idea sin título"} onClose={onClose} size="md">
       <div className="-mt-3 mb-6 flex flex-wrap items-center gap-2 text-[12px]">
-        {plan.format && <Chip>🎬 {plan.format}</Chip>}
+        {format && <Chip>🎬 {[format, details].filter(Boolean).join(" · ")}</Chip>}
         {idea.pillar && <Chip>{idea.pillar}</Chip>}
         <Chip>
           {shoot
@@ -68,6 +69,13 @@ export function IdeaSheet({
               value={idea.title}
               placeholder="Idea"
               onChange={(e) => set({ title: e.target.value })}
+            />
+          </Field>
+          <Field label="Formato">
+            <Chips
+              options={FORMATS}
+              value={idea.format ?? format}
+              onChange={(f) => set({ format: f })}
             />
           </Field>
           <Field label="Cómo sería">

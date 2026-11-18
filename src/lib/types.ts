@@ -253,6 +253,8 @@ export type Idea = {
   link: string;
   /** Fotos de referencia (ids de imágenes guardadas; se suben solas a internet). */
   images?: string[];
+  /** Qué contenido es (reel, carrusel, foto…), con las mismas opciones de las publicaciones. */
+  format?: Format | null;
   pillar: string | null;
   /** Shoot donde se va a grabar; null = sin asignar. */
   shootId: string | null;

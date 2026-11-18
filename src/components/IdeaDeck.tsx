@@ -151,7 +151,6 @@ export function IdeaDeck({
         onPrev={index > 0 ? () => go(index - 1) : undefined}
         onNext={index < total - 1 ? () => go(index + 1) : undefined}
         onDropFiles={addImages}
-        top={<Progress total={total} index={index} onGo={go} />}
       >
         {(minFit) => (
           <div key={idea.id} className={dir > 0 ? "deck-next" : "deck-prev"}>
@@ -162,12 +161,18 @@ export function IdeaDeck({
               index={index}
               total={total}
               minFit={minFit}
+              onChange={(fields) => {
+                const fresh = currentState().ideas?.find((x) => x.id === idea.id) ?? idea;
+                saveIdea({ ...fresh, ...fields });
+              }}
             />
           </div>
         )}
       </Stage>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-3 text-[13px]">
+      <Filmstrip ideas={ideas} shoots={shoots} project={project} index={index} onGo={go} />
+
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-[13px]">
         <div className="flex items-center gap-1">
           <RoundButton label="Lámina anterior" disabled={!index} onClick={() => go(index - 1)}>
             ‹
@@ -229,8 +234,8 @@ export function IdeaDeck({
     <div>
       {deck}
       <p className="mt-3 hidden text-center text-[12px] text-graphite md:block">
-        ← → para cambiar de lámina · F pantalla completa · arrastra o pega (⌘V) una foto para
-        sumarla como referencia
+        Toca el título o el texto de la lámina para escribir · ← → para cambiar · F pantalla
+        completa · arrastra o pega (⌘V) una foto para sumarla como referencia
       </p>
       <p className="mt-3 text-center text-[12px] text-graphite md:hidden">
         Desliza para cambiar de lámina · gira el celular y toca «Pantalla completa» para verla
@@ -249,18 +254,18 @@ function Stage({
   onPrev,
   onNext,
   onDropFiles,
-  top,
   children,
 }: {
   full: boolean;
   onPrev?: () => void;
   onNext?: () => void;
   onDropFiles: (files: File[]) => void;
-  top: ReactNode;
   children: (minFit: number) => ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
+  // En el computador, el alto que queda en la pantalla debajo de la lámina para la tira y los botones.
+  const [height, setHeight] = useState<number | null>(null);
   const [over, setOver] = useState(false);
   const touch = useRef<{ x: number; y: number } | null>(null);
 
@@ -269,16 +274,27 @@ function Stage({
     if (!el) return;
     const measure = () => {
       const wide = window.matchMedia("(min-width: 768px)").matches;
-      const { width, height } = el.getBoundingClientRect();
-      // En pantallas grandes quedan 2 flechas a los lados; arriba, la barrita de avance.
-      const w = width - (wide ? 2 * (48 + 24) : 0);
-      const h = height - 14;
+      const rect = el.getBoundingClientRect();
+      // Sin pantalla completa, la lámina cabe en lo que queda de pantalla y deja ver la tira de
+      // láminas y los botones de abajo (Editar, Foto…).
+      const room =
+        !full && wide
+          ? Math.max(320, window.innerHeight - (rect.top + window.scrollY) - BELOW)
+          : null;
+      setHeight(room);
+      // En pantallas grandes quedan 2 flechas a los lados.
+      const w = rect.width - (wide ? 2 * (48 + 24) : 0);
+      const h = room ?? rect.height;
       setScale(Math.max(0.1, Math.min(w / SLIDE_W, h / SLIDE_H)));
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
-    return () => observer.disconnect();
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, [full]);
 
   // Que la letra no quede demasiado chica: si se ve chica, se achica menos y se desliza. En el
@@ -291,8 +307,9 @@ function Stage({
       className={
         full
           ? "relative flex min-h-0 flex-1 items-center justify-center"
-          : "relative flex aspect-video w-full items-center justify-center md:aspect-auto md:h-[calc(100dvh-300px)] md:min-h-[420px]"
+          : "relative flex aspect-video w-full items-center justify-center md:aspect-auto"
       }
+      style={height ? { height } : undefined}
       onTouchStart={(e) => {
         const t = e.touches[0];
         touch.current = e.touches.length === 1 ? { x: t.clientX, y: t.clientY } : null;
@@ -327,11 +344,7 @@ function Stage({
         </RoundButton>
       </div>
       {scale > 0 && (
-        <div
-          className="flex flex-col items-stretch gap-[10px] md:mx-6"
-          style={{ width: SLIDE_W * scale }}
-        >
-          {top}
+        <div className="md:mx-6" style={{ width: SLIDE_W * scale }}>
           <div
             className={`relative rounded-[calc(56px*var(--s))] transition ${
               over ? "ring-4 ring-ink" : ""
@@ -358,25 +371,74 @@ function Stage({
   );
 }
 
-/** Barritas de avance, como las historias de Instagram. Se puede saltar tocando una. */
-function Progress({
-  total,
+/** Lo que queda debajo de la lámina en el computador: la tira de láminas y los botones. */
+const BELOW = 200;
+const THUMB_W = 150;
+
+/**
+ * Las láminas en chiquito abajo, como en PowerPoint o Canva: se ve en cuál vas y se salta a
+ * cualquiera tocándola.
+ */
+function Filmstrip({
+  ideas,
+  shoots,
+  project,
   index,
   onGo,
 }: {
-  total: number;
+  ideas: Idea[];
+  shoots: Shoot[];
+  project: Project;
   index: number;
   onGo: (i: number) => void;
 }) {
+  const strip = useRef<HTMLDivElement>(null);
+  const s = THUMB_W / SLIDE_W;
+
+  // La lámina actual siempre a la vista, al centro de la tira.
+  useEffect(() => {
+    const el = strip.current;
+    const thumb = el?.children[index] as HTMLElement | undefined;
+    if (el && thumb)
+      el.scrollTo({
+        left: thumb.offsetLeft - (el.clientWidth - thumb.clientWidth) / 2,
+        behavior: "smooth",
+      });
+  }, [index]);
+
   return (
-    <div className="flex h-[4px] gap-[3px]">
-      {Array.from({ length: total }, (_, i) => (
-        <button
-          key={i}
+    <div ref={strip} className="relative flex gap-3 overflow-x-auto px-2 pt-3 pb-2">
+      {ideas.map((idea, i) => (
+        <div
+          key={idea.id}
+          role="button"
+          tabIndex={0}
+          aria-label={`Lámina ${i + 1}: ${idea.title || "Idea sin título"}`}
+          aria-current={i === index || undefined}
+          title={idea.title}
           onClick={() => onGo(i)}
-          aria-label={`Ir a la lámina ${i + 1}`}
-          className={`h-full flex-1 rounded-full transition ${i <= index ? "bg-ink" : "bg-ink/15 hover:bg-ink/30"}`}
-        />
+          onKeyDown={(e) => e.key === "Enter" && onGo(i)}
+          className={`relative shrink-0 cursor-pointer overflow-hidden rounded-[8px] transition ${
+            i === index
+              ? "ring-[3px] ring-ink ring-offset-2 ring-offset-paper"
+              : "opacity-70 hover:opacity-100"
+          }`}
+          style={{ width: THUMB_W, height: SLIDE_H * s }}
+        >
+          <div inert style={{ transform: `scale(${s})`, transformOrigin: "0 0" }}>
+            <IdeaSlide
+              idea={idea}
+              project={project}
+              shoot={shoots.find((x) => x.id === idea.shootId)}
+              index={i}
+              total={ideas.length}
+              minFit={0.45}
+            />
+          </div>
+          <span className="absolute bottom-1 left-1.5 rounded-[5px] bg-black/60 px-1.5 text-[11px] font-medium text-white tabular-nums">
+            {i + 1}
+          </span>
+        </div>
       ))}
     </div>
   );

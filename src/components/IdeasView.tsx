@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { shortDate, todayKey } from "@/lib/dates";
-import { parsePlan, planPreview } from "@/lib/ideaPlan";
+import { ideaFormat, parsePlan, planPreview } from "@/lib/ideaPlan";
 import { newIdea, newShoot, saveIdea, saveShoot } from "@/lib/store";
 import type { Idea, Project, Shoot } from "@/lib/types";
 import { IdeaDeck } from "./IdeaDeck";
@@ -298,6 +298,7 @@ export function IdeasView({
 
 function IdeaCard({ idea, onOpen }: { idea: Idea; onOpen: () => void }) {
   const plan = parsePlan(idea.notes);
+  const { format } = ideaFormat(idea, plan);
   const preview = planPreview(plan);
 
   return (
@@ -345,12 +346,12 @@ function IdeaCard({ idea, onOpen }: { idea: Idea; onOpen: () => void }) {
           </span>
         </p>
       )}
-      {(idea.pillar || plan.format || idea.link || !!idea.images?.length) && (
+      {(idea.pillar || format || idea.link || !!idea.images?.length) && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-6 text-[11px] text-graphite">
           {idea.pillar && (
             <span className="rounded-full bg-black/[0.06] px-2 py-0.5 text-ink">{idea.pillar}</span>
           )}
-          {plan.format && <span>{plan.format}</span>}
+          {format && <span>{format}</span>}
           {idea.link && <span>↗ referencia</span>}
           {!!idea.images?.length && <span>📷 {idea.images.length}</span>}
         </div>

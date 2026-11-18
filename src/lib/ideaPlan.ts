@@ -1,3 +1,5 @@
+import type { Format, Idea } from "./types";
+
 // Lee las notas de una idea (texto libre) y las ordena para mostrarlas bonitas:
 // formato arriba, secciones en mayúscula (HOOK, TOMAS, AUDIO, COPY…), pasos numerados
 // y los textos en pantalla entre «comillas».
@@ -139,4 +141,31 @@ export function linkLabel(href: string) {
   } catch {
     return href;
   }
+}
+
+const FORMAT_WORDS =
+  /^(reel(\s+(vertical|horizontal))?|post(\s+(carrusel|foto))?|carrusel|historias?|stories|story|video(\s*\+\s*fotos)?|tiktok|foto)\b/i;
+
+/** El formato que dice el texto de la idea («Reel vertical 9:16 · 15 s» → «Reel vertical»). */
+function guessFormat(text: string): Format | null {
+  if (!text) return null;
+  if (/reel/i.test(text)) return /horizontal/i.test(text) ? "Reel horizontal" : "Reel vertical";
+  if (/carrusel/i.test(text)) return "Post carrusel";
+  if (/historia|stor(y|ies)/i.test(text)) return "Stories";
+  if (/video/i.test(text)) return /foto/i.test(text) ? "Video + fotos" : "Video";
+  if (/tiktok/i.test(text)) return "Reel vertical";
+  if (/foto|post/i.test(text)) return "Foto";
+  return null;
+}
+
+/**
+ * Qué contenido es la idea: el que se eligió o, si no, el que dice la primera línea del texto.
+ * `details` es el resto de esa línea (medidas, duración, cuántas fotos).
+ */
+export function ideaFormat(idea: Idea, plan: Plan): { format: Format | null; details: string } {
+  const details = plan.format
+    .replace(FORMAT_WORDS, "")
+    .replace(/^[\s·:,.-]+/, "")
+    .trim();
+  return { format: idea.format ?? guessFormat(plan.format), details };
 }
