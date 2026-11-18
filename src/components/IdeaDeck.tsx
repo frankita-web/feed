@@ -283,7 +283,7 @@ function Stage({
 
   // Que la letra no quede demasiado chica: si se ve chica, se achica menos y se desliza. En el
   // celular parado la lámina es una vista previa: cabe entera y se ve grande en pantalla completa.
-  const minFit = !scale ? 0.6 : scale < 0.3 ? 0.5 : Math.min(1, Math.max(0.55, 10 / (32 * scale)));
+  const minFit = !scale ? 0.6 : scale < 0.3 ? 0.5 : Math.min(1, Math.max(0.55, 10 / (24 * scale)));
 
   return (
     <div

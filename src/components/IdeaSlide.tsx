@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { shortDate } from "@/lib/dates";
 import { useImageUrl } from "@/lib/images";
 import {
@@ -12,11 +12,12 @@ import {
   type PlanSection,
   type RefLink,
 } from "@/lib/ideaPlan";
-import type { Idea, Project, Shoot } from "@/lib/types";
-import { Logo } from "./Logo";
+import { paletteOf, type Idea, type Project, type Shoot } from "@/lib/types";
 
-/** Tamaño real de la lámina (presentación horizontal, como Canva o PowerPoint). Se achica entera
- * para caber en la pantalla. */
+/**
+ * Tamaño real de la lámina (presentación horizontal, como Canva o PowerPoint). Se achica entera
+ * para caber en la pantalla.
+ */
 export const SLIDE_W = 1920;
 export const SLIDE_H = 1080;
 
@@ -28,11 +29,30 @@ export function ideaImages(idea: Idea, shoot?: Shoot) {
   return [...new Set([...(idea.images ?? []), ...fromShoot])];
 }
 
+/** Qué tan claro es un color (0 = negro, 1 = blanco). */
+function lightness(hex: string) {
+  const n = parseInt(hex.replace("#", "").slice(0, 6), 16);
+  if (Number.isNaN(n)) return 0.5;
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
 /**
- * Una idea en una lámina de 1920×1080, en dos columnas: a la izquierda el título, el hook y las
- * tomas; a la derecha las referencias (fotos y links) y el resto del plan (audio, copy, qué se
- * necesita). Si el texto no cabe, todo se achica parejo (hasta `minFit`); si aun así no cabe, se
- * desliza.
+ * Colores de la marca para la lámina: el más oscuro de fondo y el más claro para la letra (en
+ * Cancino, rojo oscuro con rosado).
+ */
+function slideColors(project: Project) {
+  const colors = [...new Set(paletteOf(project))].sort((a, b) => lightness(a) - lightness(b));
+  const bg = colors[0] ?? "#161616";
+  const fg = colors[colors.length - 1] ?? "#ffffff";
+  // Si la marca no tiene un color oscuro y uno claro, va en negro y blanco.
+  return lightness(fg) - lightness(bg) < 0.35 ? { bg: "#161616", fg: "#ffffff" } : { bg, fg };
+}
+
+/**
+ * Una idea en una lámina de 1920×1080, con los colores de la marca y en este orden, para leerla
+ * fácil: arriba las referencias (fotos y links), al medio el formato y la idea en grande, y abajo
+ * el resto del plan (hook, tomas, audio, copy, qué se necesita) en columnas.
+ * Si el texto no cabe, todo se achica parejo (hasta `minFit`); si aun así no cabe, se desliza.
  */
 export function IdeaSlide({
   idea,
@@ -54,104 +74,89 @@ export function IdeaSlide({
   const images = [...ideaImages(idea, shoot), ...refs.images];
   const hook = plan.sections.find((s) => /^hook/i.test(s.title));
   const rest = plan.sections.filter((s) => s !== hook);
-  // Las tomas (la primera sección con pasos numerados) van con el hook; lo demás, a la derecha.
-  const steps = rest.find((s) => s.lines.some((l) => l.kind === "step"));
-  const side = rest.filter((s) => s !== steps);
-  const hasRefs = images.length > 0 || links.length > 0 || refs.notes.length > 0;
-  const twoColumns = hasRefs || side.length > 0;
   const empty = !plan.intro.length && !plan.sections.length;
+  const { bg, fg } = slideColors(project);
   const pad = (n: number) => String(n).padStart(2, "0");
+  const where = shoot
+    ? `${shoot.title || "Shoot"}${shoot.date ? ` · ${shortDate(shoot.date)}` : ""}`
+    : "Idea suelta";
+  const blocks = [
+    ...(plan.intro.length ? [{ title: "", sub: "", lines: plan.intro }] : []),
+    ...(hook ? [hook] : []),
+    ...rest,
+  ];
 
   return (
     <div
-      className="silver relative overflow-hidden rounded-[48px] text-ink"
-      style={{ width: SLIDE_W, height: SLIDE_H }}
+      className="relative overflow-hidden rounded-[32px]"
+      style={{ width: SLIDE_W, height: SLIDE_H, background: bg, color: fg } as CSSProperties}
     >
       <Fit
         minFit={minFit}
+        bg={bg}
         watch={`${idea.title}|${idea.notes}|${idea.link}|${images.join()}|${idea.done}`}
       >
-        <header className="flex items-center justify-between gap-6 text-[24px] text-graphite">
-          <span className="flex items-center gap-4">
-            <Logo project={project} className="h-[60px] w-[60px]" />
-            <span>
-              <span className="font-semibold text-ink">{project.name}</span> · Ideas
-            </span>
-          </span>
-          <span className="tabular-nums">
-            {pad(index + 1)} / {pad(total)}
-          </span>
-        </header>
-
-        <div
-          className={`mt-[48px] grid gap-x-[88px] ${
-            twoColumns ? "grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" : "grid-cols-1"
-          }`}
-        >
-          <div>
-            <p className="text-[22px] font-medium tracking-[0.1em] text-graphite uppercase">
-              {shoot
-                ? `${shoot.title || "Shoot"}${shoot.date ? ` · ${shortDate(shoot.date)}` : ""}`
-                : "Idea suelta · sin shoot"}
-            </p>
-            <h2
-              className={`mt-[14px] leading-[1.02] font-semibold tracking-[-0.035em] ${
-                twoColumns || !empty ? "text-[80px]" : "max-w-[1500px] text-[112px]"
-              } ${idea.done ? "text-ink/45 line-through decoration-[6px]" : ""}`}
-            >
-              {idea.title || "Idea sin título"}
-            </h2>
-
-            {(plan.format || idea.pillar || idea.done) && (
-              <div className="mt-[28px] flex flex-wrap gap-[12px] text-[24px]">
-                {plan.format && <Chip>🎬 {plan.format}</Chip>}
-                {idea.pillar && <Chip>{idea.pillar}</Chip>}
-                {idea.done && <Chip dark>✓ Ya grabada</Chip>}
-              </div>
-            )}
-
-            {plan.intro.length > 0 && (
-              <div className="mt-[36px]">
-                <Lines lines={plan.intro} />
-              </div>
-            )}
-
-            {hook && <Hook section={hook} accent={project.accent} />}
-            {steps && <Section section={steps} />}
-
-            {empty && (
-              <p className="mt-[56px] max-w-[760px] rounded-[36px] border-[3px] border-dashed border-black/15 p-[44px] text-[30px] text-graphite">
-                Todavía no está escrito cómo sería. Toca «Editar» para contarlo.
-              </p>
-            )}
+        {/* Arriba: las referencias. */}
+        {images.length > 0 && <Images ids={images} />}
+        {links.length > 0 && (
+          <div
+            className={`flex flex-wrap justify-center gap-x-[40px] gap-y-[10px] text-[22px] tracking-[0.04em] uppercase ${
+              images.length ? "mt-[22px]" : ""
+            }`}
+          >
+            {links.map((l) => (
+              <LinkItem key={l.href} link={l} />
+            ))}
           </div>
+        )}
+        {refs.notes.length > 0 && (
+          <p className="mt-[12px] text-center text-[22px] opacity-75">{refs.notes.join(" · ")}</p>
+        )}
 
-          {twoColumns && (
-            <div>
-              {hasRefs && (
-                <section>
-                  <Label>Referencias</Label>
-                  {images.length > 0 && <Images ids={images} roomy={!side.length} />}
-                  {refs.notes.length > 0 && (
-                    <div className="mt-[20px]">
-                      <Lines lines={refs.notes.map((text) => ({ kind: "text", text }))} />
-                    </div>
-                  )}
-                  {links.length > 0 && (
-                    <div className="mt-[20px] space-y-[14px]">
-                      {links.map((l) => (
-                        <LinkCard key={l.href} link={l} />
-                      ))}
-                    </div>
-                  )}
-                </section>
-              )}
-              {side.map((section, i) => (
-                <Section key={i} section={section} first={!hasRefs && i === 0} />
-              ))}
-            </div>
+        {/* Al medio: el formato y la idea en grande. */}
+        <div className="flex flex-1 flex-col items-center justify-center py-[44px] text-center">
+          <p className="text-[26px] leading-[1.2] tracking-[0.06em] uppercase">
+            {[plan.format || "Idea", idea.pillar].filter(Boolean).join(" · ")}
+            <br />
+            <span className="opacity-70">
+              {where}
+              {idea.done ? " · ✓ ya grabada" : ""}
+            </span>
+          </p>
+          <h2
+            className={`mt-[36px] max-w-[1640px] text-[104px] leading-[0.98] font-medium tracking-[-0.02em] uppercase ${
+              idea.done ? "line-through decoration-[6px]" : ""
+            }`}
+          >
+            {idea.title || "Idea sin título"}
+          </h2>
+          {empty && (
+            <p className="mt-[40px] text-[26px] tracking-[0.06em] uppercase opacity-70">
+              Falta escribir cómo sería · toca «Editar»
+            </p>
           )}
         </div>
+
+        {/* Abajo: el resto del plan, en columnas. */}
+        {blocks.length > 0 && (
+          <div
+            className="border-t-[2px] pt-[36px] text-[24px] leading-[1.4]"
+            style={{
+              borderColor: `color-mix(in srgb, ${fg} 35%, transparent)`,
+              // Columnas parejas: cada parte va entera y se reparten para quedar del mismo alto.
+              columnCount: Math.min(blocks.length, 4),
+              columnGap: 56,
+            }}
+          >
+            {blocks.map((section, i) => (
+              <Block key={i} section={section} fg={fg} bg={bg} />
+            ))}
+          </div>
+        )}
+
+        <p className="mt-[6px] text-center text-[20px] tracking-[0.08em] uppercase opacity-60">
+          {project.name} · Ideas · {pad(index + 1)} / {pad(total)}
+        </p>
       </Fit>
     </div>
   );
@@ -161,7 +166,17 @@ export function IdeaSlide({
  * Achica el contenido parejo (texto y fotos) hasta que quepa en la lámina, como «ajustar» en
  * Keynote: se hace más ancho y se escala, así el texto vuelve a cortarse bien.
  */
-function Fit({ minFit, watch, children }: { minFit: number; watch: string; children: ReactNode }) {
+function Fit({
+  minFit,
+  bg,
+  watch,
+  children,
+}: {
+  minFit: number;
+  bg: string;
+  watch: string;
+  children: ReactNode;
+}) {
   const box = useRef<HTMLDivElement>(null);
   const sizer = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
@@ -217,7 +232,7 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
         <div ref={sizer} className="overflow-hidden">
           <div
             ref={inner}
-            className="flex flex-col px-[96px] pt-[64px] pb-[80px] text-[32px] leading-[1.38]"
+            className="flex flex-col px-[64px] pt-[56px] pb-[40px]"
             style={{ transform: `scale(${k})`, transformOrigin: "0 0" }}
           >
             {children}
@@ -225,9 +240,15 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
         </div>
       </div>
       {more && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[190px] items-end justify-center bg-linear-to-b from-transparent to-[#e2e2e2] pb-[32px]">
-          <span className="rounded-full bg-ink px-[28px] py-[10px] text-[24px] font-medium text-white">
-            Hay más abajo ↓
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[170px] items-end justify-center pb-[28px]"
+          style={{ background: `linear-gradient(to bottom, transparent, ${bg})` }}
+        >
+          <span
+            className="rounded-full px-[28px] py-[10px] text-[22px] tracking-[0.06em] uppercase"
+            style={{ background: "currentColor" }}
+          >
+            <span style={{ color: bg }}>Hay más abajo ↓</span>
           </span>
         </div>
       )}
@@ -235,77 +256,39 @@ function Fit({ minFit, watch, children }: { minFit: number; watch: string; child
   );
 }
 
-function Chip({ children, dark }: { children: ReactNode; dark?: boolean }) {
+/** Una parte del plan (hook, tomas, audio…) en una columna de abajo. */
+function Block({ section, fg, bg }: { section: PlanSection; fg: string; bg: string }) {
   return (
-    <span
-      className={`rounded-full px-[22px] py-[6px] ${dark ? "bg-ink text-white" : "bg-black/[0.06] text-ink"}`}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Label({ children }: { children: ReactNode }) {
-  return (
-    <h3 className="mb-[14px] flex flex-wrap items-baseline gap-x-[12px] text-[22px] font-medium tracking-[0.1em] text-graphite uppercase">
-      {children}
-    </h3>
-  );
-}
-
-function Hook({ section, accent }: { section: PlanSection; accent: string }) {
-  return (
-    <section
-      className="mt-[40px] rounded-[36px] border-l-[10px] bg-white px-[44px] py-[36px] shadow-[0_10px_40px_-20px_rgb(0_0_0/0.25)]"
-      style={{ borderColor: accent }}
-    >
-      <Label>
-        <span className="font-semibold text-ink">{section.title}</span>
-        {section.sub && <span className="tracking-normal normal-case">{section.sub}</span>}
-      </Label>
-      <div className="text-[38px] leading-[1.25] font-medium">
-        <Lines lines={section.lines} />
-      </div>
+    <section className="mb-[30px] break-inside-avoid">
+      {section.title && (
+        <h3 className="mb-[12px] text-[20px] tracking-[0.1em] uppercase opacity-70">
+          {section.title}
+          {section.sub && <span className="normal-case"> · {section.sub}</span>}
+        </h3>
+      )}
+      <Lines lines={section.lines} fg={fg} bg={bg} />
     </section>
   );
 }
 
-function Section({ section, first }: { section: PlanSection; first?: boolean }) {
-  const copy = /^copy/i.test(section.title);
+function Lines({ lines, fg, bg }: { lines: PlanLine[]; fg: string; bg: string }) {
   return (
-    <section className={first ? "" : "mt-[40px]"}>
-      <Label>
-        <span>{section.title}</span>
-        {section.sub && <span className="tracking-normal normal-case">{section.sub}</span>}
-      </Label>
-      <div className={copy ? "rounded-[28px] bg-white/75 px-[32px] py-[26px]" : ""}>
-        <Lines lines={section.lines} />
-      </div>
-    </section>
-  );
-}
-
-function Lines({ lines }: { lines: PlanLine[] }) {
-  return (
-    <div className="space-y-[12px]">
+    <div className="space-y-[10px]">
       {lines.map((l, i) =>
         l.kind === "step" ? (
-          <div key={i} className="flex gap-[20px]">
-            <span className="mt-[1px] flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full bg-ink text-[22px] font-semibold text-white">
-              {l.n}
-            </span>
+          <div key={i} className="flex gap-[14px]">
+            <span className="w-[30px] shrink-0 tabular-nums opacity-70">{l.n}.</span>
             <p>
-              <Inline text={l.text} />
+              <Inline text={l.text} fg={fg} bg={bg} />
             </p>
           </div>
         ) : l.kind === "overlay" ? (
-          <div key={i} className="flex flex-wrap items-center gap-[16px] pt-[6px]">
-            <span className="text-[22px] font-normal text-graphite">{l.label} en pantalla</span>
-            <Overlay text={l.text} />
+          <div key={i} className="pt-[4px]">
+            <Overlay text={l.text} fg={fg} bg={bg} />
           </div>
         ) : (
           <p key={i}>
-            <Inline text={l.text} />
+            <Inline text={l.text} fg={fg} bg={bg} />
           </p>
         ),
       )}
@@ -314,18 +297,12 @@ function Lines({ lines }: { lines: PlanLine[] }) {
 }
 
 /** Texto con «frases en pantalla» marcadas como en el video, y links que se abren. */
-function Inline({ text }: { text: string }) {
+function Inline({ text, fg, bg }: { text: string; fg: string; bg: string }) {
   return text.split(/(«[^»]+»|https?:\/\/\S+)/).map((part, i) =>
     part.startsWith("«") ? (
-      <Overlay key={i} text={part.slice(1, -1)} />
+      <Overlay key={i} text={part.slice(1, -1)} fg={fg} bg={bg} />
     ) : /^https?:\/\//.test(part) ? (
-      <a
-        key={i}
-        href={part}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-block rounded-full bg-white px-[0.55em] align-middle text-[0.8em] font-medium shadow-sm"
-      >
+      <a key={i} href={part} target="_blank" rel="noreferrer" className="underline">
         {linkLabel(part)} ↗
       </a>
     ) : (
@@ -334,48 +311,36 @@ function Inline({ text }: { text: string }) {
   );
 }
 
-function Overlay({ text }: { text: string }) {
+/** Texto en pantalla, en los colores al revés (como un sticker sobre el video). */
+function Overlay({ text, fg, bg }: { text: string; fg: string; bg: string }) {
   return (
-    <span className="inline-block rounded-[0.25em] bg-ink px-[0.4em] py-[0.06em] align-middle text-[0.85em] leading-tight font-extrabold tracking-tight text-white uppercase">
+    <span
+      className="inline-block rounded-[0.2em] px-[0.35em] py-[0.04em] align-middle text-[0.9em] leading-tight font-semibold tracking-tight uppercase"
+      style={{ background: fg, color: bg }}
+    >
       {text}
     </span>
   );
 }
 
-/** Las fotos de referencia, en una grilla que cambia según cuántas son. */
-function Images({ ids, roomy }: { ids: string[]; roomy: boolean }) {
-  const n = ids.length;
-  const cols = n === 1 ? 1 : n === 2 || n === 4 ? 2 : 3;
-  const aspect =
-    n === 1
-      ? roomy
-        ? "4 / 3"
-        : "16 / 10"
-      : n === 2
-        ? "4 / 5"
-        : n === 3
-          ? "3 / 4"
-          : n === 4
-            ? "4 / 3"
-            : "1 / 1";
+/** Las fotos de referencia en una fila arriba, como una tira de contactos. */
+function Images({ ids }: { ids: string[] }) {
+  const shown = ids.slice(0, 6);
   return (
-    <div
-      className="grid gap-[14px]"
-      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-    >
-      {ids.map((id) => (
-        <RefImage key={id} id={id} aspect={aspect} />
+    <div className="flex justify-center gap-[16px]">
+      {shown.map((id) => (
+        <RefImage key={id} id={id} />
       ))}
     </div>
   );
 }
 
-function RefImage({ id, aspect }: { id: string; aspect: string }) {
+function RefImage({ id }: { id: string }) {
   const external = /^https?:\/\//.test(id);
   const local = useImageUrl(external ? null : id);
   const url = external ? id : local;
   return (
-    <div className="overflow-hidden rounded-[28px] bg-[#dedede]" style={{ aspectRatio: aspect }}>
+    <div className="h-[300px] w-[280px] shrink-0 overflow-hidden bg-black/20">
       {url && (
         // eslint-disable-next-line @next/next/no-img-element -- foto local, guardada o de un link
         <img src={url} alt="" className="h-full w-full object-cover" draggable={false} />
@@ -384,37 +349,17 @@ function RefImage({ id, aspect }: { id: string; aspect: string }) {
   );
 }
 
-const MARKS: Record<string, string> = {
-  Pinterest: "P",
-  Instagram: "IG",
-  Tiktok: "TT",
-  Youtube: "▶",
-  Youtu: "▶",
-  Canva: "C",
-  Drive: "D",
-};
-
-function LinkCard({ link }: { link: RefLink }) {
+function LinkItem({ link }: { link: RefLink }) {
   const site = siteName(link.href);
   return (
     <a
       href={link.href}
       target="_blank"
       rel="noreferrer"
-      className="flex items-center gap-[24px] rounded-[28px] bg-white px-[28px] py-[20px] shadow-[0_10px_40px_-24px_rgb(0_0_0/0.35)] ring-1 ring-black/5"
+      className="underline-offset-4 hover:underline"
     >
-      <span className="flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-[18px] bg-ink text-[26px] font-bold text-white">
-        {MARKS[site] ?? site.charAt(0)}
-      </span>
-      <span className="min-w-0 flex-1 leading-tight">
-        <span className="block truncate text-[28px] font-medium">
-          {link.label || linkLabel(link.href)}
-        </span>
-        <span className="mt-[4px] block truncate text-[22px] text-graphite">
-          {link.label ? linkLabel(link.href) : link.href.replace(/^https?:\/\/(www\.)?/, "")}
-        </span>
-      </span>
-      <span className="text-[36px] text-graphite">↗</span>
+      {site}
+      {link.label ? ` · ${link.label}` : ""} ↗
     </a>
   );
 }
